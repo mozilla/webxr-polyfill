@@ -1,0 +1,31 @@
+{
+  "name": "WebXR_examples",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "start": "http-server .",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mozilla/webxr-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Mozilla/webxr-api/issues"
+  },
+  "homepage": "https://github.com/Mozilla/webxr-api#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.1",
+    "babel-preset-env": "^1.6.0",
+    "http-server": "^0.10.0",
+    "webpack": "^3.5.5"
+  }
+}
