@@ -231,7 +231,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._rawARData = JSON.parse(data)
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT_NAME, {
 			source: this,
-			data: this._rawARData
+			detail: this._rawARData
 		}))
 	}
 
@@ -253,7 +253,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		data = JSON.parse(data)
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.ADD_OBJECT_NAME, {
 			source: this,
-			data: data
+			detail: data
 		}))
 	}
 	

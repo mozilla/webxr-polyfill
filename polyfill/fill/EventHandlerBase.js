@@ -21,7 +21,7 @@ export default class EventHandlerBase {
 			return
 		}
 		for(let i; i < listeners.length; i++){
-			if(listeners[i] === currentListener){
+			if(listeners[i] === listener){
 				listeners.splice(i, 1)
 				return
 			}
