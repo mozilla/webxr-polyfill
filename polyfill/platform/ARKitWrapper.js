@@ -80,9 +80,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	/*
 	getData looks into the most recent ARKit data (as received by onWatch) for a key
-	returns the key's value or null if it doesn't exist
+	returns the key's value or null if it doesn't exist.
+	If key is null, returns the entire data structure.
 	*/
-	getData(key){
+	getData(key=null){
+		if(key === null){
+			return this._rawARData
+		}
 		if(this._rawARData && typeof this._rawARData[key] !== 'undefined'){
 			return this._rawARData[key]
 		}
