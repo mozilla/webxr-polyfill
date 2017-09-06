@@ -3,6 +3,9 @@ import XRView from '../XRView.js'
 import XRSession from '../XRSession.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
+import Quaternion from '../fill/Quaternion.js'
+import Vector3 from '../fill/Vector3.js'
+
 import DeviceOrientationTracker from '../fill/DeviceOrientationTracker.js'
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 
@@ -21,10 +24,9 @@ export default class HeadMountedDisplay extends XRDisplay {
 		this._views = [this._leftView, this._rightView]
 
 		// These will be used to set the head and eye level poses during this._handleNewFrame
-		this._deviceOrientation = new THREE.Quaternion()
-		this._devicePosition = new THREE.Vector3()
-		this._deviceScale = new THREE.Vector3(1, 1, 1)
-		this._deviceWorldMatrix = new THREE.Matrix4()
+		this._deviceOrientation = new Quaternion()
+		this._devicePosition = new Vector3()
+		this._deviceWorldMatrix = new Float32Array(16)
 	}
 
 	/*
@@ -89,8 +91,8 @@ export default class HeadMountedDisplay extends XRDisplay {
 			if(this._vrFrameData.pose.position){
 				this._devicePosition.set(...this._vrFrameData.pose.position)
 			}
-			this._deviceWorldMatrix.compose(this._devicePosition, this._deviceOrientation, this._deviceScale)
-			this._headPose._setPoseModelMatrix(this._deviceWorldMatrix.toArray())
+			MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+			this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 			this._eyeLevelPose.position = this._devicePosition.toArray()
 		}
 	}

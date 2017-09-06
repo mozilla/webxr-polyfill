@@ -42,7 +42,7 @@ class XRExampleBase {
 			return
 		}
 
-		// Get a display and then request a session
+		// Get displays and then request a session
 		navigator.XR.getDisplays().then(displays => {
 			if(displays.length == 0) {
 				this.showMessage('No displays are available')

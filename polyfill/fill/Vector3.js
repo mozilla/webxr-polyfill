@@ -24,6 +24,10 @@ export default class Vector3 {
 		return this
 	}
 
+	toArray(){
+		return [this.x, this.y, this.z]
+	}
+
 	length(){
 		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
 	}

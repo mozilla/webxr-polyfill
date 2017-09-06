@@ -60,7 +60,6 @@ class XRPolyfill extends EventHandlerBase {
 		this._sharedRealities = [new CameraReality(this)]
 		this._privateRealities = []
 
-		// Eventually RiftDisplay, ViveDisplay, DaydreamDisplay, GearVRDisplay, CardboardDisplay...
 		this._displays = [new FlatDisplay(this, this._sharedRealities[0])]
 
 		if(typeof navigator.getVRDisplays === 'function'){
@@ -71,7 +70,6 @@ class XRPolyfill extends EventHandlerBase {
 						this._displays.push(new HeadMountedDisplay(this, this._sharedRealities[0], display))
 					}
 				}
-				console.log('added vr displays', ...this._displays)
 			})
 		}
 

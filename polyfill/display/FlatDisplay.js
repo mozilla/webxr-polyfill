@@ -3,6 +3,9 @@ import XRView from '../XRView.js'
 import XRSession from '../XRSession.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
+import Quaternion from '../fill/Quaternion.js'
+import Vector3 from '../fill/Vector3.js'
+
 import DeviceOrientationTracker from '../fill/DeviceOrientationTracker.js'
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 
@@ -30,10 +33,9 @@ export default class FlatDisplay extends XRDisplay {
 		this._deviceOrientationTracker = null
 
 		// These are used if we have ARCore support or use window orientation events
-		this._deviceOrientation = null			// THREE.Quaternion
-		this._devicePosition = null				// THREE.Vector3
-		this._deviceScale = null				// THREE.Vector3
-		this._deviceWorldMatrix = null			// THREE.Matrix4
+		this._deviceOrientation = null			// Quaternion
+		this._devicePosition = null				// Vector3
+		this._deviceWorldMatrix = null			// Float32Array(16)
 
 		// Currently only support full screen views
 		this._views.push(new XRView(this._fov, this._depthNear, this._depthFar))
@@ -45,10 +47,9 @@ export default class FlatDisplay extends XRDisplay {
 				this._vrFrameData = new VRFrameData()
 				this._views[0]._depthNear = this._reality._vrDisplay.depthNear
 				this._views[0]._depthFar = this._reality._vrDisplay.depthFar
-				this._deviceOrientation = new THREE.Quaternion()
-				this._devicePosition = new THREE.Vector3()
-				this._deviceScale = new THREE.Vector3(1, 1, 1)
-				this._deviceWorldMatrix = new THREE.Matrix4()
+				this._deviceOrientation = new Quaternion()
+				this._devicePosition = new Vector3()
+				this._deviceWorldMatrix = new Float32Array(16)
 			}
 		} else if(ARKitWrapper.HasARKit()){ // Use ARKit
 			if(this._initialized === false){
@@ -65,10 +66,9 @@ export default class FlatDisplay extends XRDisplay {
 		} else { // Use device orientation
 			if(this._initialized === false){
 				this._initialized = true
-				this._deviceOrientation = new THREE.Quaternion()
-				this._devicePosition = new THREE.Vector3()
-				this._deviceScale = new THREE.Vector3(1, 1, 1)
-				this._deviceWorldMatrix = new THREE.Matrix4()
+				this._deviceOrientation = new Quaternion()
+				this._devicePosition = new Vector3()
+				this._deviceWorldMatrix = new Float32Array(16)
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
 				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT_NAME, this._updateFromDeviceOrientationTracker.bind(this))
 			}
@@ -105,8 +105,8 @@ export default class FlatDisplay extends XRDisplay {
 		this._views[0].setProjectionMatrix(this._vrFrameData.leftProjectionMatrix)
 		this._deviceOrientation.set(...this._vrFrameData.pose.orientation)
 		this._devicePosition.set(...this._vrFrameData.pose.position)
-		this._deviceWorldMatrix.compose(this._devicePosition, this._deviceOrientation, this._deviceScale)
-		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix.toArray())
+		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose.position = this._devicePosition.toArray()
 	}
 
@@ -114,8 +114,9 @@ export default class FlatDisplay extends XRDisplay {
 		// TODO set XRView's FOV
 		this._deviceOrientationTracker.getOrientation(this._deviceOrientation)
 		this._devicePosition.set(this._headPose.poseModelMatrix[12], this._headPose.poseModelMatrix[13], this._headPose.poseModelMatrix[14])
-		this._deviceWorldMatrix.compose(this._devicePosition, this._deviceOrientation, this._deviceScale)
-		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix.toArray())
+		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
+		this._eyeLevelPose.position = this._devicePosition.toArray()
 	}
 
 	_handleARKitUpdate(...params){
