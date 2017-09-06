@@ -29,8 +29,8 @@ class ARSimplestExample extends XRExampleBase {
 
 	// Called once per frame, before render to give the app a chance to update this.stageGroup (a THREE.Group)
 	updateStageGroup(frame, stageCoordinateSystem, stagePose){
-		// Spin the teapot to show this method is called
-		//this.stageGroup.children[0].rotation.y += 0.01
+		// Uncomment the next line to spin the teapot
+		// this.stageGroup.children[0].rotation.y += 0.01
 	}
 }
 

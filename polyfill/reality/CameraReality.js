@@ -30,11 +30,12 @@ export default class CameraReality extends Reality {
 		this._vrDisplay = null
 		this._vrFrameData = null
 
+		// Try to find a WebVR 1.1 display that supports Google's ARCore extensions
 		if(typeof navigator.getVRDisplays === 'function'){
 			navigator.getVRDisplays().then(displays => {
 				for(let display of displays){
 					if(display === null) continue
-					if(display.capabilities.hasPassThroughCamera){
+					if(display.capabilities.hasPassThroughCamera){ // This is the ARCore extension to WebVR 1.1
 						this._vrDisplay = display
 						this._vrFrameData = new VRFrameData()
 						this._arCoreCanvas = document.createElement('canvas')
@@ -50,8 +51,6 @@ export default class CameraReality extends Reality {
 							this._arCoreCanvas.height = window.innerHeight
 						}, false)
 						break
-					} else {
-						console.log('Found a non-pass-through camera VR display', display)
 					}
 				}
 			})

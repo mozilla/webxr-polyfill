@@ -17,7 +17,7 @@
 			}
 		</style>
 
-		<script src="libs/three.min.js"></script>
+		<script src="libs/three.js"></script>
 		<script src="models/TeapotBufferGeometry.js"></script>
 		<script type="module" src="./polyfill/XRPolyfill.js"></script>
 		<script nomodule src="dist/webxr-polyfill.js"></script>
@@ -28,13 +28,16 @@
 		<div id="target" />
 		<script>
 			window.addEventListener('DOMContentLoaded', () => {
-				setTimeout(() => {
-					try {
-						window.pageApp = new VRSimplestExample(document.getElementById('target'))
-					} catch(e) {
-						console.error('page error', e)
-					}
-				}, 1000)
+
+				window.pageApp = new VRSimplestExample(document.getElementById('target'))
+
+				// HMDs require the call to start presenting to occur due to a user input event, so make a button to trigger that
+				let enterVRButton = document.createElement('button')
+				target.appendChild(enterVRButton)
+				enterVRButton.innerHTML = 'enter vr'
+				enterVRButton.addEventListener('click', ev => {
+					window.pageApp.startPresenting()
+				})
 			})
 		</script>
 	</body>

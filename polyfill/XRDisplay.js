@@ -1,6 +1,8 @@
 import EventHandlerBase from './fill/EventHandlerBase.js'
 import XRFieldOfView from './XRFieldOfView.js'
 
+import VirtualReality from './reality/VirtualReality.js'
+
 /*
 Each XRDisplay represents a method of using a specific type of hardware to render AR or VR realities and layers.
 
@@ -36,10 +38,8 @@ export default class XRDisplay extends EventHandlerBase {
 
 	supportsSession(parameters){
 		// parameters: XRSessionCreateParametersInit 
-		// returns Promise<boolean>
-		return new Promise((resolve, reject) => {
-			resolve(this._supportedCreationParameters(parameters))
-		})
+		// returns boolean
+		return this._supportedCreationParameters(parameters)
 	}
 
 	requestSession(parameters){
@@ -48,15 +48,29 @@ export default class XRDisplay extends EventHandlerBase {
 				reject()
 				return
 			}
+			if(parameters.type === XRSession.REALITY){
+				this._reality = new VirtualReality()
+				this._xr._privateRealities.push(this._reality)
+			}
 			resolve(this._createSession(parameters))
 		})
 	}
 
+	_requestAnimationFrame(callback){
+		return window.requestAnimationFrame(callback)
+	}
+
+	_cancelAnimationFrame(handle){
+		return window.cancelAnimationFrame(handle)		
+	}
+
+
 	_createSession(parameters){
-		throw 'Should be implemented by extending class'
+		return new XRSession(this._xr, this, parameters)
 	}
 
 	_supportedCreationParameters(parameters){
+		// returns true if the parameters are supported by this display
 		throw 'Should be implemented by extending class'
 	}
 
@@ -64,6 +78,18 @@ export default class XRDisplay extends EventHandlerBase {
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
 	_handleNewFrame(frame){}
+
+	/*
+	Called by a session after it has handed the XRPresentationFrame to the app
+	Use this for any display submission calls that need to happen after the render has occurred.
+	*/
+	_handleAfterFrame(frame){}
+
+
+	/*
+	Called by XRSession after the session.baseLayer is assigned a value
+	*/
+	_handleNewBaseLayer(baseLayer){}
 
 	//attribute EventHandler ondeactivate;
 }

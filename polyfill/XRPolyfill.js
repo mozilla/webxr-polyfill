@@ -21,6 +21,7 @@ import XRWebGLLayer from './XRWebGLLayer.js'
 
 import EventHandlerBase from './fill/EventHandlerBase.js'
 import FlatDisplay from './display/FlatDisplay.js'
+import HeadMountedDisplay from './display/HeadMountedDisplay.js'
 
 import CameraReality from './reality/CameraReality.js'
 
@@ -61,6 +62,18 @@ class XRPolyfill extends EventHandlerBase {
 
 		// Eventually RiftDisplay, ViveDisplay, DaydreamDisplay, GearVRDisplay, CardboardDisplay...
 		this._displays = [new FlatDisplay(this, this._sharedRealities[0])]
+
+		if(typeof navigator.getVRDisplays === 'function'){
+			navigator.getVRDisplays().then(displays => {
+				for(let display of displays){
+					if(display === null) continue
+					if(display.capabilities.canPresent){
+						this._displays.push(new HeadMountedDisplay(this, this._sharedRealities[0], display))
+					}
+				}
+				console.log('added vr displays', ...this._displays)
+			})
+		}
 
 		// These elements are at the beginning of the body and absolutely positioned to fill the entire window
 		// Sessions and realities add their elements to these divs so that they are in the right render order

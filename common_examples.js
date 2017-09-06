@@ -5,16 +5,25 @@
 	Parameters:
 		domElement: an element used to show error messages
 		createVirtualReality: if true, create a new empty reality for this app
+
+	WebVR 1.1 displays require that the call to requestPresent be a direct result of an input event like a click.
+	If you're trying to use a WebVR 1.1 display then you'll need to pass false in the shouldStartPresenting parameter
+	of the constructor and then call this.startPresenting() inside an input event handler.
+
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
+		this.shouldStartPresenting = shouldStartPresenting
 
 		this.hasWebkit = typeof window.webkit !== 'undefined'
 		if(this.hasWebkit) this.setupWebkitUI()
 
 		// Set during the XR.getDisplays call below
+		this.displays = null
+
+		// Set during this.startSession below		
 		this.display = null
 		this.session = null
 
@@ -39,19 +48,46 @@ class XRExampleBase {
 				this.showMessage('No displays are available')
 				return
 			}
-			this.display = displays[0] // production code would allow the user to choose, this code assumes that this is a FlatDisplay
-			this.display.requestSession({
-				exclusive: this.createVirtualReality,
-				type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION
-			}).then(session => {
-				this.handleNewSession(session)
-			}).catch(err => {
-				console.error('Error requesting session', err)
-				this.showMessage('Could not initiate the session')
-			})
+			this.displays = displays
+			this._startSession()
 		}).catch(err => {
 			console.error('Error getting XR displays', err)
 			this.showMessage('Could not get XR displays')
+		})
+	}
+
+	_startSession(){
+		let sessionInitParamers = {
+			exclusive: this.createVirtualReality,
+			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION
+		}
+		for(let display of this.displays){
+			if(display.supportsSession(sessionInitParamers)){
+				this.display = display
+				break
+			}
+		}
+		if(this.display === null){
+			this.showMessage('Could not find a display for this type of session')
+			return
+		}
+		this.display.requestSession(sessionInitParamers).then(session => {
+			this.session = session
+			this.session.depthNear = 0.1
+			this.session.depthFar = 1000.0
+
+			// Handle session lifecycle events
+			this.session.addEventListener('focus', ev => { this.handleSessionFocus(ev) })
+			this.session.addEventListener('blur', ev => { this.handleSessionBlur(ev) })
+			this.session.addEventListener('end', ev => { this.handleSessionEnded(ev) })
+
+			if(this.shouldStartPresenting){
+				// VR Displays need startPresenting called due to input events like a click
+				this.startPresenting()
+			}
+		}).catch(err => {
+			console.error('Error requesting session', err)
+			this.showMessage('Could not initiate the session')
 		})
 	}
 
@@ -64,16 +100,12 @@ class XRExampleBase {
 		this.el.append(message)
 	}
 
-	handleNewSession(session){
-		this.session = session
-		this.session.depthNear = 0.1
-		this.session.depthFar = 1000.0
-
-		// Handle session lifecycle events
-		this.session.addEventListener('focus', ev => { this.handleSessionFocus(ev) })
-		this.session.addEventListener('blur', ev => { this.handleSessionBlur(ev) })
-		this.session.addEventListener('end', ev => { this.handleSessionEnded(ev) })
-
+	/*
+	WebVR 1.1 displays require that the call to requestPresent be a direct result of an input event like a click.
+	If you're trying to set up a VR display, you'll need to pass false in the shouldStartPresenting parameter of the constructor
+	and then call this.startPresenting() inside an input event handler.
+	*/
+	startPresenting(){
 		// Create a canvas and context for the layer
 		let glCanvas = document.createElement('canvas')
 		let glContext = glCanvas.getContext('webgl')
@@ -99,28 +131,7 @@ class XRExampleBase {
 		this.renderer.autoClear = false
 		this.renderer.setClearColor('#000', 0)
 
-		/*
-		This part is a bit bogus and relies on the polyfill only returning a FlatDisplay
-		*/
-		const width = parseInt(window.getComputedStyle(document.body).width)
-		const height = parseInt(window.getComputedStyle(document.body).height)
-		this.camera.aspect = width / height
-		this.camera.updateProjectionMatrix()
-		this.renderer.setSize(width, height)
-
-		if(this.createVirtualReality){
-			const reality = this.session.createVirtualReality('VR Example', false)
-
-			// Reqest the Reality change and then set up its XRLayer
-			this.session.requestRealityChange(reality).then(() => {
-				this.session.requestFrame(frame => { this.handleFrame(frame) })
-			}).error(err => {
-				console.error('Could not change realities')
-			})
-		} else {
-			// The session's reality defaults to the most recently used shared reality
-			this.session.requestFrame(frame => { this.handleFrame(frame) })
-		}
+		this.session.requestFrame(frame => { this.handleFrame(frame) })
 	}
 
 	// Extending classes can react to these events
@@ -167,10 +178,10 @@ class XRExampleBase {
 		this.stageGroup.updateMatrixWorld(true)
 
 		// Prep THREE.js for the render of each XRView
-		this.renderer.resetGLState()
+		//this.renderer.resetGLState()
 		this.scene.matrixAutoUpdate = false
 		this.renderer.autoClear = false
-		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight)
+		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
 		//this.renderer.clear()
 
 		//this.session.baseLayer.context.bindFramebuffer(this.session.baseLayer.context.FRAMEBUFFER, this.session.baseLayer.framebuffer)
@@ -185,6 +196,7 @@ class XRExampleBase {
 			this.scene.updateMatrixWorld(true)
 
 			// Set up the renderer to the XRView's viewport and then render
+			this.renderer.clearDepth()
 			const viewport = view.getViewport(this.session.baseLayer)
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
 			this.renderer.render(this.scene, this.camera)
@@ -284,6 +296,31 @@ function loadObj(baseURL, geometry){
 		})
 	})
 }
+
+function requestFullScreen(){
+	if (document.body.requestFullscreen) {
+		document.body.requestFullscreen()
+	} else if (document.body.msRequestFullscreen) {
+		document.body.msRequestFullscreen()
+	} else if (document.body.mozRequestFullScreen) {
+		document.body.mozRequestFullScreen()
+	} else if (document.body.webkitRequestFullscreen) {
+		document.body.webkitRequestFullscreen()
+	}
+}
+
+function exitFullScreen(){
+	if (document.exitFullscreen) {
+		document.exitFullscreen();
+	} else if (document.mozCancelFullScreen) {
+		document.mozCancelFullScreen()
+	} else if (document.webkitExitFullscreen) {
+		document.webkitExitFullscreen()
+	} else if (document.msExitFullscreen) {			
+		document.msExitFullscreen()
+	}
+}
+
 
 /*
 Rate limit a function call. Wait is the minimum number of milliseconds between calls.

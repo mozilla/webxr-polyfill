@@ -82,9 +82,19 @@ export default class FlatDisplay extends XRDisplay {
 	}
 
 	/*
+	Called by a session to indicate that its baseLayer attribute has been set.
+	FlatDisplay just adds the layer's canvas to DOM elements created by the XR polyfill
+	*/
+	_handleNewBaseLayer(baseLayer){
+		baseLayer._context.canvas.width = window.innerWidth
+		baseLayer._context.canvas.height = window.innerHeight
+		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
+	}
+
+	/*
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
-	_handleNewFrame(){
+	_handleNewFrame(frame){
 		if(this._vrFrameData !== null){
 			this._updateFromVRDevice()
 		}
@@ -140,7 +150,7 @@ export default class FlatDisplay extends XRDisplay {
 
 	_createSession(parameters){
 		this._start()
-		return new XRSession(this._xr, this, parameters)
+		return super._createSession(parameters)
 	}
 
 	_supportedCreationParameters(parameters){
