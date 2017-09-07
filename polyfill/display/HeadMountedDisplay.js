@@ -1,6 +1,7 @@
 import XRDisplay from '../XRDisplay.js'
 import XRView from '../XRView.js'
 import XRSession from '../XRSession.js'
+import XRViewPose from '../XRViewPose.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
 import Quaternion from '../fill/Quaternion.js'
@@ -92,8 +93,12 @@ export default class HeadMountedDisplay extends XRDisplay {
 				this._devicePosition.set(...this._vrFrameData.pose.position)
 			}
 			MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+			if(this._vrDisplay.stageParameters && this._vrDisplay.stageParameters.sittingToStandingTransform){
+				MatrixMath.mat4_multiply(this._deviceWorldMatrix, this._vrDisplay.stageParameters.sittingToStandingTransform, this._deviceWorldMatrix)
+			}
 			this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 			this._eyeLevelPose.position = this._devicePosition.toArray()
+			this._stagePose._position = [0, 0, 0]
 		}
 	}
 }

@@ -30,7 +30,7 @@ class ARSimplestExample extends XRExampleBase {
 	// Called once per frame, before render to give the app a chance to update this.stageGroup (a THREE.Group)
 	updateStageGroup(frame, stageCoordinateSystem, stagePose){
 		// Uncomment the next line to spin the teapot
-		// this.stageGroup.children[0].rotation.y += 0.01
+		this.stageGroup.children[0].rotation.y += 0.01
 	}
 }
 

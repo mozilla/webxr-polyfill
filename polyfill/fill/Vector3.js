@@ -32,6 +32,12 @@ export default class Vector3 {
 		return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z)
 	}
 
+	add(x, y, z){
+		this.x += x
+		this.y += y
+		this.z += z
+	}
+
 	normalize(){
 		var scalar = this.length()
 		if (scalar !== 0){

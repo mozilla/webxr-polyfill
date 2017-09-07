@@ -172,9 +172,6 @@ class XRExampleBase {
 		// Update the stage group relative to the current head pose
 		this.stageGroup.matrixAutoUpdate = false
 		this.stageGroup.matrix.fromArray(stagePose.poseModelMatrix)
-		this.stageGroup.matrix.elements[12] -= headPose.poseModelMatrix[12]
-		this.stageGroup.matrix.elements[13] -= headPose.poseModelMatrix[13]
-		this.stageGroup.matrix.elements[14] -= headPose.poseModelMatrix[14]
 		this.stageGroup.updateMatrixWorld(true)
 
 		// Prep THREE.js for the render of each XRView
@@ -241,22 +238,6 @@ function fillInGLTFScene(path, scene, position=[0, 0, -2], scale=[1, 1, 1]){
 	}).catch((...params) =>{
 		console.error('could not load gltf', ...params)
 	})
-}
-
-function fillInBoxScene(scene){
-	let geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2)
-	let material = new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
-	let mesh = new THREE.Mesh(geometry, material)
-	mesh.position.set(0, 0, -0.8)
-	scene.add(mesh)
-
-	let ambientLight = new THREE.AmbientLight('#FFF', 1)
-	scene.add(ambientLight)
-
-	let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
-	scene.add(directionalLight)
-
-	return scene
 }
 
 function loadGLTF(url){

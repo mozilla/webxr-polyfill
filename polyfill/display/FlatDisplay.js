@@ -108,6 +108,7 @@ export default class FlatDisplay extends XRDisplay {
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose.position = this._devicePosition.toArray()
+		this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
 	}
 
 	_updateFromDeviceOrientationTracker(){
@@ -117,6 +118,7 @@ export default class FlatDisplay extends XRDisplay {
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose.position = this._devicePosition.toArray()
+		this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
 	}
 
 	_handleARKitUpdate(...params){
@@ -124,6 +126,7 @@ export default class FlatDisplay extends XRDisplay {
 		if (cameraTransformMatrix) {
 			this._headPose._setPoseModelMatrix(cameraTransformMatrix)
 			this._eyeLevelPose._position = this._headPose._position
+			this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
 		} else {
 			console.log('no camera transform', this._arKitWrapper.rawARData)
 		}
