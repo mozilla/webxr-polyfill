@@ -153,7 +153,7 @@ class XRExampleBase {
 
 	handleFrame(frame){
 		const nextFrameRequest = this.session.requestFrame(frame => { this.handleFrame(frame) })
-		let stageCoordinateSystem = frame.getCoordinateSystem('stage')
+		let stageCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.STAGE)
 		if(stageCoordinateSystem === null){
 			this.showMessage('Could not get a usable stage coordinate system')
 			this.session.cancelFrame(nextFrameRequest)
@@ -179,7 +179,7 @@ class XRExampleBase {
 		this.scene.matrixAutoUpdate = false
 		this.renderer.autoClear = false
 		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
-		//this.renderer.clear()
+		this.renderer.clear()
 
 		//this.session.baseLayer.context.bindFramebuffer(this.session.baseLayer.context.FRAMEBUFFER, this.session.baseLayer.framebuffer)
 

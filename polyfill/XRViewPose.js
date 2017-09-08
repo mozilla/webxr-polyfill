@@ -43,4 +43,4 @@ export default class XRViewPose {
 	}
 }
 
-XRViewPose.DEFAULT_EYE_HEIGHT = 2 // meters
+XRViewPose.SITTING_EYE_HEIGHT = 1.1 // meters

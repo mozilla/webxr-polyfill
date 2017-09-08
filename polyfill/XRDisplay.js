@@ -20,9 +20,9 @@ export default class XRDisplay extends EventHandlerBase {
 		this._eyeLevelCoordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.EYE_LEVEL)
 		this._stageCoordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.STAGE)
 
-		this._headPose = new XRViewPose([0, 0, 0])
-		this._eyeLevelPose = new XRViewPose([0, 0, 0])
-		this._stagePose = new XRViewPose([0, -XRViewPose.DEFAULT_EYE_HEIGHT, 0])
+		this._headPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
+		this._eyeLevelPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
+		this._stagePose = new XRViewPose([0, 0, 0])
 
 		var fov = 50/2;
 		this._fov = new XRFieldOfView(fov, fov, fov, fov)

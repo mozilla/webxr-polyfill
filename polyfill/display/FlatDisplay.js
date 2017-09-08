@@ -105,28 +105,31 @@ export default class FlatDisplay extends XRDisplay {
 		this._views[0].setProjectionMatrix(this._vrFrameData.leftProjectionMatrix)
 		this._deviceOrientation.set(...this._vrFrameData.pose.orientation)
 		this._devicePosition.set(...this._vrFrameData.pose.position)
+		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
-		this._eyeLevelPose.position = this._devicePosition.toArray()
-		this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
+		this._eyeLevelPose._position = this._devicePosition.toArray()
+		this._stagePose._position = [0, 0, 0]
 	}
 
 	_updateFromDeviceOrientationTracker(){
 		// TODO set XRView's FOV
 		this._deviceOrientationTracker.getOrientation(this._deviceOrientation)
 		this._devicePosition.set(this._headPose.poseModelMatrix[12], this._headPose.poseModelMatrix[13], this._headPose.poseModelMatrix[14])
+		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
-		this._eyeLevelPose.position = this._devicePosition.toArray()
-		this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
+		this._eyeLevelPose._position = this._devicePosition.toArray()
+		this._stagePose._position = [0, 0, 0]
 	}
 
 	_handleARKitUpdate(...params){
 		const cameraTransformMatrix = this._arKitWrapper.getData('camera_transform')
 		if (cameraTransformMatrix) {
 			this._headPose._setPoseModelMatrix(cameraTransformMatrix)
+			this._headPose._poseModelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 			this._eyeLevelPose._position = this._headPose._position
-			this._stagePose._position = [-this._headPose._position[0], -this._headPose._position[1] - XRViewPose.DEFAULT_EYE_HEIGHT, -this._headPose._position[2]]
+			this._stagePose._position = [0, 0, 0]
 		} else {
 			console.log('no camera transform', this._arKitWrapper.rawARData)
 		}
