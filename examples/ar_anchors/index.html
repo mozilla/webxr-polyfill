@@ -1,0 +1,112 @@
+<html>
+	<head>
+		<title>AR anchor example</title>
+		<meta charset="utf-8">
+
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+
+			.add-object-button {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 2em;
+				padding: 10px;
+			}
+		</style>
+
+		<script src="../libs/three.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<script>
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false)
+					this.anchorsToAdd = [] // { node, x, y, z }
+					this.anchoredNodes = [] // { anchorUID, node }
+
+					this.addObjectButton = document.createElement('button')
+					this.addObjectButton.setAttribute('class', 'add-object-button')
+					this.addObjectButton.innerText = 'Add anchor'
+					this.el.appendChild(this.addObjectButton)
+					this.addObjectButton.addEventListener('click', ev => {
+						this.addAnchoredModel(this.createSceneGraphNode(), 0, 0, -0.5)
+					})
+				}
+
+				// Called during construction
+				initializeStageGroup(){
+				}
+
+				createSceneGraphNode(){
+					let geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2)
+					let material = new THREE.MeshPhongMaterial({ color: '#FF9999' })
+					return new THREE.Mesh(geometry, material)
+				}
+
+				/*
+					addAnchoredModel creates an anchor at (x,y,z) and positions the sceneGraphNode on the anchor from that point on
+				*/
+				addAnchoredModel(sceneGraphNode, x, y, z){
+					// Save this info for use during the next render frame
+					this.anchorsToAdd.push({
+						node: sceneGraphNode,
+						x: x, y: y, z: z
+					})
+				}
+
+				// Called once per frame
+				updateStageGroup(frame, stageCoordinateSystem, stagePose){
+					let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					// Create anchors for newly anchored nodes
+					for(let anchorToAdd of this.anchorsToAdd){
+						const anchor = new XRAnchor(new XRCoordinates(this.session.display, headCoordinateSystem, [anchorToAdd.x, anchorToAdd.y, anchorToAdd.z]))
+						const anchorUID = frame.addAnchor(anchor)
+						this.anchoredNodes.push({
+							anchorUID: anchorUID,
+							node: anchorToAdd.node
+						})
+						console.log("Added anchor", anchorUID)
+					}
+					this.anchorsToAdd = []
+					
+					// Update anchored node positions in the scene graph
+					for(let anchoredNode of this.anchoredNodes){
+						const anchor = frame.getAnchor(anchoredNode.anchorUID)
+						if(anchor === null){
+							console.error('Unknown anchor ID', anchoredNode.anchorId)
+						} else {
+							const localCoordinates = anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem)
+							anchoredNode.node.matrix.fromArray(localCoordinates.poseMatrix)
+						}
+					}
+				}
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>
