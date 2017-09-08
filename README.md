@@ -1,6 +1,6 @@
 # WebXR polyfill with examples
 
-This repository holds example applications that use a proposed API for building AR and VR applications in web browsers.
+This repository holds a polyfill and example applications for a proposed API for building AR and VR applications in web browsers.
 
 You can find the proposed API description in the [webxr-api repository](https://github.com/mozilla/webxr-api).
 
