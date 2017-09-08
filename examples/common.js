@@ -17,9 +17,6 @@ class XRExampleBase {
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
 
-		this.hasWebkit = typeof window.webkit !== 'undefined'
-		if(this.hasWebkit) this.setupWebkitUI()
-
 		// Set during the XR.getDisplays call below
 		this.displays = null
 
@@ -198,28 +195,6 @@ class XRExampleBase {
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
 			this.renderer.render(this.scene, this.camera)
 		}
-	}
-
-	/*
-	A temporary UI to show on the iOS app until the app itself provides a URL bar
-	*/
-	setupWebkitUI(){
-		this.webkitControlEl = document.createElement('div')
-		this.el.appendChild(this.webkitControlEl)
-		this.webkitControlEl.setAttribute('class', 'webkit-control')
-		this.locationInput = document.createElement('input')
-		this.locationInput.style.width = '50%'
-		this.locationInput.value = '' + document.location.href
-		this.webkitControlEl.appendChild(this.locationInput)
-		this.locationButton = document.createElement('button')
-		this.locationButton.innerHTML = 'load'
-		this.webkitControlEl.appendChild(this.locationButton)
-
-		this.locationButton.addEventListener('click', ev => {
-			window.webkit.messageHandlers.loadUrl.postMessage({
-	            url: this.locationInput.value
-	        })
-		})
 	}
 }
 
