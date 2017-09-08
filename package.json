@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "start": "http-server .",
+    "start": "npm run build && http-server .",
     "build": "webpack"
   },
   "repository": {
