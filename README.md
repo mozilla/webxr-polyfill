@@ -47,15 +47,15 @@ If you run these apps on a device with no VR or AR tracking, the apps will use t
 
 ## Supported Realities
 
-- Camera Reality (ARKit on Mozilla app, ARCore on )
+- Camera Reality (ARKit on Mozilla iOS Test App, ARCore on Android Chrome, ARCore on Android iOS (NOT YET), WebRTC video stream (PARTIAL))
 - Virtual Reality
 - Passthrough Reality (NOT YET)
 
 ## Supported Browsers
 
 - Mozilla iOS AR Test App
-- Google ARCore Chrome on Android
-- Google ARCore Chrome on iOS (NOT YET)
+- Google ARCore Test Chrome on Android
+- Google ARCore Test Chrome on iOS (NOT YET)
 - Desktop Firefox with WebVR 1.1 HMDs
-- Mobile Safari, Chrome, and Firefox (using 3dof orientation events)
-- More needed
+- Mobile Safari, Chrome, and Firefox (PARTIAL, Daydream NOT TESTED)
+- GearVR Internet (NOT TESTED)
