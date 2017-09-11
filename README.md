@@ -19,8 +19,11 @@ Clone this repo and then change directories into webxr-polyfill/
 <a href="https://docs.npmjs.com/getting-started/installing-node">Install npm</a> and then run the following:
 
 	npm install   # downloads webpack and an http server
-	npm run build # creates dist/webxr-polyfill.js for browsers that can't load ES modules
-	npm run start # start the http server in the current directory
+	npm start     # builds the polyfill in dist/webxr-polyfill.js and start the http server in the current directory
+
+## Builds
+
+  npm run build # builds the polyfill in dist/webxr-polyfill.js
 
 Using one of the supported browsers listed below, go to http://YOUR_HOST_NAME:8080/
 
