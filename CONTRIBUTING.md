@@ -1,7 +1,7 @@
 Contributing to webxr-polyfill
 ======================
 
-THis is an open source project and we love to receive contributions from the community. There are many ways to contribute, from writing documentation, submitting bug reports and feature requests or writing code.
+This is an open source project and we love to receive contributions from the community. There are many ways to contribute, from writing documentation, submitting bug reports and feature requests or writing code.
 We would also love to hear how you are using this code and to receive contributions that make it easier to deploy and integrate.
 
 Bug reports
