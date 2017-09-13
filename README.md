@@ -21,11 +21,15 @@ Clone this repo and then change directories into webxr-polyfill/
 	npm install   # downloads webpack and an http server
 	npm start     # builds the polyfill in dist/webxr-polyfill.js and start the http server in the current directory
 
-## Builds
-
-  npm run build # builds the polyfill in dist/webxr-polyfill.js
-
 Using one of the supported browsers listed below, go to http://YOUR_HOST_NAME:8080/
+
+## Portable builds
+
+To build the WebXR polyfill into a single file that you can use in a different codebase: 
+
+	npm run build
+
+The resulting file will be in dist/webxr-polyfill.js
 
 ## Writing your own XR apps
 
