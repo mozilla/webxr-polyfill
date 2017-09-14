@@ -80,7 +80,7 @@ export default class CameraReality extends Reality {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.ADD_OBJECT_NAME, this._handleARKitAddObject.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.ADD_ANCHOR_EVENT, this._handleARKitAddObject.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -125,14 +125,22 @@ export default class CameraReality extends Reality {
 	}
 
 	_handleARKitAddObject(ev){
-		console.log('AR add object', ev)
+		const anchor = this._anchors.get(ev.detail.uuid) || null
+		if(anchor === null){
+			console.log('unknown anchor', anchor)
+			return
+		}
+		// TODO update the local anchor coordinates
 	}
 
-	_addAnchor(anchor){
-		console.log('reality adding anchor', anchor)
-
-		// TODO talk to ARKit or ARCore to create an anchor
-
+	_addAnchor(anchor, display){
+		// Convert coordinates to the stage coordinate system
+		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._stageCoordinateSystem)
+		if(this._arKitWrapper !== null){
+			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix)
+		} else if(this._vrDisplay){
+			// TODO talk to ARCore to create an anchor
+		}
 		this._anchors.set(anchor.uid, anchor)
 		return anchor.uid
 	}
@@ -140,7 +148,7 @@ export default class CameraReality extends Reality {
 	/*
 	Creates an anchor attached to a surface, as found by a ray
 	*/
-	_findAnchor(coordinates){
+	_findAnchor(coordinates, display){
 		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
 		// TODO talk to ARKit to create an anchor
 		throw 'Need to implement in CameraReality'

@@ -13,6 +13,8 @@ export default class XRAnchor {
 
 	get coordinates(){	return this._coordinates }
 
+	set coordinates(value) { this._coordinates = value }
+	
 	static _generateUID(){
 		return 'anchor-' + new Date().getTime() + '-' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER))
 	}

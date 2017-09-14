@@ -18,7 +18,7 @@ export default class DeviceOrientationTracker extends EventHandlerBase {
 		}, false)
 		window.addEventListener('deviceorientation', ev => {
 			this._deviceOrientation = ev
-			this.dispatchEvent(new CustomEvent(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT_NAME, {
+			this.dispatchEvent(new CustomEvent(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, {
 				deviceOrientation: this._deviceOrientation,
 				windowOrientation: this._windowOrientation
 			}))
@@ -52,7 +52,7 @@ export default class DeviceOrientationTracker extends EventHandlerBase {
 	}
 }
 
-DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT_NAME = 'orientation-update'
+DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT = 'orientation-update'
 
 DeviceOrientationTracker.Z_AXIS = new Vector3(0, 0, 1)
 DeviceOrientationTracker.WORKING_EULER = new Euler()

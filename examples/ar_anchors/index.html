@@ -51,6 +51,10 @@
 
 				// Called during construction
 				initializeStageGroup(){
+					this.stageGroup.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.stageGroup.add(directionalLight)
 				}
 
 				createSceneGraphNode(){
@@ -60,7 +64,7 @@
 				}
 
 				/*
-					addAnchoredModel creates an anchor at (x,y,z) and positions the sceneGraphNode on the anchor from that point on
+					addAnchoredModel creates an anchor at (x,y,z) relative to the camera and positions the sceneGraphNode on the anchor from that point on
 				*/
 				addAnchoredModel(sceneGraphNode, x, y, z){
 					// Save this info for use during the next render frame
@@ -73,15 +77,24 @@
 				// Called once per frame
 				updateStageGroup(frame, stageCoordinateSystem, stagePose){
 					let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+
 					// Create anchors for newly anchored nodes
 					for(let anchorToAdd of this.anchorsToAdd){
-						const anchor = new XRAnchor(new XRCoordinates(this.session.display, headCoordinateSystem, [anchorToAdd.x, anchorToAdd.y, anchorToAdd.z]))
+						// Create an anchor that we'd like to add, relative to the current head position
+						const anchorCoordinates = new XRCoordinates(
+							this.session.display,
+							headCoordinateSystem,
+							[anchorToAdd.x, anchorToAdd.y, anchorToAdd.z]
+						)
+						const anchor = new XRAnchor(anchorCoordinates)
+
+						// Add and store the anchor UID along with the node that will be updated with changing anchor data
 						const anchorUID = frame.addAnchor(anchor)
 						this.anchoredNodes.push({
 							anchorUID: anchorUID,
 							node: anchorToAdd.node
 						})
-						console.log("Added anchor", anchorUID)
+						this.stageGroup.add(anchorToAdd.node)
 					}
 					this.anchorsToAdd = []
 					
@@ -91,8 +104,10 @@
 						if(anchor === null){
 							console.error('Unknown anchor ID', anchoredNode.anchorId)
 						} else {
-							const localCoordinates = anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem)
-							anchoredNode.node.matrix.fromArray(localCoordinates.poseMatrix)
+							// TODO figure out why the stage position is not correctly calculated when creating the anchor
+							anchoredNode.node.matrixAutoUpdate = false
+							anchoredNode.node.matrix.fromArray(anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem).poseMatrix)
+							anchoredNode.node.updateMatrixWorld(true)
 						}
 					}
 				}

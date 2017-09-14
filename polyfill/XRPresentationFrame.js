@@ -35,6 +35,9 @@ export default class XRPresentationFrame {
 		return null
 	}
 
+	/*
+	Returns an array of known XRAnchor instances. May be empty.
+	*/
 	get anchors(){
 		//readonly attribute sequence<XRAnchor> anchors;
 		let results = []
@@ -44,14 +47,18 @@ export default class XRPresentationFrame {
 		return results
 	}
 
+	/*
+	Create an anchor at a specific position defined by XRAnchor.coordinates
+	*/
 	addAnchor(anchor){
 		//DOMString? addAnchor(XRAnchor anchor);
-		return this._session.reality._addAnchor(anchor)
+		return this._session.reality._addAnchor(anchor, this._session.display)
 	}
 
 	findAnchor(coordinates){
+		throw 'This needs to change to handle ARKit x,y screen hit coordinates'
 		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
-		return this._session.reality._findAnchor(coordinates)
+		return this._session.reality._findAnchor(coordinates, this._session.display)
 	}
 
 	removeAnchor(uid){
@@ -59,6 +66,9 @@ export default class XRPresentationFrame {
 		return this._session.reality._removeAnchor(uid)
 	}
 
+	/*
+	Returns an existing XRAnchor or null if uid is unknown
+	*/
 	getAnchor(uid){
 		// XRAnchor? getAnchor(DOMString uid);
 		return this._session.reality._getAnchor(uid)

@@ -55,8 +55,8 @@ export default class FlatDisplay extends XRDisplay {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.INIT_EVENT_NAME, this._handleARKitInit.bind(this))
-				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT_NAME, this._handleARKitUpdate.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.INIT_EVENT, this._handleARKitInit.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitUpdate.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -70,7 +70,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._devicePosition = new Vector3()
 				this._deviceWorldMatrix = new Float32Array(16)
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
-				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT_NAME, this._updateFromDeviceOrientationTracker.bind(this))
+				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, this._updateFromDeviceOrientationTracker.bind(this))
 			}
 		}
 		this.running = true

@@ -46,7 +46,7 @@ export default class Reality extends EventHandlerBase {
 	/*
 	Create an anchor hung in space
 	*/
-	_addAnchor(anchor){
+	_addAnchor(anchor, display){
 		// returns DOMString anchor UID
 		throw 'Exending classes should implement _addAnchor'
 	}
@@ -54,7 +54,7 @@ export default class Reality extends EventHandlerBase {
 	/*
 	Create an anchor attached to a surface, as found by a ray
 	*/
-	_findAnchor(coordinates){
+	_findAnchor(coordinates, display){
 		// returns DOMString anchor UID
 		throw 'Exending classes should implement _findAnchor'
 	}
