@@ -1,5 +1,7 @@
-import XRCoordinateSystem from './XRCoordinateSystem.js'
 import MatrixMath from './fill/MatrixMath.js'
+import Quaternion from './fill/Quaternion.js'
+
+import XRCoordinateSystem from './XRCoordinateSystem.js'
 
 /*
 XRCoordinates represent a pose (position and orientation) in relation to a XRCoordinateSystem.
@@ -24,6 +26,12 @@ export default class XRCoordinates {
 
 	get position(){
 		return new Float32Array([this._poseMatrix[12], this._poseMatrix[13], this._poseMatrix[14]])
+	}
+
+	get orientation(){
+		let quat = new Quaternion()
+		quat.setFromRotationMatrix(this._poseMatrix)
+		return quat.toArray()
 	}
 
 	/*

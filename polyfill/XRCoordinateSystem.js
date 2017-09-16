@@ -44,13 +44,13 @@ export default class XRCoordinateSystem {
 			0, 0, 0, 1
 		])
 
-		// apply inverse of this system's poseModelMatrix to the identity matrix
+		// apply inverse of other system's poseModelMatrix to the identity matrix
 		let inverse = new Float32Array(16)
-		MatrixMath.mat4_invert(inverse, this._poseModelMatrix)
+		MatrixMath.mat4_invert(inverse, otherCoordinateSystem._poseModelMatrix)
 		MatrixMath.mat4_multiply(out, inverse, out)
 
-		// apply other system's poseModelMatrix
-		MatrixMath.mat4_multiply(out, otherCoordinateSystem._poseModelMatrix, out)
+		// apply this system's poseModelMatrix
+		MatrixMath.mat4_multiply(out, this._poseModelMatrix, out)
 		return out
 	}
 }

@@ -45,7 +45,7 @@
 					this.addObjectButton.innerText = 'Add anchor'
 					this.el.appendChild(this.addObjectButton)
 					this.addObjectButton.addEventListener('click', ev => {
-						this.addAnchoredModel(this.createSceneGraphNode(), 0, 0, -0.5)
+						this.addAnchoredModel(this.createSceneGraphNode(), 0, 0, -0.75)
 					})
 				}
 
@@ -58,7 +58,7 @@
 				}
 
 				createSceneGraphNode(){
-					let geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2)
+					let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
 					let material = new THREE.MeshPhongMaterial({ color: '#FF9999' })
 					return new THREE.Mesh(geometry, material)
 				}

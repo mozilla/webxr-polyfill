@@ -36,7 +36,7 @@ export default class Quaternion{
 		// which took it from http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/index.htm
 		// assumes the upper 3x3 of array16 (column major) is a pure rotation matrix (i.e, unscaled)
 
-		let	m11 = array16[0], m12 = array16[4], m13 = array16[8]
+		let	m11 = array16[0], m12 = array16[4], m13 = array16[8],
 			m21 = array16[1], m22 = array16[5], m23 = array16[9],
 			m31 = array16[2], m32 = array16[6], m33 = array16[10]
 

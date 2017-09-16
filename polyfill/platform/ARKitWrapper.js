@@ -72,7 +72,21 @@ export default class ARKitWrapper extends EventHandlerBase {
 	static GetOrCreate(options = null){
 		if(typeof ARKitWrapper.GLOBAL_INSTANCE === 'undefined'){
 			ARKitWrapper.GLOBAL_INSTANCE = new ARKitWrapper()
-			options = (options && typeof(options) == 'object') ? options : {}
+			options = (options && typeof(options) == 'object') ? options : {
+				ui : {
+					browser: true,
+					points: true,
+					focus: false,
+					rec: true,
+					rec_time: true,
+					mic: false,
+					build: false,
+					plane: false,
+					warnings: true,
+					anchors: false,
+					debug: false
+				}
+			}
 			ARKitWrapper.GLOBAL_INSTANCE._sendInit(options)
 		} 
 		return ARKitWrapper.GLOBAL_INSTANCE
