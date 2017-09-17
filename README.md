@@ -35,11 +35,11 @@ The resulting file will be in dist/webxr-polyfill.js
 
 The WebXR polyfill is not dependent on any external libraries, but examples/common.js has a handy base class, XRExampleBase, that wraps all of the boilerplate of starting a WebXR session and rendering into a WebGL layer using Three.js.
 
-Look in examples/ar_simplest/index.html for an example of how to extend XRExampleBase and how to start up an app.
+Look in [examples/ar_simplest/index.html](https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_simplest/index.html) for an example of how to extend [XRExampleBase](https://github.com/mozilla/webxr-polyfill/blob/master/examples/common.js) and how to start up an app.
 
-If you run these apps on our ARKit iOS app then they will use the class in polyfill/platform/ARKitWrapper.js to get pose and anchor data out of ARKit.
+If you run these apps on Mozilla's [ARKit based iOS app](https://github.com/mozilla/webxr-ios) then they will use the class in [polyfill/platform/ARKitWrapper.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARKitWrapper.js) to get pose and anchor data out of ARKit.
 
-If you run these apps on Google's ARCore backed browser then they will use the class in polyfill/platform/ARCoreCameraRenderer.js to use data out of ARCore.
+If you run these apps on Google's ARCore backed browser then they will use the class in [polyfill/platform/ARCoreCameraRenderer.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARCoreCameraRenderer.js) to use data out of ARCore.
 
 If you run these apps on desktop Firefox or Chrome with a WebVR 1.1 supported VR headset, the headset will be exposed as a WebXR XRDisplay.
 
