@@ -11,10 +11,12 @@
 				height: 100%;
 				background-color: white;
 				font-family: sans-serif;
+				font-size: 16px;
+				line-height: 1.2em;
 			}
 
 			body > section {
-				padding: 4em;
+				padding: 60px;
 			}
 
 			ul {
@@ -22,7 +24,27 @@
 				padding-left: 0;
 			}
 			li {
-				margin-bottom: 10px;
+				margin-bottom: 35px;
+			}
+
+			.intro {
+				max-width: 40em;
+			}
+
+			.source {
+				font-size: 0.8em;
+			}
+			
+			a {
+				text-decoration: none;
+			}
+
+			li a {
+				font-size: 1.3em;
+			}
+
+			li p {
+				margin-top: 0.5em;
 			}
 		</style>
 	</head>
@@ -30,10 +52,28 @@
 		<section>
 			<h1>WebXR Examples</h1>
 
+			<p class="intro">
+				Below you will find examples of WebXR experiences. If you are a developer, click the source code links to see how to use the <a href="https://github.com/mozilla/webxr-polyfill">WebXR polyfill</a> to create your own AR or VR experiences.
+			</p>
+
+			<h2>Examples</h2>
+
 			<ul>
-				<li><a href="examples/ar_simplest/">Simplest AR</a>
-				<li><a href="examples/vr_simplest/">Simplest VR</a>
-				<li><a href="examples/ar_anchors/">Anchors</a>
+				<li>
+					<a href="examples/ar_simplest/">Simplest AR</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_simplest/index.html">source</a>
+					<p>Use Three.js to position the Utah Teapot in an augmented reality scene.</p>
+				</li>
+				<li>
+					<a href="examples/vr_simplest/">Simplest VR</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/vr_simplest/index.html">source</a>
+					<p>Use Three.js to position the Utah Teapot in an virtual reality scene.</p>
+				</li>
+				<li>
+					<a href="examples/ar_anchors/">Anchors</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_anchors/index.html">source</a>
+					<p>Position boxes in space and receive updated positions using ARKit anchors.</p> 
+				</li>
 			</ul>
 		</li>
 	</body>
