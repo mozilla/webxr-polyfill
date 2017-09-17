@@ -81,6 +81,7 @@ export default class CameraReality extends Reality {
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
 				this._arKitWrapper.addEventListener(ARKitWrapper.ADD_ANCHOR_EVENT, this._handleARKitAddObject.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitWatch.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -124,17 +125,33 @@ export default class CameraReality extends Reality {
 		}
 	}
 
+	_handleARKitWatch(ev){
+		if(ev.detail && ev.detail.objects){
+			for(let anchorInfo of ev.detail.objects){
+				// The iOS app is handing up incomplete anchor transforms, so this is commented out for now.
+				// Bug is tracked here: https://github.com/mozilla/webxr-ios/issues/2
+				//this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+			}
+		}
+	}
+
 	_handleARKitAddObject(ev){
-		const anchor = this._anchors.get(ev.detail.uuid) || null
+		this._updateAnchorFromARKitUpdate(ev.detail.uuid, ev.detail)
+	}
+
+	_updateAnchorFromARKitUpdate(uuid, anchorInfo){
+		const anchor = this._anchors.get(uid) || null
 		if(anchor === null){
 			console.log('unknown anchor', anchor)
 			return
 		}
-		// TODO update the local anchor coordinates
+		// This assumes that the anchor's coordinates are in the stage coordinate system
+		anchor.coordinates.poseMatrix = anchorInfo.transform
+
 	}
 
 	_addAnchor(anchor, display){
-		// Convert coordinates to the stage coordinate system
+		// Convert coordinates to the stage coordinate system so that updating from ARKit transforms is simple
 		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._stageCoordinateSystem)
 		if(this._arKitWrapper !== null){
 			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix)
@@ -151,7 +168,7 @@ export default class CameraReality extends Reality {
 	_findAnchor(coordinates, display){
 		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
 		// TODO talk to ARKit to create an anchor
-		throw 'Need to implement in CameraReality'
+		throw new Error('Need to implement findAnchor in CameraReality')
 	}
 
 	_removeAnchor(uid){
