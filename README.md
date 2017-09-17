@@ -61,8 +61,8 @@ If you run these apps on a device with no VR or AR tracking, the apps will use t
 ## Supported Browsers
 
 - Mozilla [Project WebXR Viewer](https://github.com/mozilla/webxr-ios) iOS App using ARKit
-- Google ARCore Test Chrome on Android
-- Google ARCore Test Chrome on iOS (NOT YET)
+- Google [ARCore Test Chrome on Android](https://github.com/google-ar/WebARonARCore)
+- Google [ARCore Test Chrome on iOS](https://github.com/google-ar/WebARonARKit) (NOT YET)
 - Desktop Firefox with WebVR 1.1 HMDs
 - Mobile Safari, Chrome, and Firefox (PARTIAL, Daydream NOT TESTED)
 - GearVR Internet (NOT TESTED)
