@@ -104,7 +104,6 @@
 						if(anchor === null){
 							console.error('Unknown anchor ID', anchoredNode.anchorId)
 						} else {
-							// TODO figure out why the stage position is not correctly calculated when creating the anchor
 							anchoredNode.node.matrixAutoUpdate = false
 							anchoredNode.node.matrix.fromArray(anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem).poseMatrix)
 							anchoredNode.node.updateMatrixWorld(true)

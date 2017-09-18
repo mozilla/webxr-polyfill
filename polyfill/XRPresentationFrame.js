@@ -55,10 +55,9 @@ export default class XRPresentationFrame {
 		return this._session.reality._addAnchor(anchor, this._session.display)
 	}
 
-	findAnchor(coordinates){
-		throw 'This needs to change to handle ARKit x,y screen hit coordinates'
-		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
-		return this._session.reality._findAnchor(coordinates, this._session.display)
+	findAnchor(normalizedScreenX, normalizedScreenY){
+		// XRAnchorOffset? findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
+		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
 	}
 
 	removeAnchor(uid){

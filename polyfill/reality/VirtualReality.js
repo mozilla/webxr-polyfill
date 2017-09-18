@@ -36,8 +36,7 @@ export default class VirtualReality extends Reality {
 	/*
 	Create an anchor attached to a surface, as found by a ray
 	*/
-	_findAnchor(coordinates){
-		// How can we give apps the ability to handle looking into the scene?
+	_findAnchor(normalizedScreenX, normalizedScreenY, display){
 		return null
 	}
 
