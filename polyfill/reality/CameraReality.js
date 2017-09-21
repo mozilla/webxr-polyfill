@@ -83,7 +83,6 @@ export default class CameraReality extends Reality {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.ADD_ANCHOR_EVENT, this._handleARKitAddObject.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitWatch.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
@@ -138,8 +137,8 @@ export default class CameraReality extends Reality {
 		}
 	}
 
-	_handleARKitAddObject(ev){
-		this._updateAnchorFromARKitUpdate(ev.detail.uuid, ev.detail)
+	_handleARKitAddObject(anchorInfo){
+		this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 	}
 
 	_updateAnchorFromARKitUpdate(uuid, anchorInfo){
@@ -156,7 +155,9 @@ export default class CameraReality extends Reality {
 		// Convert coordinates to the stage coordinate system so that updating from ARKit transforms is simple
 		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._stageCoordinateSystem)
 		if(this._arKitWrapper !== null){
-			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix)
+			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix).then(
+				detail => this._handleARKitAddObject(detail)
+			)
 		}
 		// ARCore as implemented in the browser does not offer anchors except on a surface, so we just use untracked anchors
 		this._anchors.set(anchor.uid, anchor)
