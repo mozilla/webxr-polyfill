@@ -72,7 +72,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			ARKitWrapper.GLOBAL_INSTANCE = new ARKitWrapper()
 			options = (options && typeof(options) == 'object') ? options : {}
 			let defaultUIOptions = {
-				browser: true
+				browser: true,
+				rec: true
 			};
 			let uiOptions = (typeof(options.ui) == 'object') ? options.ui : {}
 			options.ui = Object.assign(defaultUIOptions, uiOptions)
