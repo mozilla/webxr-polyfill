@@ -20,7 +20,7 @@ export default class EventHandlerBase {
 		if(Array.isArray(listeners) === false){
 			return
 		}
-		for(let i; i < listeners.length; i++){
+		for(let i = 0; i < listeners.length; i++){
 			if(listeners[i] === listener){
 				listeners.splice(i, 1)
 				return

@@ -14,9 +14,7 @@ ARKitWrapper is a singleton. Use ARKitWrapper.GetOrCreate() to get the instance,
 			location: boolean,
 			camera: boolean,
 			objects: boolean,
-			debug: boolean,
-			h_plane: boolean,
-			hit_test_result: 'hit_test_plane'
+			light_intensity: boolean
 		})
 	}
 
@@ -36,8 +34,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
-		this._globalCallbacksMap = {} // Used to map a window.ARCallback method name to an ARKitWrapper.on* method name
-		// Set up the window.ARCallback methods that the ARKit bridge depends on
+		this._globalCallbacksMap = {} // Used to map a window.arkitCallback method name to an ARKitWrapper.on* method name
+		// Set up the window.arkitCallback methods that the ARKit bridge depends on
 		let callbackNames = ['onInit', 'onWatch', 'onStop', 'onHitTest', 'onAddAnchor']
 		for(let i=0; i < callbackNames.length; i++){
 			this._generateGlobalCallback(callbackNames[i], i)
@@ -45,20 +43,20 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called
 		let eventCallbacks = [
-			['onStartRecording', ARKitWrapper.RECORD_START_EVENT],
-			['onStopRecording', ARKitWrapper.RECORD_STOP_EVENT],
-			['didMoveBackground', ARKitWrapper.DID_MOVE_BACKGROUND_EVENT],
-			['willEnterForeground', ARKitWrapper.WILL_ENTER_FOREGROUND_EVENT],
+			['arkitStartRecording', ARKitWrapper.RECORD_START_EVENT],
+			['arkitStopRecording', ARKitWrapper.RECORD_STOP_EVENT],
+			['arkitDidMoveBackground', ARKitWrapper.DID_MOVE_BACKGROUND_EVENT],
+			['arkitWillEnterForeground', ARKitWrapper.WILL_ENTER_FOREGROUND_EVENT],
 			['arkitInterrupted', ARKitWrapper.INTERRUPTED_EVENT],
 			['arkitInterruptionEnded', ARKitWrapper.INTERRUPTION_ENDED_EVENT], 
-			['showDebug', ARKitWrapper.SHOW_DEBUG_EVENT]
+			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
 				detail = detail || null
 				this.dispatchEvent(
 					new CustomEvent(
-						ARKitWrapper[eventCallbacks[i][1]],
+						eventCallbacks[i][1],
 						{
 							source: this,
 							detail: detail
@@ -72,21 +70,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 	static GetOrCreate(options = null){
 		if(typeof ARKitWrapper.GLOBAL_INSTANCE === 'undefined'){
 			ARKitWrapper.GLOBAL_INSTANCE = new ARKitWrapper()
-			options = (options && typeof(options) == 'object') ? options : {
-				ui : {
-					browser: true,
-					points: true,
-					focus: false,
-					rec: true,
-					rec_time: true,
-					mic: false,
-					build: false,
-					plane: false,
-					warnings: true,
-					anchors: false,
-					debug: false
-				}
-			}
+			options = (options && typeof(options) == 'object') ? options : {}
+			let defaultUIOptions = {
+				browser: true,
+				rec: true
+			};
+			let uiOptions = (typeof(options.ui) == 'object') ? options.ui : {}
+			options.ui = Object.assign(defaultUIOptions, uiOptions)
 			ARKitWrapper.GLOBAL_INSTANCE._sendInit(options)
 		} 
 		return ARKitWrapper.GLOBAL_INSTANCE
@@ -205,8 +195,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			location: boolean,
 			camera: boolean,
 			objects: boolean,
-			h_plane: boolean,
-			hit_test_result: 'hit_test_plane'
+			light_intensity: boolean
 		}
 	*/
 	watch(options=null) {
@@ -223,8 +212,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				location: true,
 				camera: true,
 				objects: true,
-				h_plane: true,
-				hit_test_result: 'hit_test_plane'
+				light_intensity: true
 			}
 		}
 		
@@ -237,28 +225,20 @@ export default class ARKitWrapper extends EventHandlerBase {
 	}
 
 	/*
-	Sends a showDebug message to ARKit to indicate whether the Metal layer should show debug info like detected planes
-	*/
-	setDebugDisplay(showDebug) {
-		window.webkit.messageHandlers.showDebug.postMessage({
-			debug: showDebug
-		})
-	}
-
-	/*
 	Sends a setUIOptions message to ARKit to set ui options (show or hide ui elements)
 	options: {
-		browser: true,
-		points: true,
-		focus: true,
-		rec: true,
-		rec_time: true,
-		mic: true,
-		build: true,
-		plane: true,
-		warnings: true,
-		anchors: true,
-		debug: true
+		browser: boolean,
+		points: boolean,
+		focus: boolean,
+		rec: boolean,
+		rec_time: boolean,
+		mic: boolean,
+		build: boolean,
+		plane: boolean,
+		warnings: boolean,
+		anchors: boolean,
+		debug: boolean,
+		statistics: boolean
 	}
 	*/
 	setUIOptions(options) {
@@ -270,17 +250,18 @@ export default class ARKitWrapper extends EventHandlerBase {
 	Usually results in ARKit calling back to _onInit with a deviceId
 	options: {
 		ui: {
-			browser: true,
-			points: true,
-			focus: true,
-			rec: true,
-			rec_time: true,
-			mic: true,
-			build: true,
-			plane: true,
-			warnings: true,
-			anchors: true,
-			debug: true
+			browser: boolean,
+			points: boolean,
+			focus: boolean,
+			rec: boolean,
+			rec_time: boolean,
+			mic: boolean,
+			build: boolean,
+			plane: boolean,
+			warnings: boolean,
+			anchors: boolean,
+			debug: boolean,
+			statistics: boolean
 		}
 	}
 	*/
@@ -364,6 +345,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			type: hitTestType,
 			world_transform: matrix4x4 - specifies the position and orientation relative to WCS,
 			local_transform: matrix4x4 - the position and orientation of the hit test result relative to the nearest anchor or feature point,
+			distance: distance to the detected plane,
 			anchor: {uuid, transform, ...} - the anchor representing the detected surface, if any
 		},
 		...
@@ -379,15 +361,15 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	/*
 	The ARKit iOS app depends on several callbacks on `window`. This method sets them up.
-	They end up as window.ARCallback? where ? is an integer.
-	You can map window.ARCallback? to ARKitWrapper instance methods using _globalCallbacksMap
+	They end up as window.arkitCallback? where ? is an integer.
+	You can map window.arkitCallback? to ARKitWrapper instance methods using _globalCallbacksMap
 	*/
 	_generateGlobalCallback(callbackName, num) {
-		const name = 'ARCallback' + num
+		const name = 'arkitCallback' + num
 		this._globalCallbacksMap[callbackName] = name
 		const self = this
-		window[name] = function(...deviceData) {
-			self['_' + callbackName](...deviceData)
+		window[name] = function(deviceData) {
+			self['_' + callbackName](deviceData)
 		}
 	}
 }
