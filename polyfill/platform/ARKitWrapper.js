@@ -36,7 +36,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 		this._globalCallbacksMap = {} // Used to map a window.arkitCallback method name to an ARKitWrapper.on* method name
 		// Set up the window.arkitCallback methods that the ARKit bridge depends on
-		let callbackNames = ['onInit', 'onWatch', 'onStop', 'onHitTest', 'onAddAnchor']
+		let callbackNames = ['onInit', 'onWatch']
 		for(let i=0; i < callbackNames.length; i++){
 			this._generateGlobalCallback(callbackNames[i], i)
 		}
@@ -100,7 +100,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				resolve()
 				return
 			}
-			let callback = () => {
+			const callback = () => {
 				this.removeEventListener(ARKitWrapper.INIT_EVENT, callback, false)
 				resolve()
 			}
@@ -151,40 +151,49 @@ export default class ARKitWrapper extends EventHandlerBase {
 	types - bit mask of hit testing types
 	*/
 	hitTest(x, y, types = ARKitWrapper.HIT_TEST_TYPE_ALL) {
-		if (!this._isInitialized) {
-			return false
-		}
-		window.webkit.messageHandlers.hitTest.postMessage({
-			x: x,
-			y: y,
-			type: types,
-			callback: this._globalCallbacksMap.onHitTest
-		})
-	}
-
-	/*
-	Sends an addAnchor message to ARKit
-	*/
-	addAnchor(uuid, transform) {
-		if (!this._isInitialized) {
-			return false
-		}
-		window.webkit.messageHandlers.addAnchor.postMessage({
-			uuid: uuid,
-			transform: transform,
-			callback: this._globalCallbacksMap.onAddAnchor
+		return new Promise((resolve, reject) => {
+			if (!this._isInitialized) {
+				reject(new Error('ARKit is not initialized'));
+				return;
+			}
+			window.webkit.messageHandlers.hitTest.postMessage({
+				x: x,
+				y: y,
+				type: types,
+				callback: this._createPromiseCallback('hitTest', resolve)
+			})
 		})
 	}
     
 	/*
+	Sends an addAnchor message to ARKit
+	*/
+	addAnchor(uuid, transform) {
+		return new Promise((resolve, reject) => {
+			if (!this._isInitialized) {
+				reject(new Error('ARKit is not initialized'));
+				return;
+			}
+			window.webkit.messageHandlers.addAnchor.postMessage({
+				uuid: uuid,
+				transform: transform,
+				callback: this._createPromiseCallback('addAnchor', resolve)
+			})
+		})
+	}
+
+	/*
 	If this instance is currently watching, send the stopAR message to ARKit to request that it stop sending data on onWatch
 	*/
 	stop() {
-		if (!this._isWatching) {
-			return
-		}
-		window.webkit.messageHandlers.stopAR.postMessage({
-			callback: this._globalCallbacksMap.onStop
+		return new Promise((resolve, reject) => {
+			if (!this._isWatching) {
+				resolve();
+				return;
+			}
+			window.webkit.messageHandlers.stopAR.postMessage({
+				callback: this._createPromiseCallback('stop', resolve)
+			})
 		})
 	}
 	
@@ -318,9 +327,6 @@ export default class ARKitWrapper extends EventHandlerBase {
 	*/
 	_onStop() {
 		this._isWatching = false
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.STOP_EVENT, {
-			source: this
-		}))
 	}
 
 	/*
@@ -331,10 +337,6 @@ export default class ARKitWrapper extends EventHandlerBase {
 	}
 	*/
 	_onAddAnchor(data) {
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.ADD_ANCHOR_EVENT, {
-			source: this,
-			detail: data
-		}))
 	}
 
 	/*
@@ -353,10 +355,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 	@see https://developer.apple.com/documentation/arkit/arframe/2875718-hittest
 	*/
 	_onHitTest(data) {
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.HIT_TEST_EVENT, {
-			source: this,
-			detail: data
-		}))
+	}
+
+	_createPromiseCallback(action, resolve) {
+		const callbackName = this._generateCallbackUID(action);
+		window[callbackName] = (data) => {
+			delete window[callbackName]
+			const wrapperCallbackName = '_on' + action[0].toUpperCase() +
+				action.slice(1);
+			if (typeof(this[wrapperCallbackName]) == 'function') {
+				this[wrapperCallbackName](data);
+			}
+			resolve(data)
+		}
+		return callbackName;
+	}
+
+	_generateCallbackUID(prefix) {
+		return 'arkitCallback_' + prefix + '_' + new Date().getTime() + 
+			'_' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER))
 	}
 
 	/*
@@ -377,15 +394,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 // ARKitWrapper event names:
 ARKitWrapper.INIT_EVENT = 'arkit-init'
 ARKitWrapper.WATCH_EVENT = 'arkit-watch'
-ARKitWrapper.STOP_EVENT = 'arkit-stop'
-ARKitWrapper.ADD_ANCHOR_EVENT = 'arkit-add-anchor'
 ARKitWrapper.RECORD_START_EVENT = 'arkit-record-start'
 ARKitWrapper.RECORD_STOP_EVENT = 'arkit-record-stop'
 ARKitWrapper.DID_MOVE_BACKGROUND_EVENT = 'arkit-did-move-background'
 ARKitWrapper.WILL_ENTER_FOREGROUND_EVENT = 'arkit-will-enter-foreground'
 ARKitWrapper.INTERRUPTED_EVENT = 'arkit-interrupted'
 ARKitWrapper.INTERRUPTION_ENDED_EVENT = 'arkit-interruption-ended'
-ARKitWrapper.HIT_TEST_EVENT = 'arkit-hit-test'
 ARKitWrapper.SHOW_DEBUG_EVENT = 'arkit-show-debug'
 
 // hit test types

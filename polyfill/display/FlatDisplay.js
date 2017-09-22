@@ -148,9 +148,7 @@ export default class FlatDisplay extends XRDisplay {
 				location: true,
 				camera: true,
 				objects: true,
-				debug: false,
-				h_plane: false,
-				hit_test_result: 'hit_test_plane'
+				light_intensity: true
 			})
 		}, 1000)
 	}
