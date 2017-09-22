@@ -149,6 +149,19 @@ export default class ARKitWrapper extends EventHandlerBase {
 	Sends a hitTest message to ARKit to get hit testing results
 	x, y - screen coordinates normalized to 0..1
 	types - bit mask of hit testing types
+	
+	Returns a promise that returns an array of hit results:
+	[
+		{
+			type: hitTestType,
+			world_transform: matrix4x4 - specifies the position and orientation relative to WCS,
+			local_transform: matrix4x4 - the position and orientation of the hit test result relative to the nearest anchor or feature point,
+			distance: distance to the detected plane,
+			anchor: {uuid, transform, ...} - the anchor representing the detected surface, if any
+		},
+		...
+	]
+	@see https://developer.apple.com/documentation/arkit/arframe/2875718-hittest
 	*/
 	hitTest(x, y, types = ARKitWrapper.HIT_TEST_TYPE_ALL) {
 		return new Promise((resolve, reject) => {
@@ -164,9 +177,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 			})
 		})
 	}
-    
+
 	/*
 	Sends an addAnchor message to ARKit
+	Returns a promise that returns:
+	{
+		uuid - the anchor's uuid,
+		transform - anchor transformation matrix
+	}
 	*/
 	addAnchor(uuid, transform) {
 		return new Promise((resolve, reject) => {
@@ -327,34 +345,6 @@ export default class ARKitWrapper extends EventHandlerBase {
 	*/
 	_onStop() {
 		this._isWatching = false
-	}
-
-	/*
-	Callback from ARKit for when it does the work initiated by sending the addAnchor message from JS
-	data: {
-		uuid - the anchor's uuid,
-		transform - anchor transformation matrix
-	}
-	*/
-	_onAddAnchor(data) {
-	}
-
-	/*
-	Callback from ARKit for when it does the work initiated by sending the hitTest message from JS
-	ARKit returns an array of hit results
-	data: [
-		{
-			type: hitTestType,
-			world_transform: matrix4x4 - specifies the position and orientation relative to WCS,
-			local_transform: matrix4x4 - the position and orientation of the hit test result relative to the nearest anchor or feature point,
-			distance: distance to the detected plane,
-			anchor: {uuid, transform, ...} - the anchor representing the detected surface, if any
-		},
-		...
-	]
-	@see https://developer.apple.com/documentation/arkit/arframe/2875718-hittest
-	*/
-	_onHitTest(data) {
 	}
 
 	_createPromiseCallback(action, resolve) {
