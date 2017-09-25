@@ -28,7 +28,7 @@ export default class VirtualReality extends Reality {
 	/*
 	Create an anchor hung in space
 	*/
-	_addAnchor(anchor){
+	_addAnchor(anchor, display){
 		this._anchors.set(anchor.uid, anchor)
 		return anchor.uid
 	}
@@ -37,11 +37,9 @@ export default class VirtualReality extends Reality {
 	Create an anchor attached to a surface, as found by a ray
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
-		return null
-	}
-
-	_getAnchor(uid){
-		return this._anchors.get(uid) || null
+		return new Promise((resolve, reject) => {
+			resolve(null)
+		})
 	}
 
 	_removeAnchor(uid){

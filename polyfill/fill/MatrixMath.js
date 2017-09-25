@@ -8,6 +8,16 @@ https://github.com/googlevr/webvr-polyfill/blob/master/src/util.js#L270
 */
 export default class MatrixMath {
 
+	// Returns a new Float32Array that is set to the transform identity
+	static mat4_generateIdentity(){
+		return new Float32Array([
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1,
+		])
+	}
+
 	static mat4_get_position(out, m){
 		out[0] = m[12]
 		out[1] = m[13]

@@ -92,9 +92,17 @@ class XRExampleBase {
 		Empties this.el, adds a div with the message text, and shows a button to test rendering the scene to this.el
 	*/
 	showMessage(messageText){
-		let message = document.createElement('div')
-		message.innerHTML = messageText
-		this.el.append(message)
+		let messages = document.getElementsByClassName('common-message')
+		if(messages.length > 0){
+			var message = messages[0]
+		} else {
+			var message = document.createElement('div')
+			message.setAttribute('class', 'common-message')
+			this.el.append(message)
+		}
+		let div = document.createElement('div')
+		div.innerHTML = messageText
+		message.appendChild(div)
 	}
 
 	/*
@@ -103,11 +111,17 @@ class XRExampleBase {
 	and then call this.startPresenting() inside an input event handler.
 	*/
 	startPresenting(){
+		if(this.session === null){
+			this.showMessage('Can not start presenting without a session')
+			throw new Error('Can not start presenting without a session')
+		}
+
 		// Create a canvas and context for the layer
 		let glCanvas = document.createElement('canvas')
 		let glContext = glCanvas.getContext('webgl')
 		if(glContext === null){
-			throw 'Could not create GL context'
+			this.showMessage('Could not create a WebGL canvas')
+			throw new Error('Could not create GL context')
 		}
 
 		// Set the session's base layer into which the app will render

@@ -20,7 +20,7 @@ ARKitWrapper is a singleton. Use ARKitWrapper.GetOrCreate() to get the instance,
 
 */
 export default class ARKitWrapper extends EventHandlerBase {
-	constructor() {
+	constructor(){
 		super()
 		if(ARKitWrapper.HasARKit() === false){
 			throw 'ARKitWrapper will only work in Mozilla\'s ARDemo test app'
@@ -67,13 +67,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 	}
 
-	static GetOrCreate(options = null){
+	static GetOrCreate(options=null){
 		if(typeof ARKitWrapper.GLOBAL_INSTANCE === 'undefined'){
 			ARKitWrapper.GLOBAL_INSTANCE = new ARKitWrapper()
 			options = (options && typeof(options) == 'object') ? options : {}
 			let defaultUIOptions = {
 				browser: true,
-				rec: true
+				rec: true,
+				warnings: true
 			};
 			let uiOptions = (typeof(options.ui) == 'object') ? options.ui : {}
 			options.ui = Object.assign(defaultUIOptions, uiOptions)
@@ -112,8 +113,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 	getData looks into the most recent ARKit data (as received by onWatch) for a key
 	returns the key's value or null if it doesn't exist or if a key is not specified it returns all data
 	*/
-	getData(key = null){
-		if (key === null) {
+	getData(key=null){
+		if (key === null){
 			return this._rawARData
 		}
 		if(this._rawARData && typeof this._rawARData[key] !== 'undefined'){
@@ -132,7 +133,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 	return null if object with `uuid` is not found
 	*/
 	getObject(uuid){
-		if (!this._isInitialized) {
+		if (!this._isInitialized){
 			return null
 		}
 		const objects = this.getKey('objects')
@@ -150,22 +151,22 @@ export default class ARKitWrapper extends EventHandlerBase {
 	x, y - screen coordinates normalized to 0..1
 	types - bit mask of hit testing types
 	
-	Returns a promise that returns an array of hit results:
+	Returns a Promise that resolves to a (possibly empty) array of hit test data:
 	[
 		{
-			type: hitTestType,
-			world_transform: matrix4x4 - specifies the position and orientation relative to WCS,
-			local_transform: matrix4x4 - the position and orientation of the hit test result relative to the nearest anchor or feature point,
-			distance: distance to the detected plane,
-			anchor: {uuid, transform, ...} - the anchor representing the detected surface, if any
+			type: 1,							// A packed mask of types ARKitWrapper.HIT_TEST_TYPE_*
+			distance: 1.0216870307922363,		// The distance in meters from the camera to the hit
+			world_transform: Float32Array(16)	// The pose of the anchor
+			local_transform: Float32Array(16),	// The offset pose from the anchor
+			anchor: {uuid, transform, ...}		// The anchor representing the detected surface, if any
 		},
 		...
 	]
 	@see https://developer.apple.com/documentation/arkit/arframe/2875718-hittest
 	*/
-	hitTest(x, y, types = ARKitWrapper.HIT_TEST_TYPE_ALL) {
+	hitTest(x, y, types=ARKitWrapper.HIT_TEST_TYPE_ALL){
 		return new Promise((resolve, reject) => {
-			if (!this._isInitialized) {
+			if (!this._isInitialized){
 				reject(new Error('ARKit is not initialized'));
 				return;
 			}
@@ -186,14 +187,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 		transform - anchor transformation matrix
 	}
 	*/
-	addAnchor(uuid, transform) {
+	addAnchor(uid, transform){
 		return new Promise((resolve, reject) => {
-			if (!this._isInitialized) {
+			if (!this._isInitialized){
 				reject(new Error('ARKit is not initialized'));
 				return;
 			}
 			window.webkit.messageHandlers.addAnchor.postMessage({
-				uuid: uuid,
+				uuid: uid,
 				transform: transform,
 				callback: this._createPromiseCallback('addAnchor', resolve)
 			})
@@ -203,9 +204,9 @@ export default class ARKitWrapper extends EventHandlerBase {
 	/*
 	If this instance is currently watching, send the stopAR message to ARKit to request that it stop sending data on onWatch
 	*/
-	stop() {
+	stop(){
 		return new Promise((resolve, reject) => {
-			if (!this._isWatching) {
+			if (!this._isWatching){
 				resolve();
 				return;
 			}
@@ -225,8 +226,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			light_intensity: boolean
 		}
 	*/
-	watch(options=null) {
-		if (!this._isInitialized) {
+	watch(options=null){
+		if (!this._isInitialized){
 			return false
 		}
 		if(this._isWatching){
@@ -268,7 +269,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		statistics: boolean
 	}
 	*/
-	setUIOptions(options) {
+	setUIOptions(options){
 		window.webkit.messageHandlers.setUIOptions.postMessage(options)
 	}
 
@@ -304,7 +305,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 	Callback for when ARKit is initialized
 	deviceId: DOMString with the AR device ID
 	*/
-	_onInit(deviceId) {
+	_onInit(deviceId){
 		this._deviceId = deviceId
 		this._isInitialized = true
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.INIT_EVENT, {
@@ -332,7 +333,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 
 	*/
-	_onWatch(data) {
+	_onWatch(data){
 		this._rawARData = data
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
 			source: this,
@@ -343,17 +344,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 	/*
 	Callback from ARKit for when sending per-frame data to onWatch is stopped
 	*/
-	_onStop() {
+	_onStop(){
 		this._isWatching = false
 	}
 
-	_createPromiseCallback(action, resolve) {
+	_createPromiseCallback(action, resolve){
 		const callbackName = this._generateCallbackUID(action);
 		window[callbackName] = (data) => {
 			delete window[callbackName]
 			const wrapperCallbackName = '_on' + action[0].toUpperCase() +
 				action.slice(1);
-			if (typeof(this[wrapperCallbackName]) == 'function') {
+			if (typeof(this[wrapperCallbackName]) == 'function'){
 				this[wrapperCallbackName](data);
 			}
 			resolve(data)
@@ -361,7 +362,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		return callbackName;
 	}
 
-	_generateCallbackUID(prefix) {
+	_generateCallbackUID(prefix){
 		return 'arkitCallback_' + prefix + '_' + new Date().getTime() + 
 			'_' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER))
 	}
@@ -371,11 +372,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 	They end up as window.arkitCallback? where ? is an integer.
 	You can map window.arkitCallback? to ARKitWrapper instance methods using _globalCallbacksMap
 	*/
-	_generateGlobalCallback(callbackName, num) {
+	_generateGlobalCallback(callbackName, num){
 		const name = 'arkitCallback' + num
 		this._globalCallbacksMap[callbackName] = name
 		const self = this
-		window[name] = function(deviceData) {
+		window[name] = function(deviceData){
 			self['_' + callbackName](deviceData)
 		}
 	}

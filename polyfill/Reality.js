@@ -21,21 +21,21 @@ export default class Reality extends EventHandlerBase {
 
 	getCoordinateSystem(...types){
 		//XRCoordinateSystem? getCoordinateSystem(XRFrameOfReferenceType type, ...); // Tries the types in order, returning the first match or null if none is found
-		throw 'Not implemented'
+		throw new Error('Not implemented')
 	}
 
 	/*
 	Called when at least one active XRSession is using this Reality
 	*/
 	_start(){
-		throw 'Exending classes should implement _start'
+		throw new Error('Exending classes should implement _start')
 	}
 
 	/*
 	Called when no more active XRSessions are using this Reality
 	*/
 	_stop(){
-		throw 'Exending classes should implement _stop'
+		throw new Error('Exending classes should implement _stop')
 	}
 
 	/*
@@ -48,15 +48,15 @@ export default class Reality extends EventHandlerBase {
 	*/
 	_addAnchor(anchor, display){
 		// returns DOMString anchor UID
-		throw 'Exending classes should implement _addAnchor'
+		throw new Error('Exending classes should implement _addAnchor')
 	}
 
 	/*
 	Create an anchor attached to a surface, as found by a ray
+	returns a Promise that resolves either to an AnchorOffset or null if the hit test failed
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
-		// returns DOMString anchor UID
-		throw 'Exending classes should implement _findAnchor'
+		throw new Error('Exending classes should implement _findAnchor')
 	}
 
 	_getAnchor(uid){
@@ -65,7 +65,7 @@ export default class Reality extends EventHandlerBase {
 
 	_removeAnchor(uid){
 		// returns void
-		throw 'Exending classes should implement _removeAnchor'
+		throw new Error('Exending classes should implement _removeAnchor')
 	}
 
 	// attribute EventHandler onchange;
