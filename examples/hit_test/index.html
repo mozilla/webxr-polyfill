@@ -100,7 +100,8 @@
 							if(anchorOffset === null){
 								this._messageEl.innerHTML = 'miss'
 							} else {
-								this._messageEl.innerHTML = 'hit: ' + ','.join(anchorOffset.anchor.coordinates.position)
+								const anchor = frame.getAnchor(anchorOffset.anchorUID)
+								this._messageEl.innerHTML = 'hit: ' + anchor.coordinates.position.join(', ')
 
 								// Save the XRAnchorOffset and the node so that we can update the node's position based off of the anchor
 								let anchorInfo = {
