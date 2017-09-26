@@ -101,6 +101,10 @@
 								this._messageEl.innerHTML = 'miss'
 							} else {
 								const anchor = frame.getAnchor(anchorOffset.anchorUID)
+								if(anchor === null){
+									console.error('unknown anchor uid', anchorOffset.anchorUID)
+									return
+								}
 								this._messageEl.innerHTML = 'hit: ' + anchor.coordinates.position.join(', ')
 
 								// Save the XRAnchorOffset and the node so that we can update the node's position based off of the anchor
@@ -143,11 +147,12 @@
 						console.error('No touches on touch event', ev)
 						return
 					}
+
+					//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
 					this._tapEventData = [
-						ev.touches[0].pageX / window.innerWidth,
-						ev.touches[0].pageY / window.innerHeight
+						2  * (ev.touches[0].pageX / window.innerWidth)  - 1,
+						-2 * (ev.touches[0].pageY / window.innerHeight) + 1
 					]
-					console.log('touch', this._tapEventData)
 				}
 
 				// Creates a box used to indicate the location of an anchor offset

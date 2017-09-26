@@ -28,7 +28,8 @@ class XRExampleBase {
 		this.scene = new THREE.Scene() // The scene will be rotated and oriented around the camera using the head pose
 		this.stageGroup = new THREE.Group() // The group that stays on the "stage", which is at foot level relative to the head
 		this.scene.add(this.stageGroup)
-		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
+
+		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
 		this.renderer = null // Set in this.handleNewSession
 
 		// Give extending classes the opportunity to initially populate the stage group

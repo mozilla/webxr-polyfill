@@ -75,7 +75,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				browser: true,
 				rec: true,
 				warnings: true
-			};
+			}
 			let uiOptions = (typeof(options.ui) == 'object') ? options.ui : {}
 			options.ui = Object.assign(defaultUIOptions, uiOptions)
 			ARKitWrapper.GLOBAL_INSTANCE._sendInit(options)
@@ -148,17 +148,24 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	/*
 	Sends a hitTest message to ARKit to get hit testing results
-	x, y - screen coordinates normalized to 0..1
+	x, y - screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
 	types - bit mask of hit testing types
 	
 	Returns a Promise that resolves to a (possibly empty) array of hit test data:
 	[
 		{
 			type: 1,							// A packed mask of types ARKitWrapper.HIT_TEST_TYPE_*
-			distance: 1.0216870307922363,		// The distance in meters from the camera to the hit
-			world_transform: Float32Array(16)	// The pose of the anchor
-			local_transform: Float32Array(16),	// The offset pose from the anchor
-			anchor: {uuid, transform, ...}		// The anchor representing the detected surface, if any
+			distance: 1.0216870307922363,		// The distance in meters from the camera to the detected anchor or feature point.
+			world_transform:  [float x 16],		// The pose of the hit test result relative to the world coordinate system. 
+			local_transform:  [float x 16],		// The pose of the hit test result relative to the nearest anchor or feature point
+
+			// If the `type` is `HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE`, `HIT_TEST_TYPE_EXISTING_PLANE`, or `HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT` (2, 8, or 16) it will also have anchor data:
+			anchor_center: { x:float, y:float, z:float },
+			anchor_extent: { x:float, y:float },
+			uuid: string,
+
+			// If the `type` is `HIT_TEST_TYPE_EXISTING_PLANE` or `HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT` (8 or 16) it will also have an anchor transform:
+			anchor_transform: [float x 16]
 		},
 		...
 	]
@@ -402,4 +409,7 @@ ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT = 16
 ARKitWrapper.HIT_TEST_TYPE_ALL = ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT |
 	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
 	ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE |
+	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+
+ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
 	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
