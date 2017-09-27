@@ -4,6 +4,9 @@ import XRViewPose from '../XRViewPose.js'
 import XRCoordinates from '../XRCoordinates.js'
 import XRAnchorOffset from '../XRAnchorOffset.js'
 
+import MatrixMath from '../fill/MatrixMath.js'
+import Quaternion from '../fill/Quaternion.js'
+
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 import ARCoreCameraRenderer from '../platform/ARCoreCameraRenderer.js'
 
@@ -176,22 +179,33 @@ export default class CameraReality extends Reality {
 				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
+						console.log('miss')
 						return
 					}
-					let hit = this._pickARKitHit(hits)
-					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
+					const hit = this._pickARKitHit(hits)
+					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
-					// TODO this works for now, but it should set the anchor's transform and the use the offset transform
+					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
 
 					let anchor = this._getAnchor(hit.uuid)
 					if(anchor === null){
 						let anchorCoordinates = new XRCoordinates(display, display._stageCoordinateSystem)
+						anchorCoordinates.poseMatrix = hit.anchor_transform
 						anchor = new XRAnchor(anchorCoordinates, hit.uuid)
 						this._anchors.set(anchor.uid, anchor)
 					}
-					let anchorOffset = new XRAnchorOffset(anchor.uid)
-					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
-					anchorOffset.poseMatrix = hit.world_transform
+
+					const offsetPosition = [
+						hit.world_transform[12] - hit.anchor_transform[12],
+						hit.world_transform[13] - hit.anchor_transform[13],
+						hit.world_transform[14] - hit.anchor_transform[14]
+					]
+					const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
+					const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
+					const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
+					const anchorOffset = new XRAnchorOffset(anchor.uid)
+					anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
 					resolve(anchorOffset)
 				})
 			} else if(this._vrDisplay !== null){

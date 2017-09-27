@@ -67,6 +67,7 @@ export default class Quaternion{
 			this.y = (m23 + m32) / s
 			this.z = 0.25 * s
 		}
+		return this
 	}
 
 	setFromEuler(x, y, z, order='XYZ'){
