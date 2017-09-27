@@ -148,7 +148,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	/*
 	Sends a hitTest message to ARKit to get hit testing results
-	x, y - screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
+	x, y - screen coordinates normalized to 0..1 (0,0 is at top left and 1,1 is at bottom right)
 	types - bit mask of hit testing types
 	
 	Returns a Promise that resolves to a (possibly empty) array of hit test data:

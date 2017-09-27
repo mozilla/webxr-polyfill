@@ -147,11 +147,10 @@
 						console.error('No touches on touch event', ev)
 						return
 					}
-
 					//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
 					this._tapEventData = [
-						2  * (ev.touches[0].pageX / window.innerWidth)  - 1,
-						-2 * (ev.touches[0].pageY / window.innerHeight) + 1
+						ev.touches[0].clientX / window.innerWidth,
+						ev.touches[0].clientY / window.innerHeight
 					]
 				}
 

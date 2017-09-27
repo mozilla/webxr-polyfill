@@ -55,6 +55,7 @@ export default class XRPresentationFrame {
 		return this._session.reality._addAnchor(anchor, this._session.display)
 	}
 
+	// normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	findAnchor(normalizedScreenX, normalizedScreenY){
 		// Promise<XRAnchorOffset?> findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
 		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)

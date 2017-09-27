@@ -35,6 +35,7 @@ export default class VirtualReality extends Reality {
 
 	/*
 	Create an anchor attached to a surface, as found by a ray
+	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
 		return new Promise((resolve, reject) => {

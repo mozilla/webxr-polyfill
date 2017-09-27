@@ -1,5 +1,6 @@
 import Reality from '../Reality.js'
 import XRAnchor from '../XRAnchor.js'
+import XRViewPose from '../XRViewPose.js'
 import XRCoordinates from '../XRCoordinates.js'
 import XRAnchorOffset from '../XRAnchorOffset.js'
 
@@ -165,6 +166,7 @@ export default class CameraReality extends Reality {
 
 	/*
 	Creates an anchor offset relative to a surface, as found by a ray
+	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	returns a Promise that resolves either to an AnchorOffset with the first hit result or null if the hit test failed
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
@@ -178,15 +180,18 @@ export default class CameraReality extends Reality {
 					}
 					let hit = this._pickARKitHit(hits)
 					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
+
+					// TODO this works for now, but it should set the anchor's transform and the use the offset transform
+
 					let anchor = this._getAnchor(hit.uuid)
 					if(anchor === null){
 						let anchorCoordinates = new XRCoordinates(display, display._stageCoordinateSystem)
-						anchorCoordinates.poseMatrix = hit.anchor_transform
 						anchor = new XRAnchor(anchorCoordinates, hit.uuid)
 						this._anchors.set(anchor.uid, anchor)
 					}
 					let anchorOffset = new XRAnchorOffset(anchor.uid)
-					anchorOffset.poseMatrix = hit.local_transform
+					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+					anchorOffset.poseMatrix = hit.world_transform
 					resolve(anchorOffset)
 				})
 			} else if(this._vrDisplay !== null){

@@ -54,6 +54,7 @@ export default class Reality extends EventHandlerBase {
 	/*
 	Create an anchor attached to a surface, as found by a ray
 	returns a Promise that resolves either to an AnchorOffset or null if the hit test failed
+	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
 		throw new Error('Exending classes should implement _findAnchor')
