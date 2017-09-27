@@ -206,6 +206,7 @@ export default class CameraReality extends Reality {
 				if(anchor === null){
 					let coordinates = new XRCoordinates(display, display._stageCoordinateSystem)
 					coordinates.poseMatrix = hits[0].modelMatrix
+					coordinates._poseMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 					anchor = new XRAnchor(coordinates)
 					this._anchors.set(anchor.uid, anchor)
 				}
