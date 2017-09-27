@@ -140,7 +140,7 @@ export default class CameraReality extends Reality {
 		this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 	}
 
-	_updateAnchorFromARKitUpdate(uuid, anchorInfo){
+	_updateAnchorFromARKitUpdate(uid, anchorInfo){
 		const anchor = this._anchors.get(uid) || null
 		if(anchor === null){
 			console.log('unknown anchor', anchor)
