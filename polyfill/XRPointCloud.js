@@ -4,6 +4,7 @@ XRPointCloud holds an array of float values where each four values represents [x
 */
 export default class XRPointCloud {
 	get points(){
-		//readonly attribute Float32Array points;
+		//readonly attribute Float32Array points
+		throw new Error('Not implemented')
 	}
 }

@@ -1,4 +1,5 @@
 import MatrixMath from './fill/MatrixMath.js'
+import XRCoordinates from './XRCoordinates.js'
 
 /*
 XRCoordinateSystem represents the origin of a 3D coordinate system positioned at a known frame of reference.
@@ -34,6 +35,10 @@ export default class XRCoordinateSystem {
 			default:
 				throw 'Unknown coordinate system type: ' + this._type
 		}
+	}
+
+	getCoordinates(position=[0,0,0], orientation=[0,0,0,1]){
+		return new XRCoordinates(this._display, this, position, orientation)
 	}
 	
 	getTransformTo(otherCoordinateSystem){

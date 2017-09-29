@@ -188,6 +188,8 @@ export default class CameraReality extends Reality {
 
 					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
 
+					// TODO use XRPlaneAnchor for anchors with extents
+
 					let anchor = this._getAnchor(hit.uuid)
 					if(anchor === null){
 						let anchorCoordinates = new XRCoordinates(display, display._stageCoordinateSystem)

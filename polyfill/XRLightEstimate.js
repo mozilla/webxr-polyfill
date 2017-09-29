@@ -4,9 +4,11 @@ XRLightEstimate represents the attributes of environmental light as supplied by 
 export default class XRLightEstimate {
 	get ambientIntensity(){
 		//readonly attribute double ambientIntensity;
+		throw new Error('Not implemented')
 	}
 
 	getAmbientColorTemperature(){
 		//readonly attribute double ambientColorTemperature;
+		throw new Error('Not implemented')
 	}
 }

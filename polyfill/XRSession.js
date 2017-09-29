@@ -42,17 +42,6 @@ export default class XRSession extends EventHandlerBase {
 
 	get stageBounds(){ return this._stageBounds }
 
-	requestRealityChange(reality){
-		return new Promise((resolve, reject) => {
-			if(reality instanceof Reality === false){
-				reject()
-				return
-			}
-			this._display._reality = reality
-			resolve()
-		})
-	}
-
 	requestFrame(callback){
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
