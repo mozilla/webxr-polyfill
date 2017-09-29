@@ -91,7 +91,7 @@ The reason that you use anchors instead of just placing objects in a global coor
 
 First, let's add an anchor just floated in space. This code uses the `XRPresentationFrame`, so it would live in the `handleFrame` method above, where the '// XXX' comment is:
 
-			const anchorCoordinates = headCoordinateSystem.getCoordinates(0, 0, -1) // A meter in front of the camera
+			const anchorCoordinates = headCoordinateSystem.getCoordinates([0, 0, -1]) // A meter in front of the camera
 			const anchor = new XRAnchor(anchorCoordinates)
 			const sceneNode = createSceneNode() // if using Three.js, could be an Object3D or a Group
 			frame.addAnchor(anchor) // Now WebXR is tracking the anchor
