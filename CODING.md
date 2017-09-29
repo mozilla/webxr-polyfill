@@ -13,16 +13,14 @@ The basic pattern is to iterate through the `XRDisplay` instances to find the on
 	let anchoredNodes = [] // An array of { anchorOffset: XRAnchorOffset, node: <scene node like THREE.Group> }
 
 	// Get displays and then request a session
-	navigator.XR.getDisplays().then(displays => {
-		if(displays.length == 0) {
-			showMessage('No displays are available')
+	navigator.XR.getDisplays().then(disps => {
+		if(disps.length == 0) {
+			// No displays are available
 			return
 		}
-		// For this sample, we just use the first display
-		displays = displays[0]
+		displays = disps
 	}).catch(err => {
 		console.error('Error getting XR displays', err)
-		this.showMessage('Could not get XR displays')
 	})
 
 Once you have the displays, you look for one that will support the type of session that you want to start:
@@ -43,7 +41,7 @@ Once you have the displays, you look for one that will support the type of sessi
 
 Once you have a display and the user has chosen to start using it, you ask the display for an `XRSession` and request the first frame:
 
-		this.display.requestSession(sessionInitParamers).then(sess => {
+		display.requestSession(sessionInitParamers).then(sess => {
 			session = sess
 			session.depthNear = 0.1
 			session.depthFar = 1000.0
@@ -57,7 +55,7 @@ The scene, camera, and renderer objects below are representative APIs that have 
 
 	function handleFrame(frame){
 		// Set up for the next frame
-		this.session.requestFrame(frame => { this.handleFrame(frame) })
+		session.requestFrame(frame => { handleFrame(frame) })
 
 		// Get the pose for the world coordinate system
 		let stageCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.STAGE)
