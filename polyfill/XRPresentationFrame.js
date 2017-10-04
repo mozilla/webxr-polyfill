@@ -86,8 +86,6 @@ export default class XRPresentationFrame {
 				return this._session._display._headPose
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._session._display._eyeLevelPose
-			case XRCoordinateSystem.STAGE:
-				return this._session._display._stagePose
 			default:
 				return null
 		}

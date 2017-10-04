@@ -4,11 +4,11 @@ XRStageBoundPoints represent the offset in meters from the stage origin along th
 export default class XRStageBoundsPoint {
 	get x(){
 		//readonly attribute double x;
-		throw 'Not implemented'
+		throw new Error('Not implemented')
 	}
 
 	get y(){
 		//readonly attribute double z;
-		throw 'Not implemented'
+		throw new Error('Not implemented')
 	}
 }

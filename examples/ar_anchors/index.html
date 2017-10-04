@@ -58,11 +58,11 @@
 				}
 
 				// Called during construction
-				initializeStageGroup(){
-					this.stageGroup.add(new THREE.AmbientLight('#FFF', 0.2))
+				initializeScene(){
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
 					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
 					directionalLight.position.set(0, 10, 0)
-					this.stageGroup.add(directionalLight)
+					this.scene.add(directionalLight)
 				}
 
 				createSceneGraphNode(){
@@ -83,8 +83,9 @@
 				}
 
 				// Called once per frame
-				updateStageGroup(frame, stageCoordinateSystem, stagePose){
-					let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+				updateScene(frame){
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					const trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
 					// Create anchors for newly anchored nodes
 					for(let anchorToAdd of this.anchorsToAdd){
@@ -102,7 +103,7 @@
 							anchorUID: anchorUID,
 							node: anchorToAdd.node
 						})
-						this.stageGroup.add(anchorToAdd.node)
+						this.scene.add(anchorToAdd.node)
 					}
 					this.anchorsToAdd = []
 					
@@ -113,7 +114,7 @@
 							console.error('Unknown anchor ID', anchoredNode.anchorId)
 						} else {
 							anchoredNode.node.matrixAutoUpdate = false
-							anchoredNode.node.matrix.fromArray(anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem).poseMatrix)
+							anchoredNode.node.matrix.fromArray(anchor.coordinates.getTransformedCoordinates(trackerCoordinateSystem).poseMatrix)
 							anchoredNode.node.updateMatrixWorld(true)
 						}
 					}

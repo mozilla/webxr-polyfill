@@ -98,7 +98,6 @@ export default class HeadMountedDisplay extends XRDisplay {
 			}
 			this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 			this._eyeLevelPose.position = this._devicePosition.toArray()
-			this._stagePose._position = [0, 0, 0]
 		}
 	}
 }

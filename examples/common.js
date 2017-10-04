@@ -26,14 +26,12 @@ class XRExampleBase {
 
 		// Create a simple THREE test scene for the layer
 		this.scene = new THREE.Scene() // The scene will be rotated and oriented around the camera using the head pose
-		this.stageGroup = new THREE.Group() // The group that stays on the "stage", which is at foot level relative to the head
-		this.scene.add(this.stageGroup)
 
 		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
 		this.renderer = null // Set in this.handleNewSession
 
-		// Give extending classes the opportunity to initially populate the stage group
-		this.initializeStageGroup(this.stageGroup)
+		// Give extending classes the opportunity to initially populate the scene
+		this.initializeScene()
 
 		if(typeof navigator.XR === 'undefined'){
 			this.showMessage('No WebXR API found, usually because the WebXR polyfill has not loaded')
@@ -154,46 +152,27 @@ class XRExampleBase {
 	handleLayerBlur(ev){}
 
 	/*
-	Extending classes should override this to set up the stageGroup during class construction
+	Extending classes should override this to set up the scene during class construction
 	*/
-	initializeStageGroup(){}
+	initializeScene(){}
 
 	/*
 	Extending classes that need to update the layer during each frame should override this method
 	*/
-	updateStageGroup(frame, stageCoordinateSystem, stagePose){}
+	updateScene(frame){}
 
 	handleFrame(frame){
 		const nextFrameRequest = this.session.requestFrame(frame => { this.handleFrame(frame) })
-		let stageCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.STAGE)
-		if(stageCoordinateSystem === null){
-			this.showMessage('Could not get a usable stage coordinate system')
-			this.session.cancelFrame(nextFrameRequest)
-			this.session.endSession()
-			// Production apps could render a 'waiting' message and keep checking for an acceptable coordinate system
-			return
-		}
-
-		// Get the two poses we care about: the foot level stage and head pose which is updated by ARKit, ARCore, or orientation events
-		let stagePose = frame.getViewPose(stageCoordinateSystem)
 		let headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
 
-		// Let the extending class update the stageGroup before each render
-		this.updateStageGroup(frame, stageCoordinateSystem, stagePose)
-
-		// Update the stage group relative to the current head pose
-		this.stageGroup.matrixAutoUpdate = false
-		this.stageGroup.matrix.fromArray(stagePose.poseModelMatrix)
-		this.stageGroup.updateMatrixWorld(true)
+		// Let the extending class update the scene before each render
+		this.updateScene(frame)
 
 		// Prep THREE.js for the render of each XRView
-		//this.renderer.resetGLState()
-		this.scene.matrixAutoUpdate = false
 		this.renderer.autoClear = false
 		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
 		this.renderer.clear()
-
-		//this.session.baseLayer.context.bindFramebuffer(this.session.baseLayer.context.FRAMEBUFFER, this.session.baseLayer.framebuffer)
+		this.scene.matrixAutoUpdate = false
 
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){

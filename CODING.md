@@ -57,9 +57,8 @@ The scene, camera, and renderer objects below are representative APIs that have 
 		// Set up for the next frame
 		session.requestFrame(frame => { handleFrame(frame) })
 
-		// Get the pose for the world coordinate system
-		let stageCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.STAGE)
-		let stagePose = frame.getViewPose(stageCoordinateSystem)
+		// Get the pose for the HMD or handset tracker coordinate system
+		let trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
 		// Get the pose for the head
 		let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
@@ -126,11 +125,11 @@ You now have a couple of anchored nodes save in `anchoredNodes`, so during each 
 				const anchor = frame.getAnchor(anchoredNode.anchorOffset.anchorUID)
 				// Get the offset coordinates relative to the anchor
 				let offsetCoordinates = anchoredNode.anchorOffset.getTransformedCoordinates(anchor)
-				// Now use the offset coordinates, possibly by converting to the stage coordinate system.
-				if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.STAGE){
+				// Now use the offset coordinates, possibly by converting to the tracker coordinate system.
+				if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.TRACKER){
 					anchoredNode.node.matrix = offsetCoordinates.poseMatrix
 				} else {
-					anchoredNode.node.matrix = offsetCoordinates.getTransformedCoordinates(stageCoordinateSystem).poseMatrix
+					anchoredNode.node.matrix = offsetCoordinates.getTransformedCoordinates(trackerCoordinateSystem).poseMatrix
 				}
 			}
 

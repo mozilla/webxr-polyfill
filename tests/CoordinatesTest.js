@@ -9,29 +9,29 @@ import Quaternion from '../polyfill/fill/Quaternion.js'
 export default class CoordinatesTest extends Test {
 	testTransform(){
 		let display1 = new MockXRDisplay()
-		let stageCoordinateSystem = new XRCoordinateSystem(display1, XRCoordinateSystem.STAGE)
+		let trackerCoordinateSystem = new XRCoordinateSystem(display1, XRCoordinateSystem.TRACKER)
 		let headCoordinateSystem = new XRCoordinateSystem(display1, XRCoordinateSystem.HEAD_MODEL)
 		let eyeLevelCoordinateSystem = new XRCoordinateSystem(display1, XRCoordinateSystem.EYE_LEVEL)
 
 		let headCoordinates = new XRCoordinates(display1, headCoordinateSystem, [0, 0, -0.5])
-		let stageCoordinates = headCoordinates.getTransformedCoordinates(stageCoordinateSystem)
+		let trackerCoordinates = headCoordinates.getTransformedCoordinates(trackerCoordinateSystem)
 		this.assertFloatArraysEqual(
-			stageCoordinates.position, 
+			trackerCoordinates.position, 
 			[headCoordinates.position[0], XRViewPose.SITTING_EYE_HEIGHT + headCoordinates.position[1], headCoordinates.position[2]]
 		)
-		this.assertFloatArraysEqual(stageCoordinates.orientation, headCoordinates.orientation)
+		this.assertFloatArraysEqual(trackerCoordinates.orientation, headCoordinates.orientation)
 
 		// Rotate the head and test the transform
 		let quat1 = new Quaternion()
 		quat1.setFromEuler(0, -Math.PI, 0)
 		display1._headPose._orientation = quat1.toArray()
-		stageCoordinates = headCoordinates.getTransformedCoordinates(stageCoordinateSystem)
+		trackerCoordinates = headCoordinates.getTransformedCoordinates(trackerCoordinateSystem)
 		this.assertFloatArraysEqual(
-			stageCoordinates.position,
+			trackerCoordinates.position,
 			[headCoordinates.position[0], XRViewPose.SITTING_EYE_HEIGHT + headCoordinates.position[1], -1 * headCoordinates.position[2]]
 		)
 		quat1.inverse()
-		this.assertFloatArraysEqual(quat1.toArray(), stageCoordinates.orientation)
+		this.assertFloatArraysEqual(quat1.toArray(), trackerCoordinates.orientation)
 	}
 }
 

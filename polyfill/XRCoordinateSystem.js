@@ -7,7 +7,7 @@ The XRCoordinateSystem is a string from XRCoordinateSystem.TYPES:
 
 - XRCoordinateSystem.HEAD_MODEL: origin is aligned with the pose of the head, as sensed by HMD or handset trackers
 - XRCoordinateSystem.EYE_LEVEL: origin is at a fixed distance above the ground
-- XRCoordinateSystem.STAGE: origin is at ground level
+- XRCoordinateSystem.TRACKER: The origin of this coordinate system is at floor level at or below the origin of the HMD or handset provided tracking system
 - XRCoordinateSystem.GEOSPATIAL: origin is at the East, Up, South plane tangent to the planet at the latitude, longitude, and altitude represented by the `XRCoordinateSystem.cartographicCoordinates`.
 
 */
@@ -28,8 +28,8 @@ export default class XRCoordinateSystem {
 				return this._display._headPose.poseModelMatrix
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._display._eyeLevelPose.poseModelMatrix
-			case XRCoordinateSystem.STAGE:
-				return this._display._stagePose.poseModelMatrix
+			case XRCoordinateSystem.TRACKER:
+				return this._display._trackerPoseModelMatrix
 			case XRCoordinateSystem.GEOSPATIAL:
 				throw 'This polyfill does not yet handle geospatial coordinate systems'
 			default:
@@ -60,14 +60,14 @@ export default class XRCoordinateSystem {
 	}
 }
 
-XRCoordinateSystem.HEAD_MODEL = "headModel"
-XRCoordinateSystem.EYE_LEVEL = "eyeLevel"
-XRCoordinateSystem.STAGE = "stage"
-XRCoordinateSystem.GEOSPATIAL = "geospatial"
+XRCoordinateSystem.HEAD_MODEL = 'headModel'
+XRCoordinateSystem.EYE_LEVEL = 'eyeLevel'
+XRCoordinateSystem.TRACKER = 'tracker'
+XRCoordinateSystem.GEOSPATIAL = 'geospatial'
 
 XRCoordinateSystem.TYPES = [
 	XRCoordinateSystem.HEAD_MODEL,
 	XRCoordinateSystem.EYE_LEVEL,
-	XRCoordinateSystem.STAGE,
+	XRCoordinateSystem.TRACKER,
 	XRCoordinateSystem.GEOSPATIAL
 ]

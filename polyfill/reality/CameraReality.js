@@ -150,13 +150,13 @@ export default class CameraReality extends Reality {
 			console.log('unknown anchor', anchor)
 			return
 		}
-		// This assumes that the anchor's coordinates are in the stage coordinate system
+		// This assumes that the anchor's coordinates are in the tracker coordinate system
 		anchor.coordinates.poseMatrix = anchorInfo.transform
 	}
 
 	_addAnchor(anchor, display){
-		// Convert coordinates to the stage coordinate system so that updating from ARKit transforms is simple
-		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._stageCoordinateSystem)
+		// Convert coordinates to the tracker coordinate system so that updating from ARKit transforms is simple
+		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._trackerCoordinateSystem)
 		if(this._arKitWrapper !== null){
 			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix).then(
 				detail => this._handleARKitAddObject(detail)
@@ -192,7 +192,7 @@ export default class CameraReality extends Reality {
 
 					let anchor = this._getAnchor(hit.uuid)
 					if(anchor === null){
-						let anchorCoordinates = new XRCoordinates(display, display._stageCoordinateSystem)
+						let anchorCoordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
 						anchorCoordinates.poseMatrix = hit.anchor_transform
 						anchor = new XRAnchor(anchorCoordinates, hit.uuid)
 						this._anchors.set(anchor.uid, anchor)
@@ -220,7 +220,7 @@ export default class CameraReality extends Reality {
 				hits.sort((a, b) => a.distance - b.distance)
 				let anchor = this._getAnchor(hits[0].uuid)
 				if(anchor === null){
-					let coordinates = new XRCoordinates(display, display._stageCoordinateSystem)
+					let coordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
 					coordinates.poseMatrix = hits[0].modelMatrix
 					coordinates._poseMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 					anchor = new XRAnchor(coordinates)

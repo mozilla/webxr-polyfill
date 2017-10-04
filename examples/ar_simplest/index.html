@@ -36,45 +36,45 @@
 		<div id="target" />
 		<script>
 			/*
-			ARSimplestExample shows how to populate the stage group that is rendered on the stage 
+			ARSimplestExample shows how to populate the content scene 
 			*/
 			class ARSimplestExample extends XRExampleBase {
 				constructor(domElement){
 					super(domElement, false)
 				}
 
-				// Called during construction to allow the app to populate this.stageGroup (a THREE.Group)
-				initializeStageGroup(){
+				// Called during construction to allow the app to populate the THREE.Scene
+				initializeScene(){
 					// Add a teapot at about eye level
-					var geometry = new THREE.TeapotBufferGeometry(0.1)
-					let materialColor = new THREE.Color()
+					const geometry = new THREE.TeapotBufferGeometry(0.1)
+					const materialColor = new THREE.Color()
 					materialColor.setRGB(1.0, 1.0, 1.0)
-					let material = new THREE.MeshLambertMaterial({
+					const material = new THREE.MeshLambertMaterial({
 						color: materialColor,
 						side: THREE.DoubleSide
 					})
-					let mesh = new THREE.Mesh(geometry, material)
+					const mesh = new THREE.Mesh(geometry, material)
 					mesh.position.set(0, 1.4, -1)
-					this.stageGroup.add(mesh)
+					this.scene.add(mesh)
 
-					// Add a box at the stage origin
-					let box = new THREE.Mesh(
+					// Add a box at the scene origin
+					const box = new THREE.Mesh(
 						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
 						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
 					)
 					box.position.set(0, 0, 0)
-					this.stageGroup.add(box)
+					this.scene.add(box)
 
-					this.stageGroup.add(new THREE.AmbientLight('#FFF', 0.2))
-					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					const directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
 					directionalLight.position.set(0, 10, 0)
-					this.stageGroup.add(directionalLight)
+					this.scene.add(directionalLight)
 				}
 
-				// Called once per frame, before render to give the app a chance to update this.stageGroup (a THREE.Group)
-				updateStageGroup(frame, stageCoordinateSystem, stagePose){
+				// Called once per frame, before render to give the app a chance to update the this.scene
+				updateScene(frame){
 					// Uncomment the next line to spin the teapot
-					//this.stageGroup.children[0].rotation.y += 0.01
+					//this.scene.children[0].rotation.y += 0.01
 				}
 			}
 

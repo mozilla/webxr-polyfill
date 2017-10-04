@@ -6,11 +6,11 @@ Other XR platforms sometimes refer to this concept as "room scale" or "standing 
 export default class XRStageBounds {
 	get center(){
 		//readonly attribute XRCoordinates center;
-		throw 'Not implemented'
+		throw new Error('Not implemented')
 	}
 
 	get geometry(){
 		//readonly attribute FrozenArray<XRStageBoundsPoint>? geometry;
-		throw 'Not implemented'
+		throw new Error('Not implemented')
 	}
 }
