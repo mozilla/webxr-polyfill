@@ -1,6 +1,8 @@
 /*
 	XRExampleBase holds all of the common XR setup, rendering, and teardown code for a THREE.js based app
-	Extending classes should be able to focus on rendering their scene
+	It also holds a list of THREE nodes and XRAnchorOffsets which it uses to update the nodes' poses
+
+	Extending classes should be able to focus mainly on rendering their scene and handling user input
 
 	Parameters:
 		domElement: an element used to show error messages
@@ -17,6 +19,8 @@ class XRExampleBase {
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
 
+		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
+
 		// Set during the XR.getDisplays call below
 		this.displays = null
 
@@ -29,6 +33,12 @@ class XRExampleBase {
 
 		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
 		this.renderer = null // Set in this.handleNewSession
+
+		this.requestedFloor = false
+		this.floorGroup = new THREE.Group() // This group will eventually be be anchored to the floor (see findFloorAnchor below)
+
+		// an array of info that we'll use in _handleFrame to update the nodes using anchors
+		this.anchoredNodes = [] // { XRAnchorOffset, Three.js Object3D }
 
 		// Give extending classes the opportunity to initially populate the scene
 		this.initializeScene()
@@ -141,7 +151,7 @@ class XRExampleBase {
 		this.renderer.autoClear = false
 		this.renderer.setClearColor('#000', 0)
 
-		this.session.requestFrame(frame => { this.handleFrame(frame) })
+		this.session.requestFrame(this._boundHandleFrame)
 	}
 
 	// Extending classes can react to these events
@@ -161,9 +171,28 @@ class XRExampleBase {
 	*/
 	updateScene(frame){}
 
-	handleFrame(frame){
-		const nextFrameRequest = this.session.requestFrame(frame => { this.handleFrame(frame) })
-		let headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+	_handleFrame(frame){
+		const nextFrameRequest = this.session.requestFrame(this._boundHandleFrame)
+		const headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+
+		// If we haven't already, request the floor anchor offset
+		if(this.requestedFloor === false){
+			this.requestedFloor = true
+			frame.findFloorAnchor('first-floor-anchor').then(anchorOffset => {
+				if(anchorOffset === null){
+					console.error('could not find the floor anchor')
+					return
+				}
+				this.addAnchoredNode(anchorOffset, this.floorGroup)
+			}).catch(err => {
+				console.error('error finding the floor anchor', err)
+			})
+		}
+
+		// Update anchored node positions in the scene graph
+		for(let anchoredNode of this.anchoredNodes){
+			this.updateNodeFromAnchorOffset(frame, anchoredNode.node, anchoredNode.anchorOffset)
+		}
 
 		// Let the extending class update the scene before each render
 		this.updateScene(frame)
@@ -189,6 +218,39 @@ class XRExampleBase {
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
 			this.renderer.render(this.scene, this.camera)
 		}
+	}
+
+	/*
+	Add a node to the scene and keep its pose updated using the anchorOffset
+	*/
+	addAnchoredNode(anchorOffset, node){
+		this.anchoredNodes.push({
+			anchorOffset: anchorOffset,
+			node: node
+		})
+		this.scene.add(node)
+	}
+
+	/*
+	Get the anchor data from the frame and use it and the anchor offset to update the pose of the node, this must be an Object3D
+	*/
+	updateNodeFromAnchorOffset(frame, node, anchorOffset){
+		const anchor = frame.getAnchor(anchorOffset.anchorUID)
+		if(anchor === null){
+			throttledConsoleLog('Unknown anchor uid', anchorOffset.anchorUID)
+			return
+		}
+
+		node.matrixAutoUpdate = false
+		const offsetCoordinates = anchorOffset.getTransformedCoordinates(anchor)
+		if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.TRACKER){
+			node.matrix.fromArray(offsetCoordinates.poseMatrix)
+		} else {
+			node.matrix.fromArray(
+				offsetCoordinates.getTransformedCoordinates(frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)).poseMatrix
+			)
+		}
+		node.updateMatrixWorld(true)
 	}
 }
 

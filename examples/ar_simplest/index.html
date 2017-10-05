@@ -55,26 +55,21 @@
 					})
 					const mesh = new THREE.Mesh(geometry, material)
 					mesh.position.set(0, 1.4, -1)
-					this.scene.add(mesh)
+					this.floorGroup.add(mesh)
 
-					// Add a box at the scene origin
+					// Add a box on the floor
 					const box = new THREE.Mesh(
 						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
 						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
 					)
 					box.position.set(0, 0, 0)
-					this.scene.add(box)
+					this.floorGroup.add(box)
 
+					// Add some lights to the scene
 					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
 					const directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
 					directionalLight.position.set(0, 10, 0)
 					this.scene.add(directionalLight)
-				}
-
-				// Called once per frame, before render to give the app a chance to update the this.scene
-				updateScene(frame){
-					// Uncomment the next line to spin the teapot
-					//this.scene.children[0].rotation.y += 0.01
 				}
 			}
 
