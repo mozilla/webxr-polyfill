@@ -73,8 +73,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 			options = (options && typeof(options) == 'object') ? options : {}
 			let defaultUIOptions = {
 				browser: true,
+				points: true,
+				focus: false,
 				rec: true,
-				warnings: true
+				rec_time: true,
+				mic: false,
+				build: false,
+				plane: true,
+				warnings: true,
+				anchors: false,
+				debug: true,
+				statistics: false
 			}
 			let uiOptions = (typeof(options.ui) == 'object') ? options.ui : {}
 			options.ui = Object.assign(defaultUIOptions, uiOptions)
