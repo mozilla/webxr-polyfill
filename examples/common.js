@@ -28,11 +28,28 @@ class XRExampleBase {
 		this.display = null
 		this.session = null
 
-		// Create a simple THREE test scene for the layer
 		this.scene = new THREE.Scene() // The scene will be rotated and oriented around the camera using the head pose
 
 		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
-		this.renderer = null // Set in this.handleNewSession
+
+		// Create a canvas and context for the session layer
+		this.glCanvas = document.createElement('canvas')
+		this.glContext = this.glCanvas.getContext('webgl')
+		if(this.glContext === null){
+			this.showMessage('Could not create a WebGL canvas')
+			throw new Error('Could not create GL context')
+		}
+
+		// Set up the THREE renderer with the session's layer's glContext
+		this.renderer = new THREE.WebGLRenderer({
+			canvas: this.glCanvas,
+			context: this.glContext,
+			antialias: false,
+			alpha: true
+		})
+		this.renderer.setPixelRatio(1)
+		this.renderer.autoClear = false
+		this.renderer.setClearColor('#000', 0)
 
 		this.requestedFloor = false
 		this.floorGroup = new THREE.Group() // This group will eventually be be anchored to the floor (see findFloorAnchor below)
@@ -125,31 +142,12 @@ class XRExampleBase {
 			throw new Error('Can not start presenting without a session')
 		}
 
-		// Create a canvas and context for the layer
-		let glCanvas = document.createElement('canvas')
-		let glContext = glCanvas.getContext('webgl')
-		if(glContext === null){
-			this.showMessage('Could not create a WebGL canvas')
-			throw new Error('Could not create GL context')
-		}
-
 		// Set the session's base layer into which the app will render
-		this.session.baseLayer = new XRWebGLLayer(this.session, glContext)
+		this.session.baseLayer = new XRWebGLLayer(this.session, this.glContext)
 
 		// Handle layer focus events
 		this.session.baseLayer.addEventListener('focus', ev => { this.handleLayerFocus(ev) })
 		this.session.baseLayer.addEventListener('blur', ev => { this.handleLayerBlur(ev) })
-
-		// Set up the THREE renderer with the session's layer's glContext
-		this.renderer = new THREE.WebGLRenderer({
-			canvas: glCanvas,
-			context: glContext,
-			antialias: false,
-			alpha: true
-		})
-		this.renderer.setPixelRatio(1)
-		this.renderer.autoClear = false
-		this.renderer.setClearColor('#000', 0)
 
 		this.session.requestFrame(this._boundHandleFrame)
 	}
@@ -216,8 +214,12 @@ class XRExampleBase {
 			this.renderer.clearDepth()
 			const viewport = view.getViewport(this.session.baseLayer)
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
-			this.renderer.render(this.scene, this.camera)
+			this.doRender()
 		}
+	}
+
+	doRender(){
+		this.renderer.render(this.scene, this.camera)
 	}
 
 	/*
@@ -251,6 +253,63 @@ class XRExampleBase {
 			)
 		}
 		node.updateMatrixWorld(true)
+	}
+}
+
+/*
+If you want to just put virtual things on surfaces, extend this app and override `createSceneGraphNode`
+*/
+class ThingsOnSurfacesApp extends XRExampleBase {
+	constructor(domElement){
+		super(domElement, false)
+		this._tapEventData = null // Will be filled in on touch start and used in updateScene
+		this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+	}
+
+	// Return a THREE.Object3D of some sort to be placed when a surface is found
+	createSceneGraphNode(){
+		throw new Error('Extending classes should implement createSceneGraphNode')
+		/*
+		For example:
+		let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
+		let material = new THREE.MeshPhongMaterial({ color: '#99FF99' })
+		return new THREE.Mesh(geometry, material)
+		*/
+	}
+
+
+	// Called once per frame, before render, to give the app a chance to update this.scene
+	updateScene(frame){
+		// If we have tap data, attempt a hit test for a surface
+		if(this._tapEventData !== null){
+			const x = this._tapEventData[0]
+			const y = this._tapEventData[1]
+			this._tapEventData = null
+			// Attempt a hit test using the normalized screen coordinates
+			frame.findAnchor(x, y).then(anchorOffset => {
+				if(anchorOffset === null){
+					console.log('miss')
+					return
+				}
+				console.log('hit', anchorOffset)
+				this.addAnchoredNode(anchorOffset, this.createSceneGraphNode())
+			}).catch(err => {
+				console.error('Error in hit test', err)
+			})
+		}
+	}
+
+	// Save screen taps as normalized coordinates for use in this.updateScene
+	_onTouchStart(ev){
+		if (!ev.touches || ev.touches.length === 0) {
+			console.error('No touches on touch event', ev)
+			return
+		}
+		//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
+		this._tapEventData = [
+			ev.touches[0].clientX / window.innerWidth,
+			ev.touches[0].clientY / window.innerHeight
+		]
 	}
 }
 
