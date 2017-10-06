@@ -46,7 +46,6 @@
 				constructor(domElement){
 					super(domElement, false)
 					this.anchorsToAdd = [] // { node, x, y, z }
-					this.anchoredNodes = [] // { anchorUID, node }
 
 					this.addObjectButton = document.createElement('button')
 					this.addObjectButton.setAttribute('class', 'add-object-button')
@@ -58,11 +57,11 @@
 				}
 
 				// Called during construction
-				initializeStageGroup(){
-					this.stageGroup.add(new THREE.AmbientLight('#FFF', 0.2))
+				initializeScene(){
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
 					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
 					directionalLight.position.set(0, 10, 0)
-					this.stageGroup.add(directionalLight)
+					this.scene.add(directionalLight)
 				}
 
 				createSceneGraphNode(){
@@ -83,10 +82,11 @@
 				}
 
 				// Called once per frame
-				updateStageGroup(frame, stageCoordinateSystem, stagePose){
-					let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+				updateScene(frame){
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					const trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
-					// Create anchors for newly anchored nodes
+					// Create anchors and start tracking them
 					for(let anchorToAdd of this.anchorsToAdd){
 						// Create an anchor that we'd like to add, relative to the current head position
 						const anchorCoordinates = new XRCoordinates(
@@ -96,27 +96,11 @@
 						)
 						const anchor = new XRAnchor(anchorCoordinates)
 
-						// Add and store the anchor UID along with the node that will be updated with changing anchor data
+						// Create the anchor and tell the base class to update the node with its position
 						const anchorUID = frame.addAnchor(anchor)
-						this.anchoredNodes.push({
-							anchorUID: anchorUID,
-							node: anchorToAdd.node
-						})
-						this.stageGroup.add(anchorToAdd.node)
+						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
 					}
 					this.anchorsToAdd = []
-					
-					// Update anchored node positions in the scene graph
-					for(let anchoredNode of this.anchoredNodes){
-						const anchor = frame.getAnchor(anchoredNode.anchorUID)
-						if(anchor === null){
-							console.error('Unknown anchor ID', anchoredNode.anchorId)
-						} else {
-							anchoredNode.node.matrixAutoUpdate = false
-							anchoredNode.node.matrix.fromArray(anchor.coordinates.getTransformedCoordinates(stageCoordinateSystem).poseMatrix)
-							anchoredNode.node.updateMatrixWorld(true)
-						}
-					}
 				}
 			}
 

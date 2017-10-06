@@ -75,8 +75,8 @@ export default class XRSession extends EventHandlerBase {
 					return this._display._headModelCoordinateSystem
 				case XRCoordinateSystem.EYE_LEVEL:
 					return this._display._eyeLevelCoordinateSystem
-				case XRCoordinateSystem.STAGE:
-					return this._display._stageCoordinateSystem
+				case XRCoordinateSystem.TRACKER:
+					return this._display._trackerCoordinateSystem
 				case XRCoordinateSystem.GEOSPATIAL:
 					// Not supported yet
 				default:

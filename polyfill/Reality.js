@@ -60,6 +60,25 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _findAnchor')
 	}
 
+	/*
+	Find an XRAnchorOffset that is at floor level below the current head pose
+	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown
+	*/
+	_findFloorAnchor(display, uid=null){
+		// Copy the head model matrix for the current pose so we have it in the promise below
+		const headModelMatrix = new Float32Array(display._headPose.poseModelMatrix)
+
+		return new Promise((resolve, reject) => {
+			// For now, just create an anchor at origin level. Maybe in the future search for a surface?
+			const coordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
+			headModelMatrix[13] = 0 // Set height to 0
+			coordinates.poseMatrix = headModelMatrix
+			const anchor = new XRAnchor(coordinates, uid)
+			this._addAnchor(anchor, display)
+			resolve(new XRAnchorOffset(anchor.uid))
+		})
+	}
+
 	_getAnchor(uid){
 		return this._anchors.get(uid) || null
 	}

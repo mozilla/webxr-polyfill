@@ -61,6 +61,15 @@ export default class XRPresentationFrame {
 		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
 	}
 
+	/*
+	Find an XRAnchorOffset that is at floor level below the current head pose
+	uid will be the resulting anchor uid (if any), or if null one will be assigned
+	*/
+	findFloorAnchor(uid=null){
+		// Promise<XRAnchorOffset?> findFloorAnchor();
+		return this._session.reality._findFloorAnchor(this._session.display, uid)
+	}
+
 	removeAnchor(uid){
 		// void removeAnchor(DOMString uid);
 		return this._session.reality._removeAnchor(uid)
@@ -86,8 +95,6 @@ export default class XRPresentationFrame {
 				return this._session._display._headPose
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._session._display._eyeLevelPose
-			case XRCoordinateSystem.STAGE:
-				return this._session._display._stagePose
 			default:
 				return null
 		}

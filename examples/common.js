@@ -1,6 +1,8 @@
 /*
 	XRExampleBase holds all of the common XR setup, rendering, and teardown code for a THREE.js based app
-	Extending classes should be able to focus on rendering their scene
+	It also holds a list of THREE nodes and XRAnchorOffsets which it uses to update the nodes' poses
+
+	Extending classes should be able to focus mainly on rendering their scene and handling user input
 
 	Parameters:
 		domElement: an element used to show error messages
@@ -17,6 +19,8 @@ class XRExampleBase {
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
 
+		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
+
 		// Set during the XR.getDisplays call below
 		this.displays = null
 
@@ -24,16 +28,37 @@ class XRExampleBase {
 		this.display = null
 		this.session = null
 
-		// Create a simple THREE test scene for the layer
 		this.scene = new THREE.Scene() // The scene will be rotated and oriented around the camera using the head pose
-		this.stageGroup = new THREE.Group() // The group that stays on the "stage", which is at foot level relative to the head
-		this.scene.add(this.stageGroup)
 
 		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
-		this.renderer = null // Set in this.handleNewSession
 
-		// Give extending classes the opportunity to initially populate the stage group
-		this.initializeStageGroup(this.stageGroup)
+		// Create a canvas and context for the session layer
+		this.glCanvas = document.createElement('canvas')
+		this.glContext = this.glCanvas.getContext('webgl')
+		if(this.glContext === null){
+			this.showMessage('Could not create a WebGL canvas')
+			throw new Error('Could not create GL context')
+		}
+
+		// Set up the THREE renderer with the session's layer's glContext
+		this.renderer = new THREE.WebGLRenderer({
+			canvas: this.glCanvas,
+			context: this.glContext,
+			antialias: false,
+			alpha: true
+		})
+		this.renderer.setPixelRatio(1)
+		this.renderer.autoClear = false
+		this.renderer.setClearColor('#000', 0)
+
+		this.requestedFloor = false
+		this.floorGroup = new THREE.Group() // This group will eventually be be anchored to the floor (see findFloorAnchor below)
+
+		// an array of info that we'll use in _handleFrame to update the nodes using anchors
+		this.anchoredNodes = [] // { XRAnchorOffset, Three.js Object3D }
+
+		// Give extending classes the opportunity to initially populate the scene
+		this.initializeScene()
 
 		if(typeof navigator.XR === 'undefined'){
 			this.showMessage('No WebXR API found, usually because the WebXR polyfill has not loaded')
@@ -117,33 +142,14 @@ class XRExampleBase {
 			throw new Error('Can not start presenting without a session')
 		}
 
-		// Create a canvas and context for the layer
-		let glCanvas = document.createElement('canvas')
-		let glContext = glCanvas.getContext('webgl')
-		if(glContext === null){
-			this.showMessage('Could not create a WebGL canvas')
-			throw new Error('Could not create GL context')
-		}
-
 		// Set the session's base layer into which the app will render
-		this.session.baseLayer = new XRWebGLLayer(this.session, glContext)
+		this.session.baseLayer = new XRWebGLLayer(this.session, this.glContext)
 
 		// Handle layer focus events
 		this.session.baseLayer.addEventListener('focus', ev => { this.handleLayerFocus(ev) })
 		this.session.baseLayer.addEventListener('blur', ev => { this.handleLayerBlur(ev) })
 
-		// Set up the THREE renderer with the session's layer's glContext
-		this.renderer = new THREE.WebGLRenderer({
-			canvas: glCanvas,
-			context: glContext,
-			antialias: false,
-			alpha: true
-		})
-		this.renderer.setPixelRatio(1)
-		this.renderer.autoClear = false
-		this.renderer.setClearColor('#000', 0)
-
-		this.session.requestFrame(frame => { this.handleFrame(frame) })
+		this.session.requestFrame(this._boundHandleFrame)
 	}
 
 	// Extending classes can react to these events
@@ -154,46 +160,46 @@ class XRExampleBase {
 	handleLayerBlur(ev){}
 
 	/*
-	Extending classes should override this to set up the stageGroup during class construction
+	Extending classes should override this to set up the scene during class construction
 	*/
-	initializeStageGroup(){}
+	initializeScene(){}
 
 	/*
 	Extending classes that need to update the layer during each frame should override this method
 	*/
-	updateStageGroup(frame, stageCoordinateSystem, stagePose){}
+	updateScene(frame){}
 
-	handleFrame(frame){
-		const nextFrameRequest = this.session.requestFrame(frame => { this.handleFrame(frame) })
-		let stageCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.STAGE)
-		if(stageCoordinateSystem === null){
-			this.showMessage('Could not get a usable stage coordinate system')
-			this.session.cancelFrame(nextFrameRequest)
-			this.session.endSession()
-			// Production apps could render a 'waiting' message and keep checking for an acceptable coordinate system
-			return
+	_handleFrame(frame){
+		const nextFrameRequest = this.session.requestFrame(this._boundHandleFrame)
+		const headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+
+		// If we haven't already, request the floor anchor offset
+		if(this.requestedFloor === false){
+			this.requestedFloor = true
+			frame.findFloorAnchor('first-floor-anchor').then(anchorOffset => {
+				if(anchorOffset === null){
+					console.error('could not find the floor anchor')
+					return
+				}
+				this.addAnchoredNode(anchorOffset, this.floorGroup)
+			}).catch(err => {
+				console.error('error finding the floor anchor', err)
+			})
 		}
 
-		// Get the two poses we care about: the foot level stage and head pose which is updated by ARKit, ARCore, or orientation events
-		let stagePose = frame.getViewPose(stageCoordinateSystem)
-		let headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+		// Update anchored node positions in the scene graph
+		for(let anchoredNode of this.anchoredNodes){
+			this.updateNodeFromAnchorOffset(frame, anchoredNode.node, anchoredNode.anchorOffset)
+		}
 
-		// Let the extending class update the stageGroup before each render
-		this.updateStageGroup(frame, stageCoordinateSystem, stagePose)
-
-		// Update the stage group relative to the current head pose
-		this.stageGroup.matrixAutoUpdate = false
-		this.stageGroup.matrix.fromArray(stagePose.poseModelMatrix)
-		this.stageGroup.updateMatrixWorld(true)
+		// Let the extending class update the scene before each render
+		this.updateScene(frame)
 
 		// Prep THREE.js for the render of each XRView
-		//this.renderer.resetGLState()
-		this.scene.matrixAutoUpdate = false
 		this.renderer.autoClear = false
 		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
 		this.renderer.clear()
-
-		//this.session.baseLayer.context.bindFramebuffer(this.session.baseLayer.context.FRAMEBUFFER, this.session.baseLayer.framebuffer)
+		this.scene.matrixAutoUpdate = false
 
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
@@ -208,8 +214,102 @@ class XRExampleBase {
 			this.renderer.clearDepth()
 			const viewport = view.getViewport(this.session.baseLayer)
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
-			this.renderer.render(this.scene, this.camera)
+			this.doRender()
 		}
+	}
+
+	doRender(){
+		this.renderer.render(this.scene, this.camera)
+	}
+
+	/*
+	Add a node to the scene and keep its pose updated using the anchorOffset
+	*/
+	addAnchoredNode(anchorOffset, node){
+		this.anchoredNodes.push({
+			anchorOffset: anchorOffset,
+			node: node
+		})
+		this.scene.add(node)
+	}
+
+	/*
+	Get the anchor data from the frame and use it and the anchor offset to update the pose of the node, this must be an Object3D
+	*/
+	updateNodeFromAnchorOffset(frame, node, anchorOffset){
+		const anchor = frame.getAnchor(anchorOffset.anchorUID)
+		if(anchor === null){
+			throttledConsoleLog('Unknown anchor uid', anchorOffset.anchorUID)
+			return
+		}
+
+		node.matrixAutoUpdate = false
+		const offsetCoordinates = anchorOffset.getTransformedCoordinates(anchor)
+		if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.TRACKER){
+			node.matrix.fromArray(offsetCoordinates.poseMatrix)
+		} else {
+			node.matrix.fromArray(
+				offsetCoordinates.getTransformedCoordinates(frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)).poseMatrix
+			)
+		}
+		node.updateMatrixWorld(true)
+	}
+}
+
+/*
+If you want to just put virtual things on surfaces, extend this app and override `createSceneGraphNode`
+*/
+class ThingsOnSurfacesApp extends XRExampleBase {
+	constructor(domElement){
+		super(domElement, false)
+		this._tapEventData = null // Will be filled in on touch start and used in updateScene
+		this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+	}
+
+	// Return a THREE.Object3D of some sort to be placed when a surface is found
+	createSceneGraphNode(){
+		throw new Error('Extending classes should implement createSceneGraphNode')
+		/*
+		For example:
+		let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
+		let material = new THREE.MeshPhongMaterial({ color: '#99FF99' })
+		return new THREE.Mesh(geometry, material)
+		*/
+	}
+
+
+	// Called once per frame, before render, to give the app a chance to update this.scene
+	updateScene(frame){
+		// If we have tap data, attempt a hit test for a surface
+		if(this._tapEventData !== null){
+			const x = this._tapEventData[0]
+			const y = this._tapEventData[1]
+			this._tapEventData = null
+			// Attempt a hit test using the normalized screen coordinates
+			frame.findAnchor(x, y).then(anchorOffset => {
+				if(anchorOffset === null){
+					console.log('miss')
+					return
+				}
+				console.log('hit', anchorOffset)
+				this.addAnchoredNode(anchorOffset, this.createSceneGraphNode())
+			}).catch(err => {
+				console.error('Error in hit test', err)
+			})
+		}
+	}
+
+	// Save screen taps as normalized coordinates for use in this.updateScene
+	_onTouchStart(ev){
+		if (!ev.touches || ev.touches.length === 0) {
+			console.error('No touches on touch event', ev)
+			return
+		}
+		//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
+		this._tapEventData = [
+			ev.touches[0].clientX / window.innerWidth,
+			ev.touches[0].clientY / window.innerHeight
+		]
 	}
 }
 
