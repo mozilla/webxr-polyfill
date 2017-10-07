@@ -31,6 +31,7 @@ class XRExampleBase {
 		this.scene = new THREE.Scene() // The scene will be rotated and oriented around the camera using the head pose
 
 		this.camera = new THREE.PerspectiveCamera(70, 1024, 1024, 0.1, 1000) // These values will be overwritten by the projection matrix from ARKit or ARCore
+		this.scene.add(this.camera)
 
 		// Create a canvas and context for the session layer
 		this.glCanvas = document.createElement('canvas')
@@ -199,16 +200,14 @@ class XRExampleBase {
 		this.renderer.autoClear = false
 		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
 		this.renderer.clear()
-		this.scene.matrixAutoUpdate = false
+		this.camera.matrixAutoUpdate = false
 
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
 			// Each XRView has its own projection matrix, so set the camera to use that
 			this.camera.projectionMatrix.fromArray(view.projectionMatrix)
-
-			// Set the scene's view matrix using the head pose
-			this.scene.matrix.fromArray(headPose.getViewMatrix(view))
-			this.scene.updateMatrixWorld(true)
+			this.camera.matrix.fromArray(headPose.poseModelMatrix)
+			this.camera.updateMatrixWorld(true)
 
 			// Set up the renderer to the XRView's viewport and then render
 			this.renderer.clearDepth()
