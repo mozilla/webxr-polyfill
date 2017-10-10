@@ -30,6 +30,19 @@
 		</style>
 		<script src="../libs/three.min.js"></script>
 		<script src="../libs/loaders/BinaryLoader.js"></script>
+
+		<script src="../libs/postprocessing/EffectComposer.js"></script>
+
+		<script src="../libs/shaders/ConvolutionShader.js"></script>
+		<script src="../libs/postprocessing/ShaderPass.js"></script>
+		<script src="../libs/postprocessing/MaskPass.js"></script>
+		<script src="../libs/shaders/CopyShader.js"></script>
+		<script src="../libs/shaders/FilmShader.js"></script>
+
+		<script src="../libs/postprocessing/RenderPass.js"></script>
+		<script src="../libs/postprocessing/BloomPass.js"></script>
+		<script src="../libs/postprocessing/FilmPass.js"></script>
+
 		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 		<script nomodule src="../../dist/webxr-polyfill.js"></script>
 		<script src="../common.js"></script>
@@ -70,18 +83,19 @@
 						this.maleGeometry = geometry
 						this.geometries.push(this.maleGeometry)
 					})
+
+					this.composer = new THREE.EffectComposer(this.renderer)
+					this.composer.addPass(new THREE.RenderPass(this.scene, this.camera))
+					this.composer.addPass(new THREE.BloomPass(0.75))
+					let filmPass = new THREE.FilmPass(0.5, 0.5, 1448, false)
+					filmPass.renderToScreen = true
+					this.composer.addPass(filmPass)
 				}
 
 				updateScene(frame){
 					super.updateScene(frame)
 					let delta = 10 * this.clock.getDelta()
 					delta = delta < 2 ? delta : 2
-					/*
-
-					for(let j = 0, jl = this.clonemeshes.length; j < jl; j++){
-						this.clonemeshes[j].mesh.rotation.y += -0.1 * delta * this.clonemeshes[j].speed
-					}
-					*/
 
 					let data = null
 					let vertices = null
@@ -174,6 +188,11 @@
 					}
 				}
 
+				doRender(){
+					this.renderer.clear()
+					this.composer.render(0.01)
+				}
+
 				// Called during construction to allow the app to populate this.scene
 				initializeScene(){
 					// Add a box at the scene origin
@@ -195,7 +214,7 @@
 					const group = new THREE.Group()
 					group.add(this.createMesh(
 						this.geometries[Math.floor(this.geometries.length * Math.random())], 
-						0.003,
+						0.006,
 						0,0,0, 
 						0.005, 
 						this.colors[Math.floor(this.colors.length * Math.random())],
