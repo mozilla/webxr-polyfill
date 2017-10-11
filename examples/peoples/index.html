@@ -51,7 +51,7 @@
 		<div id="target" />
 		<script>
 			/*
-			This is the THREE.js example from view-source:https://threejs.org/examples/webgl_points_dynamic.html ported to WebXR
+			This is the THREE.js example from https://threejs.org/examples/webgl_points_dynamic.html ported to WebXR
 			*/
 			class PageApp extends ThingsOnSurfacesApp {
 				constructor(domElement){
@@ -77,7 +77,11 @@
 					loader.load('../models/female02/Female02_bin.js', geometry => {
 						this.femaleGeometry = geometry
 						this.geometries.push(this.femaleGeometry)
-						this.floorGroup.add(this.createSceneGraphNode())
+
+						// Add a first model so that it's clear that the scene is running and before hit testing can find an anchor
+						let firstNode = this.createSceneGraphNode()
+						firstNode.position.set(0, 0, -2)
+						this.floorGroup.add(firstNode)
 					})
 					loader.load('../models/male02/Male02_bin.js', geometry => {
 						this.maleGeometry = geometry
@@ -125,10 +129,7 @@
 							vt = vertices_tmp[i]
 							// falling down
 							if (data.direction < 0){
-								// let d = Math.abs(p.x - vertices_tmp[i][0]) + Math.abs(p.y - vertices_tmp[i][1]) + Math.abs(p.z - vertices_tmp[i][2])
-								// if (d < 200){
 								if (p.y > 0){
-									// p.y += data.direction * data.speed * delta
 									p.x += 1.5 * (0.50 - Math.random()) * data.speed * delta
 									p.y += 3.0 * (0.25 - Math.random()) * data.speed * delta
 									p.z += 1.5 * (0.50 - Math.random()) * data.speed * delta
@@ -141,8 +142,6 @@
 							}
 							// rising up
 							if (data.direction > 0){
-								//if (p.y < vertices_tmp[i][1]){
-								//	p.y += data.direction * data.speed * delta
 								d = Math.abs(p.x - vt[0]) + Math.abs(p.y - vt[1]) + Math.abs(p.z - vt[2])
 								if (d > 1){
 									p.x += - (p.x - vt[0]) / d * data.speed * delta * (0.85 - Math.random())
