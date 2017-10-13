@@ -1,0 +1,387 @@
+// ###################  WebXR Protocol ###################
+
+
+
+// ###################  Types
+
+! required param
+? optional param
+
+enum ErrorCodes : Integer {
+     Unknown
+     InvalidFormat
+     InvalidURL
+     InvalidAnchor
+     InvalidHitTest
+     InvalidRegion
+}
+
+Point {
+  x: Float!
+  y: Float!
+}
+
+Size {
+  width: Float!
+  height: Float!
+}
+
+Vector3 {
+  x: Float!
+  y: Float!
+  z: Float!
+}
+
+Vector4 {
+  x: Float!
+  y: Float!
+  z: Float!
+  w: Float!
+}
+
+Matrix4 {
+  columns(Vector4) [4]!
+}
+
+enum TrackingState : String {
+  arTrackingNormal
+  arTrackingLimited
+  arTrackingLimitedInitializing
+  arTrackingLimitedExcessiveMotion
+  arTrackingLimitedInsufficientFeatures
+  arTrackingNotAvailable
+}
+
+options (UInteger, ARHitTestResultType) {
+   ARHitTestResultTypeFeaturePoint              = (1 << 0),
+   ARHitTestResultTypeEstimatedHorizontalPlane  = (1 << 1),
+   ARHitTestResultTypeExistingPlane             = (1 << 3),
+   ARHitTestResultTypeExistingPlaneUsingExtent  = (1 << 4),
+}
+
+HitTestPoint {
+  type: ARHitTestResultType!
+  worldTransform: Matrix4!
+  localTransform: Matrix4!
+  distance: Float!
+}
+
+HitTestPlane {
+  point: HitTestPoint!
+  plane: Plane!
+}
+
+Plane {
+  center: Vector3!
+  extent: Vector3!
+  transform: Matrix4!
+  uuid: String!
+}
+
+UserAnchor {
+  uuid: String!
+  name: String!
+  worldTransform: Matrix4!
+}
+
+Camera {
+   projectionCamera: Matrix4!
+   cameraTransform: Matrix4!
+}
+
+Light {
+   ambientIntensity: Float?
+   ambientColorTemperature: Float?
+}
+
+Device {
+    uuid: String!,
+    screenSize: Size!,
+    viewportSize: Size!,
+    screenScale: Float!
+    isIpad: Boolean!,
+    systemVersion: String!
+}
+
+UIOptions {
+   arkit: {
+   	statistics: Boolean?
+   	plane: Boolean?
+   	focus: Boolean?
+   	anchors: Boolean?
+        points: Boolean?
+   }
+   custom : {
+
+//        browser: Boolean?
+//        rec: Boolean?
+//        rec_time: Boolean?
+//        mic: Boolean?
+//        build: Boolean?
+//        warnings: Boolean?
+//        debug: Boolean?
+        _ : Boolean?
+   }
+}
+
+ARError {
+  code: Integer!
+  description: String!
+}
+
+Region {
+   id: String!
+   radius: double!
+   center: Location!
+}
+
+Heading {
+   magnetic: Double
+   theTrue: Double
+}
+
+Location {
+   altitude: double!
+   longitude: double!
+   altitude: double?
+}
+
+enum LocationAccuracy: Double {
+   BestForNavigation
+   Best
+   NearestTenMeters
+   HundredMeters
+   Kilometer
+   ThreeKilometers
+}
+
+// ###################  JS Calls
+
+arInitAR (
+	callback: String? (
+        device: Device!
+
+            or
+         error: ErrorCodes?
+	)
+	options: {
+  		ui: UIOptions?
+	}
+)
+
+arWatchAR (
+    callback: String? (
+            // on ARSession update
+            camera: Camera?
+            light: Light?
+            location: Location?
+
+            or
+            // at once
+        error: ErrorCodes?
+    )
+    options: {
+        camera: Boolean?
+        location?: {
+            accuracy: LocationAccuracy    // desired accuracy
+        }
+        heading ? :{// available heading, on IOS "updateHeading"
+	    accuracy: Double    // desired accuracy
+	}
+        anchors: Boolean?  // call on IOS "updatedAnchors"
+        planes: Boolean?   // call on IOS "updatedAnchors", and "addPlanes"
+        lightEstimate: Boolean?
+    }
+)
+
+arStopAR (
+    callback: String? (
+        error: ErrorCodes?
+    )
+)
+
+arSetUIOptions (
+    callback: String? (
+        error: ErrorCodes?
+    )
+    options: UIOptions?
+)
+
+arLoadURL (
+    callback: String? (
+
+        error: ErrorCodes?
+    )
+    options: {
+        url: String!
+    }
+)
+
+arHitTest (
+    callback: String? (
+        results?: {
+            planes: [HitTestPlane]
+            points: [HitTestPoint]
+        }
+
+        or
+        error: ErrorCodes?
+    )
+    options: {
+        type: ARHitTestResultType!
+        point: Point!
+    }
+)
+
+arAddAnchor (
+    callback: String? (
+        anchor: UserAnchor!
+
+        or
+        error: ErrorCodes?
+    )
+    options: {
+        name: String?
+        transform: Matrix4!
+    }
+)
+
+arRemoveAnchor (
+    callback: String? (
+        uuid: String!
+
+        or
+        error: ErrorCodes?
+    )
+    options: {
+        uuid: String!
+    }
+)
+
+arUpdateAnchor (
+    callback: String? {
+        anchor: UserAnchor! // new anchor uuid!
+
+        or
+        error: ErrorCodes?
+    }
+    options: {
+        anchor: UserAnchor!
+    }
+)
+
+arStartHold (
+    callback: String? (
+
+        error: ErrorCodes?
+    )
+
+    options: {
+        anchor: UserAnchor
+    }
+)
+
+arStopHold (
+    callback: String? (
+
+        error: ErrorCodes?
+    )
+
+    options: {
+        anchor: UserAnchor
+    }
+)
+
+arAddRegion (
+    callback: String? (
+
+      error: ErrorCodes?
+    )
+    options: {
+        region: Region!
+    }
+)
+
+arRemoveRegion (
+    callback: String? (
+
+    error: ErrorCodes?
+    )
+    options: {
+        id: String!
+    }
+)
+
+arInRegion (
+    callback: String? (
+        inRegion: Boolean!
+    )
+    options: {
+        id: String!
+    }
+)
+
+// ###################  IOS Calls
+
+arShowDebug (
+    debug: Boolean!
+)
+
+arStartRecording ()
+
+arStopRecording ()
+
+arDidMoveBackground ()
+
+arWillEnterForeground ()
+
+arReceiveMemoryWarning ()
+
+arTransitionToSize (
+    size: Size!
+)
+
+// Location
+
+arEnterRegion (
+    region: Region!
+)
+
+arExitRegion (
+    region: Region!
+)
+
+arUpdateHeading (
+    heading: Heading!
+)
+
+arUpdateLocation (
+    location: Location!
+)
+
+// AR
+
+arInterruption ()
+
+arInterruptionEnded ()
+
+arTrackingChanged (
+    state: TrackingState!
+)
+
+arSessionFails (
+    error: ARError?
+)
+
+arAddPlanes (
+    planes: [Plane]
+)
+
+arRemovePlanes (
+    planes: [Plane]
+)
+
+arUpdatedAnchors (
+    planes: [Plane]? // by "planes" param in "watchAR" or while Hold mode
+    anchors: [UserAnchor]?
+)
