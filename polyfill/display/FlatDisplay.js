@@ -57,7 +57,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitUpdate.bind(this))
 				this._arKitWrapper.init().then(() => {
-          this._handleARKitInit();
+					this._handleARKitInit();
 				})
 			} else {
 				this._arKitWrapper.watch()
@@ -134,7 +134,7 @@ export default class FlatDisplay extends XRDisplay {
 			console.log('no camera transform', this._arKitWrapper.getData())
 		}
 
-		const cameraProjectionMatrix = this._arKitWrapper.flattenARMatrix(camera.projectionMatrix)
+		const cameraProjectionMatrix = this._arKitWrapper.flattenARMatrix(camera.projectionCamera)
 		if(cameraProjectionMatrix){
 			this._views[0].setProjectionMatrix(cameraProjectionMatrix)
 		} else {
