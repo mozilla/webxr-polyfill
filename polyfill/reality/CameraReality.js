@@ -151,7 +151,7 @@ export default class CameraReality extends Reality {
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
-		anchor.coordinates.poseMatrix = this._arKitWrapper.flattenARMatrix(anchorInfo.worldTransform)
+		anchor.coordinates.poseMatrix = this._arKitWrapper.flattenARMatrix(anchorInfo.transform)
 	}
 
 	_addAnchor(anchor, display){
