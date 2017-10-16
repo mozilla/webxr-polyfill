@@ -162,9 +162,9 @@ export default class CameraReality extends Reality {
 				detail => this._handleARKitAddObject(detail)
 			)
 		}
-    // ARCore as implemented in the browser does not offer anchors except on a surface, so we just use untracked anchors
-    this._anchors.set(anchor.uid, anchor)
-    return anchor.uid
+		// ARCore as implemented in the browser does not offer anchors except on a surface, so we just use untracked anchors
+		this._anchors.set(anchor.uid, anchor)
+		return anchor.uid
 	}
 
 	/*
@@ -186,8 +186,8 @@ export default class CameraReality extends Reality {
 					// Only plane hits have uuid!
 					const hit = {
 						uuid: arHit.uuid,
-            anchor_transform: this._arKitWrapper.flattenARMatrix(arHit.plane.transform),
-            world_transform: this._arKitWrapper.flattenARMatrix(arHit.point.worldTransform)
+						anchor_transform: this._arKitWrapper.flattenARMatrix(arHit.plane.transform),
+						world_transform: this._arKitWrapper.flattenARMatrix(arHit.point.worldTransform)
 					}
 					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
@@ -249,32 +249,32 @@ export default class CameraReality extends Reality {
 		if(data.planes.length === 0 && data.points.length === 0) return null
 		let info = null
 
-    if (data.planes.length > 0) {
-      let planeResults = data.planes;
+		if(data.planes.length > 0) {
+			let planeResults = data.planes;
 
-      let planeExistingUsingExtentResults = planeResults.filter(
-        hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
-      )
-      let planeExistingResults = planeResults.filter(
-        hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
-      )
+			let planeExistingUsingExtentResults = planeResults.filter(
+				hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+			)
+			let planeExistingResults = planeResults.filter(
+				hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
+			)
 
-      if (planeExistingUsingExtentResults.length) {
-        // existing planes using extent first
-        planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.point.distance - b.point.distance)
-        info = planeExistingUsingExtentResults[0]
-      } else if (planeExistingResults.length) {
-        // then other existing planes
-        planeExistingResults = planeExistingResults.sort((a, b) => a.point.distance - b.point.distance)
-        info = planeExistingResults[0]
-      } else {
-        // other types except feature points
-        planeResults = planeResults.sort((a, b) => a.point.distance - b.point.distance)
-        info = planeResults[0]
-      }
-    } else if (data.points.length > 0) {
-      // feature points if any
-      info = data.points[0]
+			if(planeExistingUsingExtentResults.length) {
+				// existing planes using extent first
+				planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeExistingUsingExtentResults[0]
+			} else if(planeExistingResults.length) {
+				// then other existing planes
+				planeExistingResults = planeExistingResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeExistingResults[0]
+			} else {
+				// other types except feature points
+				planeResults = planeResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeResults[0]
+			}
+		} else if(data.points.length > 0) {
+			// feature points if any
+			info = data.points[0]
 		}
 		return info
 	}
