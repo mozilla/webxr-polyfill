@@ -1,4 +1,5 @@
 import MatrixMath from './fill/MatrixMath.js'
+import Quaternion from './fill/Quaternion.js'
 
 /*
 XRDevicePose describes the position and orientation of an XRDisplay relative to the query XRCoordinateSystem.
@@ -28,6 +29,22 @@ export default class XRViewPose {
 		this._poseModelMatrix[14] = array3[2]
 	}
 
+	get _orientation(){
+		let quat = new Quaternion()
+		quat.setFromRotationMatrix(this._poseModelMatrix)
+		return quat.toArray()
+	}
+
+	set _orientation(array4){
+		MatrixMath.mat4_fromRotationTranslation(this._poseModelMatrix, array4, this._position)
+	}
+
+	_translate(array3){
+		this._poseModelMatrix[12] += array3[0]
+		this._poseModelMatrix[13] += array3[1]
+		this._poseModelMatrix[14] += array3[2]
+	}
+
 	getViewMatrix(view, out=null){
 		if(out === null){
 			out = new Float32Array(16)
@@ -37,4 +54,4 @@ export default class XRViewPose {
 	}
 }
 
-XRViewPose.DEFAULT_EYE_HEIGHT = 2 // meters
+XRViewPose.SITTING_EYE_HEIGHT = 1.1 // meters

@@ -35,6 +35,9 @@ export default class XRPresentationFrame {
 		return null
 	}
 
+	/*
+	Returns an array of known XRAnchor instances. May be empty.
+	*/
 	get anchors(){
 		//readonly attribute sequence<XRAnchor> anchors;
 		let results = []
@@ -44,14 +47,27 @@ export default class XRPresentationFrame {
 		return results
 	}
 
+	/*
+	Create an anchor at a specific position defined by XRAnchor.coordinates
+	*/
 	addAnchor(anchor){
 		//DOMString? addAnchor(XRAnchor anchor);
-		return this._session.reality._addAnchor(anchor)
+		return this._session.reality._addAnchor(anchor, this._session.display)
 	}
 
-	findAnchor(coordinates){
-		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
-		return this._session.reality._findAnchor(coordinates)
+	// normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
+	findAnchor(normalizedScreenX, normalizedScreenY){
+		// Promise<XRAnchorOffset?> findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
+		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
+	}
+
+	/*
+	Find an XRAnchorOffset that is at floor level below the current head pose
+	uid will be the resulting anchor uid (if any), or if null one will be assigned
+	*/
+	findFloorAnchor(uid=null){
+		// Promise<XRAnchorOffset?> findFloorAnchor();
+		return this._session.reality._findFloorAnchor(this._session.display, uid)
 	}
 
 	removeAnchor(uid){
@@ -59,6 +75,9 @@ export default class XRPresentationFrame {
 		return this._session.reality._removeAnchor(uid)
 	}
 
+	/*
+	Returns an existing XRAnchor or null if uid is unknown
+	*/
 	getAnchor(uid){
 		// XRAnchor? getAnchor(DOMString uid);
 		return this._session.reality._getAnchor(uid)
@@ -76,8 +95,6 @@ export default class XRPresentationFrame {
 				return this._session._display._headPose
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._session._display._eyeLevelPose
-			case XRCoordinateSystem.STAGE:
-				return this._session._display._stagePose
 			default:
 				return null
 		}

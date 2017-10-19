@@ -31,12 +31,12 @@ export default class XRView {
 			this._viewport.x = 0
 			this._viewport.y = 0
 			this._viewport.width = layer.framebufferWidth / 2
-			this._viewport.height = layer.framebufferHeight / 2
+			this._viewport.height = layer.framebufferHeight
 		} else if(this._eye === XRView.RIGHT){
 			this._viewport.x = layer.framebufferWidth / 2
-			this._viewport.y = layer.framebufferWidth / 2
+			this._viewport.y = 0
 			this._viewport.width = layer.framebufferWidth / 2
-			this._viewport.height = layer.framebufferHeight / 2
+			this._viewport.height = layer.framebufferHeight
 		} else {
 			this._viewport.x = 0
 			this._viewport.y = 0

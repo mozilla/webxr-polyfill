@@ -1,0 +1,118 @@
+<html>
+	<head>
+		<title>AR anchor example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.add-object-button {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 2em;
+				padding: 10px;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 20px;
+			}
+		</style>
+
+		<script src="../libs/three.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<script>
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false)
+					this.anchorsToAdd = [] // { node, x, y, z }
+
+					this.addObjectButton = document.createElement('button')
+					this.addObjectButton.setAttribute('class', 'add-object-button')
+					this.addObjectButton.innerText = 'Add anchor'
+					this.el.appendChild(this.addObjectButton)
+					this.addObjectButton.addEventListener('click', ev => {
+						this.addAnchoredModel(this.createSceneGraphNode(), 0, 0, -0.75)
+					})
+				}
+
+				// Called during construction
+				initializeScene(){
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				createSceneGraphNode(){
+					let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
+					let material = new THREE.MeshPhongMaterial({ color: '#FF9999' })
+					return new THREE.Mesh(geometry, material)
+				}
+
+				/*
+					addAnchoredModel creates an anchor at (x,y,z) relative to the camera and positions the sceneGraphNode on the anchor from that point on
+				*/
+				addAnchoredModel(sceneGraphNode, x, y, z){
+					// Save this info for use during the next render frame
+					this.anchorsToAdd.push({
+						node: sceneGraphNode,
+						x: x, y: y, z: z
+					})
+				}
+
+				// Called once per frame
+				updateScene(frame){
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					const trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+
+					// Create anchors and start tracking them
+					for(let anchorToAdd of this.anchorsToAdd){
+						// Create an anchor that we'd like to add, relative to the current head position
+						const anchorCoordinates = new XRCoordinates(
+							this.session.display,
+							headCoordinateSystem,
+							[anchorToAdd.x, anchorToAdd.y, anchorToAdd.z]
+						)
+						const anchor = new XRAnchor(anchorCoordinates)
+
+						// Create the anchor and tell the base class to update the node with its position
+						const anchorUID = frame.addAnchor(anchor)
+						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
+					}
+					this.anchorsToAdd = []
+				}
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>

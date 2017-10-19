@@ -1,0 +1,139 @@
+
+  <html>
+	<head>
+		<title>Hit test example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				overflow: hidden;
+				position: fixed;
+				width: 100%;
+				height: 100vh;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 20px;
+			}
+		</style>
+
+		<script src="../libs/three.min.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<script>
+			/*
+			HitTestExample shows how to find surfaces or other features and place content relative to them.
+
+			In a production application, you would not create a separate anchor for every user action because
+			your application would quickly slow down tracking so many anchors. Instead, find an anchor
+			for groups of content that are positioned relative to some surface or other feature.
+			*/
+			class HitTestExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false)
+					this._tapEventData = null // Will be filled in on touch start and used in updateScene
+
+					// A message at the bottom of the screen that shows whether a surface has been found
+					this._messageEl = document.createElement('div')
+					this.el.appendChild(this._messageEl)
+					this._messageEl.style.position = 'absolute'
+					this._messageEl.style.bottom = '10px'
+					this._messageEl.style.left = '10px'
+					this._messageEl.style.color = 'white'
+					this._messageEl.style['font-size'] = '16px'
+
+					this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+				}
+
+				// Called during construction to allow the app to populate this.scene
+				initializeScene(){
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0.05, 0)
+					this.floorGroup.add(box)
+
+					// Add a few lights
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				// Called once per frame, before render, to give the app a chance to update this.scene
+				updateScene(frame){
+					// If we have tap data, attempt a hit test for a surface
+					if(this._tapEventData !== null){
+						const x = this._tapEventData[0]
+						const y = this._tapEventData[1]
+						this._tapEventData = null
+						// Attempt a hit test using the normalized screen coordinates
+						frame.findAnchor(x, y).then(anchorOffset => {
+							if(anchorOffset === null){
+								this._messageEl.innerHTML = 'miss'
+							} else {
+								this._messageEl.innerHTML = 'hit'
+								this.addAnchoredNode(anchorOffset, this._createSceneGraphNode())
+							}
+						}).catch(err => {
+							console.error('Error in hit test', err)
+						})
+					}
+				}
+
+				// Save screen taps as normalized coordinates for use in this.updateScene
+				_onTouchStart(ev){
+					if (!ev.touches || ev.touches.length === 0) {
+						console.error('No touches on touch event', ev)
+						return
+					}
+					//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
+					this._tapEventData = [
+						ev.touches[0].clientX / window.innerWidth,
+						ev.touches[0].clientY / window.innerHeight
+					]
+				}
+
+				// Creates a box used to indicate the location of an anchor offset
+				_createSceneGraphNode(){
+					let group = new THREE.Group()
+					let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
+					let material = new THREE.MeshPhongMaterial({ color: '#99FF99' })
+					let mesh = new THREE.Mesh(geometry, material)
+					mesh.position.set(0, 0.05, 0)
+					group.add(mesh)
+					return group
+				}
+			}
+
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new HitTestExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>

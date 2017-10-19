@@ -1,0 +1,1 @@
+These files are part of the [PotassiumES](https://github.com/trevorfsmith/potassium) source code, which is copyright [Trevor F. Smith](https://trevor.smith.name/) (subs@trevor.smith.name) and released with NO WARRENTY AT ALL under the [MIT License](https://github.com/TrevorFSmith/potassium/blob/master/LICENSE).

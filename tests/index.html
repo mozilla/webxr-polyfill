@@ -1,0 +1,22 @@
+<html>
+	<head>
+		<title>Tests</title>
+		<meta charset="utf-8">
+		<style>
+		</style>
+
+		<script type="module" src="../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../dist/webxr-polyfill.js"></script>
+	</head>
+	<body>
+		<script type="module">
+			import CoordinatesTest from './CoordinatesTest.js'
+			try{
+				new CoordinatesTest().run()
+				console.log('passed')
+			} catch (e){
+				console.error(e)
+			}
+		</script>
+	</body>
+</html>

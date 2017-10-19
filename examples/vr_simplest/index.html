@@ -1,0 +1,103 @@
+<html>
+	<head>
+		<title>VR simplest example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.enter-vr-button {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 2em;
+				padding: 10px;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 20px;
+			}
+		</style>
+
+		<script src="../libs/three.js"></script>
+		<script src="../models/TeapotBufferGeometry.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<script>
+
+			class VRSimplestExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, true, false) 
+				}
+
+				// Called during construction
+				initializeScene(){
+					// Add a teapot at about eye level
+					var geometry = new THREE.TeapotBufferGeometry(0.1)
+					let materialColor = new THREE.Color()
+					materialColor.setRGB(1.0, 1.0, 1.0)
+					let material = new THREE.MeshLambertMaterial({
+						color: materialColor,
+						side: THREE.DoubleSide
+					})
+					let mesh = new THREE.Mesh(geometry, material)
+					mesh.position.set(0, 1.6, -1)
+					this.scene.add(mesh)
+
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0, 0)
+					this.scene.add(box)
+
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				// Called once per frame
+				updateScene(frame){
+					// Uncomment the next line to spin the box
+					// this.scene.children[0].rotation.y += 0.01
+				}
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+
+				window.pageApp = new VRSimplestExample(document.getElementById('target'))
+
+				// HMDs require the call to start presenting to occur due to a user input event, so make a button to trigger that
+				let enterVRButton = document.createElement('button')
+				enterVRButton.setAttribute('class', 'enter-vr-button')
+				document.getElementById('target').appendChild(enterVRButton)
+				enterVRButton.innerHTML = 'Enter VR'
+				enterVRButton.addEventListener('click', ev => {
+					window.pageApp.startPresenting()
+					document.getElementById('target').remove(enterVRButton)
+				})
+			})
+		</script>
+	</body>
+</html>

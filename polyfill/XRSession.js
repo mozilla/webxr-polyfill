@@ -28,15 +28,8 @@ export default class XRSession extends EventHandlerBase {
 	}
 
 	set baseLayer(value){
-		if(this._baseLayer !== null){
-			this._xr._sessionEls.removeChild(this._baseLayer._context.canvas)
-		}
 		this._baseLayer = value
-		if(this._baseLayer !== null){
-			this._baseLayer._context.canvas.width = window.innerWidth
-			this._baseLayer._context.canvas.height = window.innerHeight
-			this._xr._sessionEls.appendChild(this._baseLayer._context.canvas)
-		}
+		this._display._handleNewBaseLayer(this._baseLayer)
 	}
 
 	get depthNear(){ this._display._depthNear }
@@ -49,32 +42,21 @@ export default class XRSession extends EventHandlerBase {
 
 	get stageBounds(){ return this._stageBounds }
 
-	requestRealityChange(reality){
-		return new Promise((resolve, reject) => {
-			if(reality instanceof Reality === false){
-				reject()
-				return
-			}
-			this._display._reality = reality
-			resolve()
-		})
-	}
-
 	requestFrame(callback){
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
 		}
-		// TODO If ARKit is present, switch to using the ARKit watch callback
-		return window.requestAnimationFrame(() => {
+		return this._display._requestAnimationFrame(() => {
 			const frame = this._createPresentationFrame()
 			this._display._reality._handleNewFrame(frame)
 			this._display._handleNewFrame(frame)
 			callback(frame)
+			this._display._handleAfterFrame(frame)
 		})
 	}
 
 	cancelFrame(handle){
-		return window.cancelAnimationFrame(handle)
+		return this._display._cancelAnimationFrame(handle)
 	}
 
 	end(){
@@ -93,8 +75,8 @@ export default class XRSession extends EventHandlerBase {
 					return this._display._headModelCoordinateSystem
 				case XRCoordinateSystem.EYE_LEVEL:
 					return this._display._eyeLevelCoordinateSystem
-				case XRCoordinateSystem.STAGE:
-					return this._display._stageCoordinateSystem
+				case XRCoordinateSystem.TRACKER:
+					return this._display._trackerCoordinateSystem
 				case XRCoordinateSystem.GEOSPATIAL:
 					// Not supported yet
 				default:

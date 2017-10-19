@@ -1,4 +1,12 @@
 import Reality from '../Reality.js'
+import XRAnchor from '../XRAnchor.js'
+import XRViewPose from '../XRViewPose.js'
+import XRCoordinates from '../XRCoordinates.js'
+import XRAnchorOffset from '../XRAnchorOffset.js'
+
+import MatrixMath from '../fill/MatrixMath.js'
+import Quaternion from '../fill/Quaternion.js'
+
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 import ARCoreCameraRenderer from '../platform/ARCoreCameraRenderer.js'
 
@@ -30,11 +38,12 @@ export default class CameraReality extends Reality {
 		this._vrDisplay = null
 		this._vrFrameData = null
 
+		// Try to find a WebVR 1.1 display that supports Google's ARCore extensions
 		if(typeof navigator.getVRDisplays === 'function'){
 			navigator.getVRDisplays().then(displays => {
 				for(let display of displays){
 					if(display === null) continue
-					if(display.capabilities.hasPassThroughCamera){
+					if(display.capabilities.hasPassThroughCamera){ // This is the ARCore extension to WebVR 1.1
 						this._vrDisplay = display
 						this._vrFrameData = new VRFrameData()
 						this._arCoreCanvas = document.createElement('canvas')
@@ -50,8 +59,6 @@ export default class CameraReality extends Reality {
 							this._arCoreCanvas.height = window.innerHeight
 						}, false)
 						break
-					} else {
-						console.log('Found a non-pass-through camera VR display', display)
 					}
 				}
 			})
@@ -81,7 +88,7 @@ export default class CameraReality extends Reality {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.ADD_OBJECT_NAME, this._handleARKitAddObject.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitWatch.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -125,31 +132,143 @@ export default class CameraReality extends Reality {
 		}
 	}
 
-	_handleARKitAddObject(ev){
-		console.log('AR add object', ev)
+	_handleARKitWatch(ev){
+		if(ev.detail && ev.detail.objects){
+			for(let anchorInfo of ev.detail.objects){
+				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+			}
+		}
 	}
 
-	_addAnchor(anchor){
-		console.log('reality adding anchor', anchor)
+	_handleARKitAddObject(anchorInfo){
+		this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+	}
 
-		// TODO talk to ARKit or ARCore to create an anchor
+	_updateAnchorFromARKitUpdate(uid, anchorInfo){
+		const anchor = this._anchors.get(uid) || null
+		if(anchor === null){
+			console.log('unknown anchor', anchor)
+			return
+		}
+		// This assumes that the anchor's coordinates are in the tracker coordinate system
+		anchor.coordinates.poseMatrix = anchorInfo.transform
+	}
 
+	_addAnchor(anchor, display){
+		// Convert coordinates to the tracker coordinate system so that updating from ARKit transforms is simple
+		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._trackerCoordinateSystem)
+		if(this._arKitWrapper !== null){
+			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix).then(
+				detail => this._handleARKitAddObject(detail)
+			)
+		}
+		// ARCore as implemented in the browser does not offer anchors except on a surface, so we just use untracked anchors
 		this._anchors.set(anchor.uid, anchor)
 		return anchor.uid
 	}
 
 	/*
-	Creates an anchor attached to a surface, as found by a ray
+	Creates an anchor offset relative to a surface, as found by a ray
+	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
+	returns a Promise that resolves either to an AnchorOffset with the first hit result or null if the hit test failed
 	*/
-	_findAnchor(coordinates){
-		// XRAnchorOffset? findAnchor(XRCoordinates); // cast a ray to find or create an anchor at the first intersection in the Reality
-		// TODO talk to ARKit to create an anchor
-		throw 'Need to implement in CameraReality'
+	_findAnchor(normalizedScreenX, normalizedScreenY, display){
+		return new Promise((resolve, reject) => {
+			if(this._arKitWrapper !== null){
+				// Perform a hit test using the ARKit integration
+				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
+					if(hits.length === 0){
+						resolve(null)
+						console.log('miss')
+						return
+					}
+					const hit = this._pickARKitHit(hits)
+					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+
+					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
+
+					// TODO use XRPlaneAnchor for anchors with extents
+
+					let anchor = this._getAnchor(hit.uuid)
+					if(anchor === null){
+						let anchorCoordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
+						anchorCoordinates.poseMatrix = hit.anchor_transform
+						anchor = new XRAnchor(anchorCoordinates, hit.uuid)
+						this._anchors.set(anchor.uid, anchor)
+					}
+
+					const offsetPosition = [
+						hit.world_transform[12] - hit.anchor_transform[12],
+						hit.world_transform[13] - hit.anchor_transform[13],
+						hit.world_transform[14] - hit.anchor_transform[14]
+					]
+					const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
+					const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
+					const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
+					const anchorOffset = new XRAnchorOffset(anchor.uid)
+					anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
+					resolve(anchorOffset)
+				})
+			} else if(this._vrDisplay !== null){
+				// Perform a hit test using the ARCore data
+				let hits = this._vrDisplay.hitTest(normalizedScreenX, normalizedScreenY)
+				if(hits.length == 0){
+					resolve(null)
+					return
+				}
+				hits.sort((a, b) => a.distance - b.distance)
+				let anchor = this._getAnchor(hits[0].uuid)
+				if(anchor === null){
+					let coordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
+					coordinates.poseMatrix = hits[0].modelMatrix
+					coordinates._poseMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+					anchor = new XRAnchor(coordinates)
+					this._anchors.set(anchor.uid, anchor)
+				}
+				resolve(new XRAnchorOffset(anchor.uid))
+			} else {
+				resolve(null) // No platform support for finding anchors
+			}
+		})
 	}
 
 	_removeAnchor(uid){
 		// returns void
 		// TODO talk to ARKit to delete an anchor
 		this._anchors.delete(uid)
+	}
+
+	_pickARKitHit(data){
+		if(data.length === 0) return null
+		let info = null
+
+		let planeResults = data.filter(
+			hitTestResult => hitTestResult.type != ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT
+		)
+		let planeExistingUsingExtentResults = planeResults.filter(
+			hitTestResult => hitTestResult.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+		)
+		let planeExistingResults = planeResults.filter(
+			hitTestResult => hitTestResult.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
+		)
+
+		if (planeExistingUsingExtentResults.length) {
+			// existing planes using extent first
+			planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.distance - b.distance)
+			info = planeExistingUsingExtentResults[0]
+		} else if (planeExistingResults.length) {
+			// then other existing planes
+			planeExistingResults = planeExistingResults.sort((a, b) => a.distance - b.distance)
+			info = planeExistingResults[0]
+		} else if (planeResults.length) {
+			// other types except feature points
+			planeResults = planeResults.sort((a, b) => a.distance - b.distance)
+			info = planeResults[0]
+		} else {
+			// feature points if any
+			info = data[0]
+		}
+		return info
 	}
 }

@@ -1,3 +1,4 @@
+import Quaternion from './Quaternion.js'
 
 /*
 MatrixMath provides helper functions for populating the various matrices involved with 3D graphics.
@@ -6,6 +7,33 @@ Many of the math methods were taken from the Google webvr polyfill:
 https://github.com/googlevr/webvr-polyfill/blob/master/src/util.js#L270
 */
 export default class MatrixMath {
+
+	// Returns a new Float32Array that is set to the transform identity
+	static mat4_generateIdentity(){
+		return new Float32Array([
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1,
+		])
+	}
+
+	static mat4_get_position(out, m){
+		out[0] = m[12]
+		out[1] = m[13]
+		out[2] = m[14]
+		return out
+	}
+
+	static mat4_get_rotation(out, m){
+		let quat = new Quaternion()
+		quat.setFromRotationMatrix(m)
+		out[0] = quat.x
+		out[1] = quat.y
+		out[2] = quat.z
+		out[3] = quat.w
+		return out
+	}
 
 	static mat4_eyeView(out, poseModelMatrix, offset=new Float32Array([0, 0, 0])) {
 		MatrixMath.mat4_translate(out, poseModelMatrix, offset)
@@ -40,7 +68,7 @@ export default class MatrixMath {
 		return out
 	}
 
-	static mat4_fromRotationTranslation(out, q, v) {
+	static mat4_fromRotationTranslation(out, q=[0,0,0,1], v=[0,0,0]) {
 		// Quaternion math
 		const x = q[0]
 		const y = q[1]
