@@ -442,3 +442,5 @@ window.throttle = function(func, wait, leading=true, trailing=true) {
 window.throttledConsoleLog = throttle((...params) => {
 	console.log(...params)
 }, 1000)
+
+function hideMe(elem) { elem.style.display = 'none' }
