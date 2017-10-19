@@ -24,6 +24,17 @@
 				transform: translate(-50%, -50%);
 				font-size: 20px;
 			}
+			#description {
+			    pointer-events: auto;
+			    font-family: sans-serif;
+			    padding: 1em;
+			    background-color:rgba(255,255,255,0.7);
+			    -webkit-backdrop-filter: blur(5px);
+			    position:absolute;
+			    bottom: 0px;
+			    left:0px;
+			    right: 0px;
+			}			
 		</style>
 
 		<script src="../libs/three.min.js"></script>
@@ -34,6 +45,11 @@
 	</head>
 	<body>
 		<div id="target" />
+        <div onclick="hideMe(this)" id="description">
+          <h2>Boombox</h2>
+          <h5>(click to dismiss)</h5>
+          <p>Shows a boombox in a VR environment. Uses 6DOF from WebXR to navigate within VR.</p>  
+        </div>
 		<script>
 			/*
 			ARSimplestExample shows how to populate the content scene 
