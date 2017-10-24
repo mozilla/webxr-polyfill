@@ -87,7 +87,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arAddPlanes', ARKitWrapper.PLAINS_ADDED_EVENT],
 			['arRemovePlanes', ARKitWrapper.PLAINS_REMOVED_EVENT],
 			['arUpdatedAnchors', ARKitWrapper.ANCHORS_UPDATED_EVENT],
-			['arTransitionToSize', ARKitWrapper.SIZE_CHANGED_EVENT]
+			['arTransitionToSize', ARKitWrapper.SIZE_CHANGED_EVENT],
+			['arOrientationChanged', ARKitWrapper.ORIENTATION_CHANGED_EVENT]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -551,6 +552,7 @@ ARKitWrapper.PLAINS_ADDED_EVENT = 'ar-plains-added'
 ARKitWrapper.PLAINS_REMOVED_EVENT = 'ar-plains-removed'
 ARKitWrapper.ANCHORS_UPDATED_EVENT = 'ar-anchors-updated'
 ARKitWrapper.SIZE_CHANGED_EVENT = 'ar-size-changed'
+ARKitWrapper.ORIENTATION_CHANGED_EVENT = 'ar-orientation-changed'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
@@ -573,3 +575,9 @@ ARKitWrapper.LOCATION_ACCURACY_NEAREST_TEN_METERS = 'NearestTenMeters'
 ARKitWrapper.LOCATION_ACCURACY_HUNDRED_METERS = 'HundredMeters'
 ARKitWrapper.LOCATION_ACCURACY_KILOMETER = 'Kilometer'
 ARKitWrapper.LOCATION_ACCURACY_THREE_KILOMETERS = 'ThreeKilometers'
+
+// orientation
+ARKitWrapper.ORIENTATION_PORTRAIT = 'Portrait'
+ARKitWrapper.ORIENTATION_LANDSCAPE_LEFT = 'LandscapeLeft'
+ARKitWrapper.ORIENTATION_LANDSCAPE_RIGHT = 'LandscapeRight'
+ARKitWrapper.ORIENTATION_UPSIDE_DOWN = 'UpsideDown'

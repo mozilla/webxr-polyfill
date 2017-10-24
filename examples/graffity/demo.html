@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <title>ARKit JS App Demo</title>
+    
+    <style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0);
+    }
+    canvas {
+        touch-action: none;
+    }
+    * {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+    #message {
+        display: none;
+        border: 1px solid red;
+        position: absolute;
+        top: 0px;
+        left: 10px;
+        right: 10px;
+        text-align: center;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.9);
+    }
+    </style>
+    
+    <script src="vendor/three.js"></script>
+    <script src="vendor/stats.js"></script> 
+    
+    <script src="fill/EventHandlerBase.js" type="module"></script>
+    <script src="platform/ARKitWrapper.js" type="module"></script>
+    
+    <script src="demo.js" type="module"></script>
+</head>
+<body>
+<canvas id="app-canvas" oncontextmenu="return false;">Browser not supported</canvas>
+<div id="message" style="display: none;">Any message</div>
+</body>
+</html>
