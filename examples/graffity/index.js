@@ -40,7 +40,8 @@ class App {
                     mic: true,
                     build: true,
                     warnings: true,
-                    debug: true
+                    debug: true,
+                    application: 'Graffiti'
                 }
             }
         }).then(this.onARInit.bind(this));
