@@ -1,0 +1,145 @@
+<html>
+	<head>
+		<title>WebXR Viewer</title>
+		<meta charset="utf-8">
+
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				background-color: #ECEAE0;
+				color: #221E1D;
+				font-family: sans-serif;
+				font-size: 16px;
+				line-height: 1.3em;
+				padding-bottom: 200px;
+			}
+
+			section {
+				margin: 0.5rem;
+			}
+			section > * {
+				margin: 0.5rem;
+			}
+
+			h1, h2, h3 {
+				border: 1px solid #ccc;
+				border-width: 0 0 1px 0;
+				padding-bottom: 0.2rem;
+				padding-top: 0.5rem;
+				color: #221E1D;
+				font-weight: normal;
+			}
+
+
+
+			/* grid code */
+
+			ul {
+				list-style: none;
+				padding:0;
+				margin:0;
+				display: flex;
+				flex-flow: wrap row;
+				justify-content: flex-start;
+			}
+			ul li {
+				max-width: 15em;
+				border: 1px solid #ccc;
+				background-color: #FFFFFF;
+				padding: 0.5em;
+				margin: 0.5em;
+			}
+			ul li img {
+				width: 100%;
+				height: auto;
+				margin:0;
+				padding:0;
+			}
+
+			/* example item contents */
+			.intro {
+				max-width: 40em;
+				padding: 0.5rem 0;
+			}
+
+			.source {
+				font-size: 0.8rem;
+			}
+			
+			a {
+				text-decoration: none;
+				color: #E9633B;
+			}
+
+			li a {
+				font-size: 1.3rem;
+			}
+
+			li p {
+				margin-top: 0.5rem;
+			}
+		</style>
+	</head>
+	<body>
+		<section>
+			<h1>WebXR Viewer</h1>
+
+			<p class="intro">
+				Help Mozilla Research by taking part in WebXR viewer, an augmented reality and virtual reality application that lets you navigate to XR experiences just like websites.
+			</p>
+
+			<p class="intro">
+				Below you will find examples of WebXR experiences. If you are a developer, click the source code links to see how to use the <a href="https://github.com/mozilla/webxr-polyfill">WebXR polyfill</a> to create your own AR or VR experiences.
+			</p>
+		</section>
+		<section>
+			<h2>Examples</h2>
+
+			<ul>
+				<li>
+					<a href="examples/ar_simplest/">Simplest AR</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_simplest/index.html">source</a>
+					<p>Use Three.js to position the Utah Teapot in an augmented reality scene.</p>
+					<a href="examples/ar_simplest/">
+						<img src="examples/ar_simplest/screenshot.jpeg" width="300" height="200"/>
+					</a>
+				</li>
+				<li>
+					<a href="examples/ar_anchors/">Anchors</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_anchors/index.html">source</a>
+					<p>Position boxes in space and receive updated positions using ARKit anchors.</p>
+					<a href="examples/ar_anchors/">
+						<img src="examples/ar_anchors/screenshot.jpeg" width="300" height="200"/>
+					</a>
+				</li>
+				<li>
+					<a href="examples/hit_test/">Hit testing</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/hit_test/index.html">source</a>
+					<p>Find anchors by tapping to search for surfaces.</p>
+					<a href="examples/hit_test/">
+						<img src="examples/hit_test/screenshot.jpeg" width="300" height="200"/>
+					</a>
+				</li>
+				<li>
+					<a href="examples/peoples/">Peoples</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/peoples/index.html">source</a>
+					<p>Place animated people on surfaces.</p>
+					<a href="examples/peoples/">
+						<img src="examples/peoples/screenshot.jpeg" width="300" height="200"/>
+					</a>
+				</li>
+				<li>
+					<a href="examples/boombox/">Boom box</a>
+					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/boombox/index.html">source</a>
+					<p>A shiney boom box in an environment map</p>
+					<a href="examples/boombox/">
+						<img src="examples/boombox/screenshot.jpeg" width="300" height="200"/>
+					</a>
+				</li>
+			</ul>
+		</section>
+	</body>
+</html>
