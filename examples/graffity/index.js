@@ -17,6 +17,10 @@ class App {
 
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
+        
+        this.orientation = null;
+        this.fixOrientationMatrix = new THREE.Matrix4();
+        this.orientationAngle = 0;
     }
 
     initAR() {
@@ -97,7 +101,7 @@ class App {
         });
 
         this.ar.addEventListener(ARKitWrapper.SIZE_CHANGED_EVENT, (e) => {
-            this.resize(e.detail.width, e.detail.height);
+            this.resize(e.detail.size.width, e.detail.size.height);
         });
 
         this.ar.addEventListener(ARKitWrapper.PLAINS_ADDED_EVENT, (e) => {
@@ -126,6 +130,28 @@ class App {
             
             this.fpsStats.domElement.style.display = this.isDebug ? '' : 'none';
         });
+        
+        this.ar.addEventListener(ARKitWrapper.ORIENTATION_CHANGED_EVENT, e => {
+            this.updateOrientation(e.detail.orientation);
+        });
+    }
+
+    updateOrientation(orientation) {
+        this.orientation = orientation;
+        switch (this.orientation) {
+            case ARKitWrapper.ORIENTATION_PORTRAIT:
+                this.orientationAngle = Math.PI / 2;
+                break;
+            case ARKitWrapper.ORIENTATION_UPSIDE_DOWN:
+                this.orientationAngle = -Math.PI / 2;
+                break;
+            case ARKitWrapper.ORIENTATION_LANDSCAPE_LEFT:
+                this.orientationAngle = -Math.PI;
+                break;
+            default:
+                this.orientationAngle = 0;
+                break;
+        }
     }
 
     createCube(name) {
@@ -322,9 +348,10 @@ class App {
         if (!this.ar.deviceInfo || !this.ar.deviceInfo.uuid) {
             return;
         }
-        
-        this.deviceId = this.ar.deviceInfo.uuid;
 
+        this.deviceId = this.ar.deviceInfo.uuid;
+        this.updateOrientation(this.ar.deviceInfo.orientation);
+        
         this.resize(
             this.ar.deviceInfo.viewportSize.width,
             this.ar.deviceInfo.viewportSize.height
@@ -335,15 +362,23 @@ class App {
     
     onARWatch() {
         const camera = this.ar.getData('camera');
-        if (camera) {
-            this.camera.projectionMatrix.fromArray(
-                this.ar.flattenARMatrix(camera.projectionCamera)
-            );
+        if (!camera) return;
+
+        if (this.orientationAngle != 0) {
+            this.fixOrientationMatrix.makeRotationZ(this.orientationAngle);
+            this.camera.matrix.fromArray(
+                this.ar.flattenARMatrix(camera.cameraTransform)
+            ).multiply(this.fixOrientationMatrix);
+        } else {
             this.camera.matrix.fromArray(
                 this.ar.flattenARMatrix(camera.cameraTransform)
             );
         }
-
+        
+        this.camera.projectionMatrix.fromArray(
+            this.ar.flattenARMatrix(camera.projectionCamera)
+        );
+        
         this.requestAnimationFrame();
     }
     
