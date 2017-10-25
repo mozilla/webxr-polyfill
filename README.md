@@ -4,6 +4,17 @@ This repository holds a polyfill and example applications for a proposed API for
 
 You can find the proposed API description in the [webxr-api repository](https://github.com/mozilla/webxr-api).
 
+Table of Contents (ToC)
+=======================
+
+* [Warning](#warning)
+* [Running the examples](#running-the-examples)
+* [Portable builds](#portable-builds)
+* [Writing your own XR apps](#writing-your-own-xr-apps)
+* [Supported Displays](#supported-displays)
+* [Supported Realities](#supported-realities)
+* [Supported Browsers](#supported-browsers)
+
 ## WARNING
 
 THIS SOFTWARE IS PRERELEASE, IS *NOT* READY FOR PRODUCTION USE, AND *WILL* SOON HAVE BREAKING CHANGES.
