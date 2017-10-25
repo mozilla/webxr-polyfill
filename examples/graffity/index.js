@@ -41,7 +41,7 @@ class App {
                     build: true,
                     warnings: true,
                     debug: true,
-                    application: 'Graffiti'
+                    showUIAtOnce: true
                 }
             }
         }).then(this.onARInit.bind(this));
