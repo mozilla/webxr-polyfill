@@ -1,5 +1,5 @@
 import ARKitWrapper from './platform/ARKitWrapper.js'
-
+import EditControls from './EditControls.js'
 
 const CUBE_SIZE = 0.1;
 
