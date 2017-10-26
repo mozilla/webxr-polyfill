@@ -1,13 +1,23 @@
-import ARKitWrapper from './platform/ARKitWrapper.js'
+import ARKitWrapper from '../../polyfill/platform/ARKitWrapper.js'
 import EditControls from './EditControls.js'
 
 const CUBE_SIZE = 0.1;
 
+const MODE_VIEW = 'view';
+const MODE_EDIT_TRANSLATE = 'edit-translate';
+const MODE_EDIT_ROTATE = 'edit-rotate';
+
 class App {
     constructor(canvasId) {
-        this.isDebug = true;
-        this.deviceId = null;
+        this.mode = MODE_VIEW;
         
+        this.isDebug = false;
+        this.deviceId = null;
+
+        this.orientation = null;
+        this.fixOrientationMatrix = new THREE.Matrix4();
+        this.orientationAngle = 0;
+
         this.clock = new THREE.Clock();
         this.initScene(canvasId);
         
@@ -17,10 +27,6 @@ class App {
 
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
-        
-        this.orientation = null;
-        this.fixOrientationMatrix = new THREE.Matrix4();
-        this.orientationAngle = 0;
     }
 
     initAR() {
@@ -231,8 +237,15 @@ class App {
         document.querySelector('#message').onclick = function() {
             this.style.display = 'none';
         }
+        
+        this.editControls = new EditControls(this.canvas);
+        this.editControls.addEventListener(EditControls.EVENT_DOUBLETAP, this.onDoubleTap.bind(this));
     }
 
+    onDoubleTap(e) {
+        console.log('doubletap', e);
+    }
+    
     requestAnimationFrame() {
         window.requestAnimationFrame(this.render.bind(this));
     }
