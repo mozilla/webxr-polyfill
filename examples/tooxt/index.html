@@ -1,0 +1,45 @@
+<html>
+	<head>
+		<title>Tooxt</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+		<script src="../libs/three.min.js"></script>
+		<script src="../libs/three-gltf-loader.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+
+		<link rel="stylesheet" href="site.css" type='text/css'>
+		<style>
+			.main-nav-component {
+				margin-bottom: 0;
+				opacity: 0.5;
+				position: absolute;
+				top: 0;
+				left: 0;
+				z-index: 2;
+				width: 100%;
+			}
+			.page {
+				z-index: 1;
+			}
+		</style>
+	</head>
+	<body>
+		<script type="module">
+			import {IndexPage} from './components.js'
+			
+			import MockService from '../libs/potassium/MockService.js'
+			import populateService from './mockData.js'
+			let service = new MockService()
+			populateService(service)
+			service.attachToDataObject()
+
+			document.addEventListener('DOMContentLoaded', ev => {
+				window.page = new IndexPage()
+				document.body.appendChild(window.page.el)
+			})
+		</script>
+	</body>
+</html>

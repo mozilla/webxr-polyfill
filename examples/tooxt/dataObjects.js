@@ -1,0 +1,175 @@
+import DataModel from  '../libs/potassium/DataModel.js'
+import DataCollection from  '../libs/potassium/DataCollection.js'
+
+let apiBaseURL = '/api/'
+
+/*
+User is used for both authentication and identity
+Fields:
+	uuid
+	first_name (''): string
+	last_name (''): string
+*/
+let User = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'user/'
+		return apiBaseURL + 'user/' + this.get('uuid')
+	}
+}
+let Users = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: User }, options))
+	}
+	get url(){ return apiBaseURL + 'user/'}
+}
+
+/*
+Reality represents an environment like actual reality or a virtual reality
+Fields:
+	uuid
+	name (''): string
+*/
+let Reality = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'reality/'
+		return apiBaseURL + 'reality/' + this.get('uuid')
+	}
+}
+let Realities = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: Reality }, options))
+	}
+	get url(){ return apiBaseURL + 'reality/' }
+}
+
+/*
+Layer represents a view onto a Reality.
+Fields:
+	uuid
+	name (''): string
+	reality: Reality uuid
+	owner: User uuid
+*/
+let Layer = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'layer/'
+		return apiBaseURL + 'layer/' + this.get('uuid')
+	}
+}
+let Layers = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: Layer }, options))
+	}
+	get url(){ return apiBaseURL + 'layer/' }
+}
+
+/*
+Anchor represents a specific location.
+Each Anchor is linked to a Layer.
+Fields:
+	uuid
+	layer: Layer uuid
+	point: [latitude, longitude]
+	elevation: float
+	orientation: quaternion
+*/
+let Anchor = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'anchor/'
+		return apiBaseURL + 'anchor/' + this.get('uuid')
+	}
+}
+let Anchors = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: Anchor }, options))
+	}
+	get url(){
+		if(typeof this.options.layerUUID !== 'undefined'){
+			return apiBaseURL + 'layer/' + this.options.layerUUID + '/anchors'
+		}
+		return apiBaseURL + 'anchor/'
+	}
+}
+
+/*
+Content represents information about a set of ContentAssets, which could represent assets for a glTF model or a simple text file.
+Fields:
+	uuid
+	name (''): string
+	owner: User uuid
+*/
+let Content = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'content/'
+		return apiBaseURL + 'content/' + this.get('uuid')
+	}
+}
+let Contents = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: Content }, options))
+	}
+	get url(){
+		if(typeof this.options.anchorUUID !== 'undefined'){
+			return apiBaseURL + 'anchor/' + this.options.anchorUUID + '/contents'
+		}
+		return apiBaseURL + 'content/'
+	}
+}
+
+/*
+ContentAsset represents a single blob of data for a Content, for example a single texture for a glTF model or a text file
+Fields:
+	uuid
+	primary (false): true if this is the initial asset, like a .gltf file or a .txt file for a textual Content 
+	content: Content uuid
+	name: string
+	mimetype: string
+	size: integer
+	uri: a data: or https: URI for the blob
+*/
+let ContentAsset = class extends DataModel {
+	get url(){
+		if(typeof this.options.contentUUID !== 'undefined'){
+			return apiBaseURL + 'content/' + this.options.contentUUID + '/primary'
+		}
+		if(this.isNew) return apiBaseURL + 'content-asset/'
+		return apiBaseURL + 'content-asset/' + this.get('uuid')
+	}
+}
+let ContentAssets = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: ContentAsset }, options))
+	}
+	get url(){ return apiBaseURL + 'content-asset/'}
+}
+
+/*
+AnchoredContent links Content to an Anchor
+Fields:
+	uuid
+	content: Content uuid
+	anchor: Anchor uuid
+	transform: a column first affine transform matrix
+*/
+let AnchoredContent = class extends DataModel {
+	get url(){
+		if(this.isNew) return apiBaseURL + 'anchored-content/'
+		return apiBaseURL + 'anchored-content/' + this.get('uuid')
+	}
+}
+let AnchoredContents = class extends DataCollection {
+	constructor(data=[], options={}){
+		super(data, Object.assign({ dataObject: AnchoredContent }, options))
+	}
+	get url(){ apiBaseURL + 'anchored-content/'}
+}
+
+export {
+	User, Users,
+	Layer, Layers,
+	Anchor, Anchors,
+	Content, Contents,
+	Reality, Realities,
+	ContentAsset, ContentAssets,
+	AnchoredContent, AnchoredContents
+}

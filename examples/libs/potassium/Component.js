@@ -1,5 +1,6 @@
 import EventMixin from './EventMixin.js'
 import el from './El.js'
+import obj from './Obj.js'
 
 /*
 	Component holds the reactive logic for a DOM element
@@ -10,14 +11,21 @@ let Component = EventMixin(
 			this.dataObject = dataObject // a DataModel or DataCollection
 			this.options = options
 			this.cleanedUp = false
+
 			if(typeof this.options.el !== 'undefined'){
 				this.el = this.options.el
 			} else {
 				this.el = el.div()
 			}
+
+			if(typeof this.options.obj !== 'undefined'){
+				this.obj = this.options.obj
+			} else {
+				this.obj = obj.group()
+			}
+
 			this.boundCallbacks = [] // { callback, dataObject } to be unbound during cleanup
 			this.domEventCallbacks = [] // { callback, eventName, targetEl } to be unregistered during cleanup
-			this._el.component = this
 		}
 		cleanup(){
 			if(this.cleanedUp) return
@@ -45,6 +53,23 @@ let Component = EventMixin(
 			this._el.component = this
 			this.trigger(Component.ElementChangedEvent, this, this._el)
 		}
+
+		// The root Three.Object3D
+		get obj(){ 
+			return this._obj
+		}
+		set obj(object3D){
+			if(!object3D || typeof object3D.matrixWorld === 'undefined'){
+				throw new Error(`Tried to set a non-Object3D to Component.obj: ${object3D}`)
+			}
+			if(this._obj){
+				delete this._obj['component']
+			}
+			this._obj = object3D
+			this._obj.component = this
+			this.trigger(Component.ObjectChangedEvent, this, this.obj)
+		}
+
 		/*
 			Listen to a DOM event.
 			For example:
@@ -112,7 +137,8 @@ let Component = EventMixin(
 	}
 )
 
-Component.ElementChangeEvent = 'element-changed'
+Component.ElementChangedEvent = 'element-changed'
+Component.ObjectChangedEvent = 'object-changed'
 
 export default Component
 
