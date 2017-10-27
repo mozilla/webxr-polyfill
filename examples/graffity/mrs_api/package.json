@@ -1,0 +1,31 @@
+{
+  "name": "mrs-fe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "http-server --open --hot",
+    "serve": "webpack-dev-server --open",
+    "watch": "webpack --progress --watch"
+  },
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^15.1.0",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "eslint-plugin-react": "^7.1.0",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.9.2",
+    "webpack-hot-middleware": "^2.20.0"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "joi": "^13.0.1",
+    "joi-browser": "^10.6.1"
+  }
+}
