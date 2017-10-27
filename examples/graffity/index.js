@@ -3,13 +3,9 @@ import EditControls from './EditControls.js'
 
 const CUBE_SIZE = 0.1;
 
-const MODE_VIEW = 'view';
-const MODE_EDIT_TRANSLATE = 'edit-translate';
-const MODE_EDIT_ROTATE = 'edit-rotate';
-
 class App {
     constructor(canvasId) {
-        this.mode = MODE_VIEW;
+        this.mode = EditControls.MODE_VIEW;
         
         this.isDebug = false;
         this.deviceId = null;
@@ -28,7 +24,9 @@ class App {
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
     }
-
+    setMode(mode) {
+        this.mode = mode;
+    }
     initAR() {
         this.ar = ARKitWrapper.GetOrCreate();
         this.ar.init({
@@ -199,6 +197,14 @@ class App {
         
         this.camera.matrixAutoUpdate = false;
         
+        /*@todo remove this cube */
+        const cubeMesh = this.createCube('cube1');
+        cubeMesh.position.set(0, 1.6, 0);
+        cubeMesh.scale.set(10, 10, 10);
+        this.scene.add(cubeMesh);
+        this.cubeMesh = cubeMesh;
+        this.cubesNum++;
+        
         this.fpsStats = new Stats();
         this.fpsStats.setMode(0);
         this.fpsStats.domElement.style.display = 'none';
@@ -238,12 +244,7 @@ class App {
             this.style.display = 'none';
         }
         
-        this.editControls = new EditControls(this.canvas);
-        this.editControls.addEventListener(EditControls.EVENT_DOUBLETAP, this.onDoubleTap.bind(this));
-    }
-
-    onDoubleTap(e) {
-        console.log('doubletap', e);
+        this.editControls = new EditControls(this);
     }
     
     requestAnimationFrame() {
@@ -396,6 +397,42 @@ class App {
         this.requestAnimationFrame();
     }
     
+    pick(pos) {
+        let pickInfo = {};
+        this.raycaster.setFromCamera(
+            {x: pos.ndcX, y: pos.ndcY},
+            this.camera
+        );
+        const intersects = this.raycaster.intersectObjects(this.getPickableMeshes());
+        if (!intersects.length) {
+            pickInfo.hit = false;
+            return pickInfo;
+        }
+        pickInfo.hit = true;
+        pickInfo.pickedMesh = intersects[0].object;
+        pickInfo.pickedPoint = intersects[0].point;
+        pickInfo.pointerX = pos.x;
+        pickInfo.pointerY = pos.y;
+        pickInfo.ndcX = pos.ndcX;
+        pickInfo.ndcY = pos.ndcY;
+        return pickInfo;
+    }
+    getPickableMeshes(forceUpdate) {
+        if (this.pickableMeshes && !forceUpdate) {
+            return this.pickableMeshes;
+        }
+        this.pickableMeshes = [];
+        var cnt = this.scene.children.length;
+        for (var i = 0; i < cnt; i++) {
+            const mesh = this.scene.children[i];
+            if (mesh.type != 'Mesh') {
+                continue;
+            }
+            
+            this.pickableMeshes.push(mesh);
+        }
+        return this.pickableMeshes;
+    }
     showMessage(txt) {
         document.querySelector('#message').textContent = txt;
         document.querySelector('#message').style.display = 'block';

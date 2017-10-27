@@ -29,37 +29,23 @@
     }
     .common-message {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        bottom: 0;
+        left: 0;
         font-size: 20px;
     }
     </style>
     
-<!--
-    <script src="../libs/three.min.js"></script>
--->
     <script src="../libs/three.js"></script>
     <script src="../libs/stats.js"></script>
     
-<!--
-    <script type="module" src="../../polyfill/XRPolyfill.js"></script>
--->
-    
     <script src="../../polyfill/fill/EventHandlerBase.js" type="module"></script>
     <script src="../../polyfill/platform/ARKitWrapper.js" type="module"></script>
-    
-<!--
-    <script nomodule src="../../dist/webxr-polyfill.js"></script>
--->
+
     <script src="webkit-simulator.js"></script>
 </head>
 <body>
-<!--
-<div id="target"></div>
--->
 <canvas id="app-canvas" oncontextmenu="return false;">Browser not supported</canvas>
-<div id="message" style="display: none;">Any message</div>
+<div id="message" class="common-message" style="display: none;">Any message</div>
 
 <script src="index.js" type="module"></script>
 
