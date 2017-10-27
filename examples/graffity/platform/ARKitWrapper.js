@@ -267,7 +267,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 		return new Promise((resolve, reject) => {
 			window.webkit.messageHandlers.arUpdateAnchor.postMessage({
 				options: {
-					anchor: anchor
+					uuid: anchor.uuid,
+					transform: anchor.transform
 				},
 				callback: this._createPromiseCallback('updateAnchor', resolve, reject)
 			})

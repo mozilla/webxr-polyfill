@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>AR Graffity</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-
+    <link rel="stylesheet" href="style.css">
     <style>
     html, body {
         width: 100%;
@@ -12,7 +12,8 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background: rgba(0, 0, 0, 0);
+        /*background: rgba(0, 0, 0, 0);*/
+        background: red;
         -webkit-user-select: none;
         user-select: none;
     }
@@ -29,44 +30,111 @@
     }
     .common-message {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        bottom: 0;
+        left: 0;
         font-size: 20px;
     }
     </style>
-
-<!--
-    <script src="../libs/three.min.js"></script>
--->
     <script src="../libs/three.js"></script>
     <script src="../libs/stats.js"></script>
-
-<!--
-    <script type="module" src="../../polyfill/XRPolyfill.js"></script>
--->
-
-<!--
+    
     <script src="../../polyfill/fill/EventHandlerBase.js" type="module"></script>
     <script src="../../polyfill/platform/ARKitWrapper.js" type="module"></script>
--->
-
-    <script src="fill/EventHandlerBase.js" type="module"></script>
-    <script src="platform/ARKitWrapper.js" type="module"></script>
-
-<!--
-    <script nomodule src="../../dist/webxr-polyfill.js"></script>
--->
-
+    <script src="galleryControl.js"></script>
+    <script src="webkit-simulator.js"></script>
 </head>
 <body>
-<!--
-<div id="target"></div>
--->
 <canvas id="app-canvas" oncontextmenu="return false;">Browser not supported</canvas>
-<div id="message" style="display: none;">Any message</div>
+<div id="message" class="common-message" style="display: none;">Any message</div>
 
 <script src="index.js" type="module"></script>
+<div id="ui">
+    <button id="galleryBtn" state='true'></button>
+    <button id="rotate"></button>
+    <button id="removeObject"></button>
+</div>
+<div class="status-check"></div>
+<div class="swiper-container">
+    <div class="swiper-wrapper">
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail01.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail02.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail03.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail04.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail05.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail06.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail07.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail08.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail09.jpg')"></div>
+        </div>
+        <div class="swiper-slide">
+            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail010.jpg')"></div>
+        </div>
+    </div>
+</div>
+<script src="./gallery/script.js"></script>
+<script>
+  (function() {
+    var moving = false;
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    });
+    var swiper = new Swiper('.swiper-container', {
+      slidesPerView: 6,
+      centeredSlides: false,
+      paginationClickable: false,
+      spaceBetween: 5,
+      setWrapperSize: true,
+      spaceBetween: 16.5,
+      direction: 'vertical',
+      slidesOffsetBefore: 5,
+      slidesOffsetAfter: 5,
+      roundLengths: true,
+      /**
+       @todo: prevent double tap
+       */
+      onSliderMove: function(swiper, e) {
+        moving = true;
+      },
+      onTap: function(swiper, e) {
+        window.app.scene.children[0].lookAt(new THREE.Vector3(0,0,0));
 
+        window.app.raycaster.setFromCamera(
+          {x: 0, y: 0},
+          window.app.camera
+        );
+
+        let transform = new THREE.Matrix4();
+        transform = transform.toArray();
+        transform = window.app.ar.createARMatrix(transform);
+
+        window.app.ar.addAnchor(
+          null,
+          transform
+        ).then(info => window.app.onARAddObject(info));
+      },
+      onTouchEnd: function(swiper, e) {
+        moving = false;
+      }
+    })
+  }())
+  ;
+</script>
 </body>
 </html>
