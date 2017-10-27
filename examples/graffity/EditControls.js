@@ -9,7 +9,6 @@ const SCALE_SPEED = 0.01;
 
 export default class EditControls {
     constructor(app) {
-        super();
         this.app = app;
         this.canvas = app.canvas;
         
