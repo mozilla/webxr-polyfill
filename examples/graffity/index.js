@@ -1,5 +1,7 @@
 import ARKitWrapper from './platform/ARKitWrapper.js'
-
+import MRS_API from './mrs_api/src/api/index.js'
+import GLTFLoader from './examples/libs/loaders/GLTFLoader.js'
+import THREE from './examples/libs/three.js';
 
 const CUBE_SIZE = 0.1;
 
@@ -7,17 +9,17 @@ class App {
     constructor(canvasId) {
         this.isDebug = true;
         this.deviceId = null;
-        
+
         this.clock = new THREE.Clock();
         this.initScene(canvasId);
-        
+
         this.cubesNum = 0;
 
         this.initAR();
 
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
-        
+
         this.orientation = null;
         this.fixOrientationMatrix = new THREE.Matrix4();
         this.orientationAngle = 0;
@@ -45,6 +47,52 @@ class App {
                 }
             }
         }).then(this.onARInit.bind(this));
+
+        const swiperWrapper = swiperContainer.getElementsByClassName('swiper-wrapper')[0];
+        const protos = {};
+
+        const loader = new THREE.GLTFLoader();
+        let mesh;
+
+        function getGallery() {
+          MRS_API.getGalleries(1)
+          .then((res, res) => {
+            return res
+          })
+          .then(gallery => gallery[0].id)
+          .then(id => MRS_API.getGalleryModels(id, 1))
+          .then(models => models.forEach(model => {
+            let swiperSlide = document.createElement('div');
+            swiperSlide.addClass('swiper-slide');
+            let div = document.createElement('div');
+            div.addClass('imageHolder');
+            div.style.backgroundImage = url(${model.Model.thumbPath});
+            div.setAttribute('modelId', model.modelId);
+            swiperSlide.appendChild(div);
+            swiperWrapper.appendChild(swiperSlide);
+          }))
+          .then(model => MRS_API.getModel(model[0].modelId))
+          .then(res => loader.load(res, (gltf) => {
+            const meshes = gltf.meshes;
+            mesh = new THREE.Mesh(meshes);
+            protos.push(mesh);
+          }))
+        };
+
+        if (window.localStorage.apiKey) {
+          let userAndLayer = MRS_API.getUser(window.localStorage.apiKey)
+            .then((res, rej) => {
+              this.dataOfUser = res;
+              getGallery();
+            });
+        } else {
+          let userAndLayer = MRS_API.createUser({ username: 'test', email: 'mail@test.com' })
+            .then((res, rej) => {
+              window.localStorage.setItem('apiKey', MRS_API.apiKey);
+              this.dataOfUser = res;
+              getGallery();
+            })
+        };
 
         this.ar.addEventListener(ARKitWrapper.WATCH_EVENT, this.onARWatch.bind(this));
 
@@ -119,19 +167,36 @@ class App {
             // do something when anchors are updated
             console.log('ANCHORS_UPDATED_EVENT', e.detail);
         });
-        
+
         this.ar.addEventListener(ARKitWrapper.LOCATION_UPDATED_EVENT, (e) => {
             // do something when location is updated
             console.log('LOCATION_UPDATED_EVENT', e.detail);
+
+            let location = false;
+            function getLayerAndAnchors(data) {
+              const layersAnchors = MRS_API.getLayersAnchors({ id: data.layer.id, latitude: e.latitude, longitude: e.longitude, elevation: e.altitude, page: 1 })
+                .then((res, rej) => res )
+                .then((anchors) => {
+                  const models = anchors.map((anchor) => {
+                    return MRS_API.getAnchorsModels(anchor.id, 1);
+                  });
+              });
+              location = true;
+            };
+
+            if (!location) {
+              getLayerAndAnchors(this.dataOfUser);
+            };
+
         });
-        
+
         this.ar.addEventListener(ARKitWrapper.SHOW_DEBUG_EVENT, e => {
             const options = e.detail;
             this.isDebug = Boolean(options.debug);
-            
+
             this.fpsStats.domElement.style.display = this.isDebug ? '' : 'none';
         });
-        
+
         this.ar.addEventListener(ARKitWrapper.ORIENTATION_CHANGED_EVENT, e => {
             this.updateOrientation(e.detail.orientation);
         });
@@ -160,7 +225,7 @@ class App {
         let material = new THREE.MeshLambertMaterial({color: 0x7d4db2, reflectivity: 0, wireframe: false, opacity: 0.8});
         let cubeMesh = new THREE.Mesh(geometry, material);
         cubeMesh.name = name;
-        
+
         return cubeMesh;
     }
     resize(width, height) {
@@ -170,7 +235,7 @@ class App {
     }
     initScene(canvasId) {
         this.canvas = document.getElementById(canvasId);
-        
+
         this.scene = new THREE.Scene();
         this.engine = new THREE.WebGLRenderer({
             antialias: true,
@@ -178,21 +243,21 @@ class App {
             alpha: true
         });
         this.resize(window.innerWidth, window.innerHeight);
-        
+
         this.engine.setClearColor('#000', 0);
 
         this.camera = new THREE.PerspectiveCamera(37.94, this.width / this.height, 0.001, 1000);
-        
+
         this.camera.position.set(0, 1.6, 0);
         this.camera.lookAt(new THREE.Vector3(0, 1.6, -100));
 
         this.scene.add(this.camera);
-        
+
         let light = new THREE.PointLight(0xffffff, 2, 0);
         this.camera.add(light);
-        
+
         this.camera.matrixAutoUpdate = false;
-        
+
         this.fpsStats = new Stats();
         this.fpsStats.setMode(0);
         this.fpsStats.domElement.style.display = 'none';
@@ -200,7 +265,7 @@ class App {
         this.fpsStats.domElement.style.right = '0px';
         document.body.appendChild(this.fpsStats.domElement);
     }
-    
+
     cleanScene() {
         let children2Remove = [];
 
@@ -213,7 +278,7 @@ class App {
         children2Remove.forEach(child => {
             child.parent.remove(child);
         });
-        
+
         this.cubesNum = 0;
     }
 
@@ -222,12 +287,12 @@ class App {
         this.canvas.addEventListener('click', e => {
             let normX = e.clientX / this.width;
             let normY = e.clientY / this.height;
-            
+
             this.tapPos = {x: 2 * normX - 1, y: -2 * normY + 1};
-            
+
             this.ar.hitTest(normX, normY).then(data => this.onARHitTest(data)).catch(e => e);
         });
-        
+
         document.querySelector('#message').onclick = function() {
             this.style.display = 'none';
         }
@@ -236,7 +301,7 @@ class App {
     requestAnimationFrame() {
         window.requestAnimationFrame(this.render.bind(this));
     }
-    
+
     watchAR() {
         this.ar.watch({
             location: {
@@ -251,16 +316,16 @@ class App {
             }
         });
     }
-    
+
     render(time) {
         let deltaTime = Math.max(0.001, Math.min(this.clock.getDelta(), 1));
-        
+
         if (this.isDebug) {
             this.fpsStats.begin();
         }
-        
+
         this.engine.render(this.scene, this.camera);
-        
+
         if (this.isDebug) {
             this.fpsStats.end();
         }
@@ -274,14 +339,14 @@ class App {
         if (data.planes.length) {
             // search for planes
             planeResults = data.planes;
-            
+
             planeExistingUsingExtentResults = planeResults.filter(
                 hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
             );
             planeExistingResults = planeResults.filter(
                 hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
             );
-            
+
             if (planeExistingUsingExtentResults.length) {
                 // existing planes using extent first
                 planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.point.distance - b.point.distance);
@@ -310,7 +375,7 @@ class App {
                 {x: this.tapPos.x, y: this.tapPos.y},
                 this.camera
             );
-            
+
             let objPos = this.raycaster.ray.origin.clone();
             objPos.add(this.raycaster.ray.direction);
             transform = new THREE.Matrix4();
@@ -326,7 +391,7 @@ class App {
     onARAddObject(info) {
         const cubeMesh = this.createCube(info.uuid);
         cubeMesh.matrixAutoUpdate = false;
-        
+
         info.transform.v3.y += CUBE_SIZE / 2;
         cubeMesh.matrix.fromArray(this.ar.flattenARMatrix(info.transform));
         this.scene.add(cubeMesh);
@@ -334,17 +399,17 @@ class App {
 
         this.requestAnimationFrame();
     }
-    
+
     onARDidMoveBackground() {
         this.ar.stop().then(() => {
             this.cleanScene();
         });
     }
-    
+
     onARWillEnterForeground() {
         this.watchAR();
     }
-    
+
     onARInit(e) {
         if (!this.ar.deviceInfo || !this.ar.deviceInfo.uuid) {
             return;
@@ -352,15 +417,16 @@ class App {
 
         this.deviceId = this.ar.deviceInfo.uuid;
         this.updateOrientation(this.ar.deviceInfo.orientation);
-        
+
         this.resize(
             this.ar.deviceInfo.viewportSize.width,
             this.ar.deviceInfo.viewportSize.height
         );
-        
+
         this.watchAR();
+
     }
-    
+
     onARWatch() {
         const camera = this.ar.getData('camera');
         if (!camera) return;
@@ -375,14 +441,14 @@ class App {
                 this.ar.flattenARMatrix(camera.cameraTransform)
             );
         }
-        
+
         this.camera.projectionMatrix.fromArray(
             this.ar.flattenARMatrix(camera.projectionCamera)
         );
-        
+
         this.requestAnimationFrame();
     }
-    
+
     showMessage(txt) {
         document.querySelector('#message').textContent = txt;
         document.querySelector('#message').style.display = 'block';
