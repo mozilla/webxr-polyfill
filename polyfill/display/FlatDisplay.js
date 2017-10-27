@@ -55,10 +55,9 @@ export default class FlatDisplay extends XRDisplay {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.INIT_EVENT, this._handleARKitInit.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitUpdate.bind(this))
-				this._arKitWrapper.waitForInit().then(() => {
-					this._arKitWrapper.watch()
+				this._arKitWrapper.init().then(() => {
+					this._handleARKitInit();
 				})
 			} else {
 				this._arKitWrapper.watch()
@@ -122,30 +121,37 @@ export default class FlatDisplay extends XRDisplay {
 	}
 
 	_handleARKitUpdate(...params){
-		const cameraTransformMatrix = this._arKitWrapper.getData('camera_transform')
+		const camera = this._arKitWrapper.getData('camera')
+		if (!camera) {
+			return;
+		}
+		const cameraTransformMatrix = this._arKitWrapper.flattenARMatrix(camera.cameraTransform)
 		if (cameraTransformMatrix) {
 			this._headPose._setPoseModelMatrix(cameraTransformMatrix)
 			this._headPose._poseModelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 			this._eyeLevelPose._position = this._headPose._position
 		} else {
-			console.log('no camera transform', this._arKitWrapper.rawARData)
+			console.log('no camera transform', this._arKitWrapper.getData())
 		}
 
-		const cameraProjectionMatrix = this._arKitWrapper.getData('projection_camera')
+		const cameraProjectionMatrix = this._arKitWrapper.flattenARMatrix(camera.projectionCamera)
 		if(cameraProjectionMatrix){
 			this._views[0].setProjectionMatrix(cameraProjectionMatrix)
 		} else {
-			console.log('no projection camera', this._arKitWrapper.rawARData)
+			console.log('no projection camera', this._arKitWrapper.getData())
 		}
 	}
 
 	_handleARKitInit(ev){
 		setTimeout(() => {
 			this._arKitWrapper.watch({
-				location: true,
+				location: {
+					accuracy: ARKitWrapper.LOCATION_ACCURACY_HUNDRED_METERS
+				},
 				camera: true,
-				objects: true,
-				light_intensity: true
+				anchors: true,
+				planes: true,
+				lightEstimate: true
 			})
 		}, 1000)
 	}

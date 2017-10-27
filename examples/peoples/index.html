@@ -28,6 +28,7 @@
 				font-size: 20px;
 			}
 		</style>
+		<link rel="stylesheet" href="../common.css"/>
 		<script src="../libs/three.min.js"></script>
 		<script src="../libs/loaders/BinaryLoader.js"></script>
 
@@ -49,6 +50,11 @@
 	</head>
 	<body>
 		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>Peoples</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Place animated people on surfaces by tapping.</p>
+		</div>
 		<script>
 			/*
 			This is the THREE.js example from https://threejs.org/examples/webgl_points_dynamic.html ported to WebXR

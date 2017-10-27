@@ -14,6 +14,12 @@ There are a lot of pieces of the WebXR polyfill that are stubbed out and throw '
 
 ## Running the examples
 
+The master branch of this repo is automatically built and hosted at https://examples.webxrexperiments.com
+ 
+The develop branch is hosted at https://develop.examples.webxrexperiments.com
+
+## Building and Running the examples
+
 Clone this repo and then change directories into webxr-polyfill/
 
 <a href="https://docs.npmjs.com/getting-started/installing-node">Install npm</a> and then run the following:

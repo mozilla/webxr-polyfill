@@ -25,7 +25,7 @@
 				font-size: 20px;
 			}
 		</style>
-
+		<link rel="stylesheet" href="../common.css"/>
 		<script src="../libs/three.min.js"></script>
 		<script src="../libs/three-gltf-loader.js"></script>
 		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
@@ -33,7 +33,12 @@
 		<script src="../common.js"></script>
 	</head>
 	<body>
-		<div id="target" />
+	<div id="target" />
+	<div onclick="hideMe(this)" id="description">
+		<h2>Boombox</h2>
+		<h5>(click to dismiss)</h5>
+		<p>Shows a boombox in a VR environment. Uses 6DOF from WebXR to navigate within VR.</p>
+	</div>
 		<script>
 			/*
 			ARSimplestExample shows how to populate the content scene 

@@ -88,8 +88,8 @@ export default class CameraReality extends Reality {
 			if(this._initialized === false){
 				this._initialized = true
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
-				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitWatch.bind(this))
-				this._arKitWrapper.waitForInit().then(() => {
+				this._arKitWrapper.addEventListener(ARKitWrapper.ANCHORS_UPDATED_EVENT, this._handleARKitAnchorsUpdate.bind(this))
+				this._arKitWrapper.init().then(() => {
 					this._arKitWrapper.watch()
 				})
 			} else {
@@ -132,33 +132,33 @@ export default class CameraReality extends Reality {
 		}
 	}
 
-	_handleARKitWatch(ev){
-		if(ev.detail && ev.detail.objects){
-			for(let anchorInfo of ev.detail.objects){
-				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+  _handleARKitAnchorsUpdate(ev){
+		if(ev.detail && ev.detail.anchors){
+			for(let anchorInfo of ev.detail.anchors){
+				this._updateAnchorFromARKitUpdate(anchorInfo.name, anchorInfo)
 			}
 		}
 	}
 
 	_handleARKitAddObject(anchorInfo){
-		this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+		this._updateAnchorFromARKitUpdate(anchorInfo.name, anchorInfo)
 	}
 
-	_updateAnchorFromARKitUpdate(uid, anchorInfo){
-		const anchor = this._anchors.get(uid) || null
+	_updateAnchorFromARKitUpdate(name, anchorInfo){
+		const anchor = this._anchors.get(name) || null
 		if(anchor === null){
 			console.log('unknown anchor', anchor)
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
-		anchor.coordinates.poseMatrix = anchorInfo.transform
+		anchor.coordinates.poseMatrix = this._arKitWrapper.flattenARMatrix(anchorInfo.transform)
 	}
 
 	_addAnchor(anchor, display){
 		// Convert coordinates to the tracker coordinate system so that updating from ARKit transforms is simple
 		anchor.coordinates = anchor.coordinates.getTransformedCoordinates(display._trackerCoordinateSystem)
 		if(this._arKitWrapper !== null){
-			this._arKitWrapper.addAnchor(anchor.uid, anchor.coordinates.poseMatrix).then(
+			this._arKitWrapper.addAnchor(anchor.uid, this._arKitWrapper.createARMatrix(anchor.coordinates.poseMatrix)).then(
 				detail => this._handleARKitAddObject(detail)
 			)
 		}
@@ -177,12 +177,18 @@ export default class CameraReality extends Reality {
 			if(this._arKitWrapper !== null){
 				// Perform a hit test using the ARKit integration
 				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
-					if(hits.length === 0){
+					if(hits.planes.length === 0){
 						resolve(null)
-						console.log('miss')
+						console.log('miss plane hits')
 						return
 					}
-					const hit = this._pickARKitHit(hits)
+					const arHit = this._pickARKitHit(hits)
+					// Only plane hits have uuid!
+					const hit = {
+						uuid: arHit.uuid,
+						anchor_transform: this._arKitWrapper.flattenARMatrix(arHit.plane.transform),
+						world_transform: this._arKitWrapper.flattenARMatrix(arHit.point.worldTransform)
+					}
 					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
@@ -240,34 +246,35 @@ export default class CameraReality extends Reality {
 	}
 
 	_pickARKitHit(data){
-		if(data.length === 0) return null
+		if(data.planes.length === 0 && data.points.length === 0) return null
 		let info = null
 
-		let planeResults = data.filter(
-			hitTestResult => hitTestResult.type != ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT
-		)
-		let planeExistingUsingExtentResults = planeResults.filter(
-			hitTestResult => hitTestResult.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
-		)
-		let planeExistingResults = planeResults.filter(
-			hitTestResult => hitTestResult.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
-		)
+		if(data.planes.length > 0) {
+			let planeResults = data.planes;
 
-		if (planeExistingUsingExtentResults.length) {
-			// existing planes using extent first
-			planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.distance - b.distance)
-			info = planeExistingUsingExtentResults[0]
-		} else if (planeExistingResults.length) {
-			// then other existing planes
-			planeExistingResults = planeExistingResults.sort((a, b) => a.distance - b.distance)
-			info = planeExistingResults[0]
-		} else if (planeResults.length) {
-			// other types except feature points
-			planeResults = planeResults.sort((a, b) => a.distance - b.distance)
-			info = planeResults[0]
-		} else {
+			let planeExistingUsingExtentResults = planeResults.filter(
+				hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+			)
+			let planeExistingResults = planeResults.filter(
+				hitTestResult => hitTestResult.point.type == ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
+			)
+
+			if(planeExistingUsingExtentResults.length) {
+				// existing planes using extent first
+				planeExistingUsingExtentResults = planeExistingUsingExtentResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeExistingUsingExtentResults[0]
+			} else if(planeExistingResults.length) {
+				// then other existing planes
+				planeExistingResults = planeExistingResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeExistingResults[0]
+			} else {
+				// other types except feature points
+				planeResults = planeResults.sort((a, b) => a.point.distance - b.point.distance)
+				info = planeResults[0]
+			}
+		} else if(data.points.length > 0) {
 			// feature points if any
-			info = data[0]
+			info = data.points[0]
 		}
 		return info
 	}
