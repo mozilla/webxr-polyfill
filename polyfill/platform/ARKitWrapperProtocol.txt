@@ -26,6 +26,20 @@ Size {
   height: Float!
 }
 
+enum Orientation : String {
+    Portrait
+    UpsideDown
+    LandscapeLeft
+    LandscapeRight
+}
+
+enum OrientationAngle : Int {
+    0
+    90
+    -90
+    180
+}
+
 Vector3 {
   x: Float!
   y: Float!
@@ -338,7 +352,13 @@ arWillEnterForeground ()
 arReceiveMemoryWarning ()
 
 arTransitionToSize (
-    size: Size!
+    size: Size!,
+    angle: OrientationAngle!
+)
+
+arOrientationChanged (
+    size: Size!,
+    orientation: Orientation!
 )
 
 // Location
