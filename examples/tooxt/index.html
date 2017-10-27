@@ -12,26 +12,45 @@
 
 		<link rel="stylesheet" href="site.css" type='text/css'>
 		<style>
+			body {
+				z-index: 0;
+			}
+			.webxr-realities {
+				z-index: 1;
+				top: 0;
+			}
+			.webxr-sessions {
+				z-index: 2;
+				top: 0;
+			}
 			.main-nav-component {
 				margin-bottom: 0;
 				opacity: 0.5;
 				position: absolute;
 				top: 0;
 				left: 0;
-				z-index: 2;
+				z-index: 3;
 				width: 100%;
 			}
 			.page {
-				z-index: 1;
+				z-index: 4;
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				top: 0;
+			}
+			.mode-switcher {
+				margin-bottom: 20px;
 			}
 		</style>
 	</head>
 	<body>
 		<script type="module">
-			import {IndexPage} from './components.js'
-			
+			import IndexPage from './IndexPage.js'
 			import MockService from '../libs/potassium/MockService.js'
 			import populateService from './mockData.js'
+
+			// Set up a mock web service for this demo
 			let service = new MockService()
 			populateService(service)
 			service.attachToDataObject()

@@ -2,6 +2,7 @@
 A handy, chain oriented API for creating Three.js scenes
 */
 import el from './El.js'
+import Engine from './Engine.js'
 
 let obj = {}
 export default obj
@@ -47,45 +48,6 @@ obj.nodeFunction = function(clazz, ...params){
 		instance.append(params[i])
 	}
 	return instance
-}
-
-let Engine = class {
-	constructor(scene, camera){
-		this._boundRender = this._render.bind(this)
-
-		this.scene = scene
-		this.camera = camera
-		this.scene.add(this.camera)
-
-		this.glCanvas = el.canvas()
-		this.glContext = this.glCanvas.getContext('webgl')
-		if(this.glContext === null){
-			throw new Error('Could not create GL context')
-		}
-		this.renderer = new THREE.WebGLRenderer({
-			canvas: this.glCanvas,
-			context: this.glContext,
-			antialias: false,
-			alpha: false
-		})
-		this.renderer.autoClear = true
-		setTimeout(this._initRenderer.bind(this), 3000) // TODO HACK!
-	}
-	get el(){
-		return this.renderer.domElement
-	}
-	_initRenderer(){
-		this.renderer.setPixelRatio(1)
-		this.renderer.autoClear = false
-		this.renderer.setClearColor('#000', 0)
-		this.renderer.setSize(this.el.offsetWidth, this.el.offsetHeight)
-		console.log('inited')
-		window.requestAnimationFrame(this._boundRender)
-	}
-	_render(){
-		window.requestAnimationFrame(this._boundRender)
-		this.renderer.render(this.scene, this.camera)
-	}
 }
 
 obj.engine = (scene, camera) => { return new Engine(scene, camera) }

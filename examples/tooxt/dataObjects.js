@@ -1,3 +1,7 @@
+/*
+This file contains the DataModel and DataCollection definitions for the geo-content service.
+Look in mockData.js for the MockService endpoints and mocked data.
+*/
 import DataModel from  '../libs/potassium/DataModel.js'
 import DataCollection from  '../libs/potassium/DataCollection.js'
 
@@ -97,6 +101,8 @@ Fields:
 	uuid
 	name (''): string
 	owner: User uuid
+
+If the Content is returned as part of a list of Content for an Anchor, it also includes a relative pose matrix named `transform`. 
 */
 let Content = class extends DataModel {
 	get url(){

@@ -29,7 +29,32 @@ let Page = EventMixin(
 		get scene(){ return this._scene }
 		get camera(){ return this._camera }
 		get engine(){ return this._engine }
+
+		setMode(mode){
+			if(this.engine.mode === mode) return
+			this.engine.setMode(mode).then(newMode => {
+				this._displayMode(newMode)
+			}).catch(err => {
+				console.error('Error switching mode', err)
+			})
+		}
 	}
 )
+
+/*
+
+	Ok, we want the page to manage the display, reality, and input mode switching.
+	It should send events down the Component heirarchy, perhaps by traversing the el and obj.
+	Somehow it should handle setting up and tearing down XRSessions, and cause the engine to render using the correct RAF.
+	State: 
+		- display: flat (handling kb&m, touch), overlay (handling kb, touch), in-scene (handling gamepad)
+
+	Components need to react to display and input change events by changing visibility, style, and layout.
+
+	There should be a focus and input manager that translates low level input into higher level semantics using an app-specific schema.
+
+	
+*/
+
 
 export default Page

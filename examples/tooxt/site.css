@@ -166,3 +166,7 @@ button:active {
 	width: 100%;
 	min-height: 300px;
 }
+
+.mode-switcher .selected {
+	background-color: #99FF99;
+}

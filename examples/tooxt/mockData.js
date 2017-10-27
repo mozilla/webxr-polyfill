@@ -1,6 +1,6 @@
-
 /*
-Fill the MockService with endpoints that emulate a working geo-content database
+populateService fills the MockService with endpoints that emulate a working geo-content database.
+The mock data served by these endpoints is at the bottom of this file.
 */
 let populateService = function(service){
 	// The list of all users
@@ -32,7 +32,6 @@ let populateService = function(service){
 	// The list of content associated with an anchor (does not check ownership)
 	service.addJSONEndpoint(/^\/api\/anchor\/([0-9a-z\-]+)\/contents$/, (url, ...params) => {
 		let anchor = firstWithUUID(pathElement(url, 1), anchors)
-		console.log('anc', anchor)
 		if(anchor === null) return null
 		let result = []
 		for(let ac of anchoredContent.filter(ac => { return ac.anchor === anchor.uuid })){
