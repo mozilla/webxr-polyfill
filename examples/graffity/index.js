@@ -32,7 +32,7 @@ class App {
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
 
-        this.run();
+        // this.run();
     }
     run() {
         let render = (time) => {
@@ -84,7 +84,7 @@ class App {
 
         this.auth();
 
-        // this.ar.addEventListener(ARKitWrapper.WATCH_EVENT, this.onARWatch.bind(this));
+        this.ar.addEventListener(ARKitWrapper.WATCH_EVENT, this.onARWatch.bind(this));
 
         this.ar.addEventListener(ARKitWrapper.RECORD_START_EVENT, () => {
             // do something when recording is started
@@ -316,7 +316,7 @@ class App {
         let light = new THREE.PointLight(0xffffff, 2, 0);
         this.camera.add(light);
 
-        // this.camera.matrixAutoUpdate = false;
+        this.camera.matrixAutoUpdate = false;
 
         /*@todo remove this cube */
         const cubeMesh = this.createCube('cube1');
@@ -471,7 +471,7 @@ class App {
             mesh = this.createCube(info.uuid);
             info.transform.v3.y += CUBE_SIZE / 2;
         }
-        // mesh.matrixAutoUpdate = false;
+        mesh.matrixAutoUpdate = false;
 
         mesh.matrix.fromArray(this.ar.flattenARMatrix(info.transform));
         this.scene.add(mesh);
