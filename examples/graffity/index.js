@@ -43,9 +43,11 @@ class App {
         switch (mode) {
             case EditControls.MODE_VIEW:
                 document.querySelector('#removeObject').style.display = 'none';
+                document.querySelector('#rotate').style.display = 'none';
                 break;
             case EditControls.MODE_EDIT_TRANSLATE:
                 document.querySelector('#removeObject').style.display = '';
+                document.querySelector('#rotate').style.display = '';
                 break;
         }
     }
