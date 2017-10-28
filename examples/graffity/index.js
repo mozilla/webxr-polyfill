@@ -74,7 +74,7 @@ class App {
                     build: true,
                     warnings: true,
                     debug: true,
-                    showUIAtOnce: true
+                    showUIAtOnce: false
                 }
             }
         }).then(this.onARInit.bind(this));
