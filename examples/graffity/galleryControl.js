@@ -46,6 +46,7 @@
 
 window.onload = () => {
   const galleryBtn = document.getElementById('galleryBtn');
+  const removeBtn = document.getElementById('removeObject');
   const swiperContainer = document.getElementsByClassName('swiper-container')[0];
 
   galleryBtn.addEventListener('click', e => {
@@ -60,4 +61,8 @@ window.onload = () => {
       e.target.style.backgroundImage = "url('./img/gallery.png')";
     }
   });
+
+    removeBtn.addEventListener('click', e => {
+        window.app.removePickedMesh();
+    });
 };

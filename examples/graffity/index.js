@@ -40,6 +40,19 @@ class App {
     }
     setMode(mode) {
         this.mode = mode;
+        switch (mode) {
+            case EditControls.MODE_VIEW:
+                document.querySelector('#removeObject').style.display = 'none';
+                break;
+            case EditControls.MODE_EDIT_TRANSLATE:
+                document.querySelector('#removeObject').style.display = '';
+                break;
+        }
+    }
+    removePickedMesh() {
+        if (this.editControls.pickedMesh) {
+            this.scene.remove(this.editControls.pickedMesh);
+        }
     }
     initAR() {
         this.ar = ARKitWrapper.GetOrCreate();
@@ -198,8 +211,7 @@ class App {
                             let div = document.createElement('div');
                             div.classList.add('imageHolder');
                             let url = MRS_URL + '/' + model.Model.thumbPath;
-                            url = 'img/thumb.png';
-                            div.style.backgroundImage = `url(${url})`;
+                            div.style.backgroundImage = `url('${url}')`;
                             div.setAttribute('modelId', model.modelId);
                             swiperSlide.appendChild(div);
                             swiperWrapper.appendChild(swiperSlide);
@@ -213,9 +225,17 @@ class App {
                     loader.load(url, (gltf) => {
                         const mesh = gltf.scene.children[0];
                         this.protos[model.modelId] = mesh;
+                        if (models.length == Object.keys(this.protos).length) {
+                            this.isGalleryLoaded = true;
+                            this.onGalleryLoaded();
+                        }
                     });
                 }
             );
+    }
+    onGalleryLoaded() {
+        document.querySelector('#ui').style.display = '';
+        document.querySelector('.swiper-container').style.display = '';
     }
     auth() {
         // @todo: this logic should be inside MRS class
