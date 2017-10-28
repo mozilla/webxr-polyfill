@@ -242,8 +242,8 @@ export default class EditControls {
         this.cameraBasis.z.normalize();
     }
     removePickedMesh() {
-        if (this.editControls.pickedMesh) {
-            this.scene.remove(this.editControls.pickedMesh);
+        if (this.pickedMesh) {
+            this.scene.remove(this.pickedMesh);
             this.reset();
             this.app.setMode(EditControls.MODE_VIEW);
         }
