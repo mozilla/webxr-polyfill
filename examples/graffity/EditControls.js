@@ -106,7 +106,8 @@ export default class EditControls {
         const savedTouch = this.touches[0];
         const dx = touch.clientX - savedTouch.clientX;
         const dy = touch.clientY - savedTouch.clientY;
-        
+
+        this.pickedMesh.position.setFromMatrixPosition(this.pickedMesh.matrix);
         if (Math.abs(dx) >= Math.abs(dy)) {
             // move along camera X axis
             this.pickedMesh.position.addScaledVector(this.cameraBasis.x, MOVE_SPEED * dx);
@@ -174,7 +175,9 @@ export default class EditControls {
         }
         
         let scaleDistance = this.getTouchesDistance(touch1, touch2);
-        
+
+        this.pickedMesh.position.setFromMatrixPosition(this.pickedMesh.matrix);
+        this.pickedMesh.scale.setFromMatrixScale(this.pickedMesh.matrix);
         if (!isScale) {
             // move along camera Y axis
             this.pickedMesh.position.addScaledVector(new THREE.Vector3(0, -1, 0), MOVE_SPEED * dy1);
@@ -188,6 +191,9 @@ export default class EditControls {
         this.saveTouchInfo(touch2, 1);
         
         this.scaleDistance = scaleDistance;
+
+        this.pickedMesh.updateMatrix();
+        this.pickedMesh.updateMatrixWorld(true);
     }
     onTouchEnd(e) {
         e.preventDefault();
