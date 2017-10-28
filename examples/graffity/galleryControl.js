@@ -29,7 +29,7 @@
             );
 
             let fixRotationMatrix = new THREE.Matrix4();
-            fixRotationMatrix.makeRotationZ(Math.PI / 2);
+            fixRotationMatrix.makeRotationX(Math.PI / 2);
 
             let transform = new THREE.Matrix4();
             transform.scale(new THREE.Vector3(0.1, 0.1, 0.1));
