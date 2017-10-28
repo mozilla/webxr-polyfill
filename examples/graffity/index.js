@@ -31,6 +31,8 @@ class App {
 
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
+
+        this.run();
     }
     run() {
         let render = (time) => {
@@ -82,7 +84,7 @@ class App {
 
         this.auth();
 
-        this.ar.addEventListener(ARKitWrapper.WATCH_EVENT, this.onARWatch.bind(this));
+        // this.ar.addEventListener(ARKitWrapper.WATCH_EVENT, this.onARWatch.bind(this));
 
         this.ar.addEventListener(ARKitWrapper.RECORD_START_EVENT, () => {
             // do something when recording is started
@@ -314,7 +316,7 @@ class App {
         let light = new THREE.PointLight(0xffffff, 2, 0);
         this.camera.add(light);
 
-        this.camera.matrixAutoUpdate = false;
+        // this.camera.matrixAutoUpdate = false;
 
         /*@todo remove this cube */
         const cubeMesh = this.createCube('cube1');
@@ -469,7 +471,7 @@ class App {
             mesh = this.createCube(info.uuid);
             info.transform.v3.y += CUBE_SIZE / 2;
         }
-        mesh.matrixAutoUpdate = false;
+        // mesh.matrixAutoUpdate = false;
 
         mesh.matrix.fromArray(this.ar.flattenARMatrix(info.transform));
         this.scene.add(mesh);
@@ -535,19 +537,29 @@ class App {
             {x: pos.ndcX, y: pos.ndcY},
             this.camera
         );
-        const intersects = this.raycaster.intersectObjects(this.getPickableMeshes());
+        const intersects = this.raycaster.intersectObjects(this.getPickableMeshes(), true);
         if (!intersects.length) {
             pickInfo.hit = false;
             return pickInfo;
         }
+        let pickedObject = intersects[0].object;
+        if (pickedObject.type == 'Mesh') {
+            pickedObject = this.getObjectFirstParent(pickedObject);
+        }
         pickInfo.hit = true;
-        pickInfo.pickedMesh = intersects[0].object;
+        pickInfo.pickedMesh = pickedObject;
         pickInfo.pickedPoint = intersects[0].point;
         pickInfo.pointerX = pos.x;
         pickInfo.pointerY = pos.y;
         pickInfo.ndcX = pos.ndcX;
         pickInfo.ndcY = pos.ndcY;
         return pickInfo;
+    }
+    getObjectFirstParent(obj) {
+        if (obj.parent.type == 'Scene') {
+            return obj;
+        }
+        return this.getObjectFirstParent(obj.parent);
     }
     getPickableMeshes(forceUpdate) {
         if (this.pickableMeshes && !forceUpdate) {
