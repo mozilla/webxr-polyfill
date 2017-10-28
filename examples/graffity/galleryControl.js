@@ -28,8 +28,14 @@
                 window.app.camera
             );
 
+            let fixRotationMatrix = new THREE.Matrix4();
+            fixRotationMatrix.makeRotationZ(Math.PI / 2);
+
             let transform = new THREE.Matrix4();
             transform.scale(new THREE.Vector3(0.1, 0.1, 0.1));
+
+            transform.multiply(fixRotationMatrix);
+
             transform = transform.toArray();
             transform = window.app.ar.createARMatrix(transform);
 
