@@ -29,6 +29,7 @@
             );
 
             let transform = new THREE.Matrix4();
+            transform.scale(new THREE.Vector3(0.1, 0.1, 0.1));
             transform = transform.toArray();
             transform = window.app.ar.createARMatrix(transform);
 
