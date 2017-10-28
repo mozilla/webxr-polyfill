@@ -51,15 +51,17 @@
     <script src="../../polyfill/fill/EventHandlerBase.js" type="module"></script>
     <script src="../../polyfill/platform/ARKitWrapper.js" type="module"></script>
 -->
-    
-    <script src="fill/EventHandlerBase.js" type="module"></script>
-    <script src="platform/ARKitWrapper.js" type="module"></script>
-    
-<!--
-    <script nomodule src="../../dist/webxr-polyfill.js"></script>
--->
+
+    <script src="../../polyfill/fill/EventHandlerBase.js" type="module"></script>
+    <script src="../../polyfill/platform/ARKitWrapper.js" type="module"></script>
+    <script src="../libs/joi-browser.min.js"></script>
+
+    <script src="../libs/loaders/GLTFLoader.js"></script>
+
+    <!--<script src="mrs_api/src/validation/index.js" type="module"></script>-->
+
     <script src="galleryControl.js"></script>
-    <script src="webkit-simulator.js"></script>
+    <script src="webkit-simulator.js" ></script>
 </head>
 <body>
 <!--
@@ -77,36 +79,6 @@
 <div class="status-check"></div>
 <div class="swiper-container">
     <div class="swiper-wrapper">
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail01.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail02.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail03.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail04.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail05.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail06.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail07.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail08.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail09.jpg')"></div>
-        </div>
-        <div class="swiper-slide">
-            <div class="imageHolder" style="background-image: url('gallery/assets/thumbnail010.jpg')"></div>
-        </div>
     </div>
 </div>
 <script src="./gallery/script.js"></script>
@@ -157,5 +129,6 @@
   }())
   ;
 </script>
+<script src="mrs_api/src/api/index.js" type="module"></script>
 </body>
 </html>

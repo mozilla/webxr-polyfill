@@ -1,7 +1,7 @@
-import ARKitWrapper from './platform/ARKitWrapper.js'
-import MRS_API from './mrs_api/src/api/index.js'
-import GLTFLoader from './examples/libs/loaders/GLTFLoader.js'
-import THREE from './examples/libs/three.js';
+import ARKitWrapper from '../../polyfill/platform/ARKitWrapper.js'
+import API from './mrs_api/src/api/index.js'
+
+const MRS_API = new API('http://localhost:3000');
 
 const CUBE_SIZE = 0.1;
 
@@ -48,7 +48,7 @@ class App {
             }
         }).then(this.onARInit.bind(this));
 
-        const swiperWrapper = swiperContainer.getElementsByClassName('swiper-wrapper')[0];
+        const swiperWrapper = document.getElementsByClassName('swiper-wrapper')[0];
         const protos = {};
 
         const loader = new THREE.GLTFLoader();
@@ -56,7 +56,7 @@ class App {
 
         function getGallery() {
           MRS_API.getGalleries(1)
-          .then((res, res) => {
+          .then((res) => {
             return res
           })
           .then(gallery => gallery[0].id)
@@ -66,7 +66,7 @@ class App {
             swiperSlide.addClass('swiper-slide');
             let div = document.createElement('div');
             div.addClass('imageHolder');
-            div.style.backgroundImage = url(${model.Model.thumbPath});
+            div.style.backgroundImage = `url(${model.Model.thumbPath})`;
             div.setAttribute('modelId', model.modelId);
             swiperSlide.appendChild(div);
             swiperWrapper.appendChild(swiperSlide);
