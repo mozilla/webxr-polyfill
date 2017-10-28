@@ -537,7 +537,7 @@ class App {
             {x: pos.ndcX, y: pos.ndcY},
             this.camera
         );
-        const intersects = this.raycaster.intersectObjects(this.getPickableMeshes(), true);
+        const intersects = this.raycaster.intersectObjects(this.getPickableMeshes(), false);
         if (!intersects.length) {
             pickInfo.hit = false;
             return pickInfo;
