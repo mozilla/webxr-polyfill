@@ -438,6 +438,7 @@ class App {
             if (!mesh) {
                 return;
             }
+            mesh = mesh.clone(true);
             mesh.name = info.uuid;
         } else {
             mesh = this.createCube(info.uuid);
