@@ -32,10 +32,11 @@
             transform = transform.toArray();
             transform = window.app.ar.createARMatrix(transform);
 
+            let modelId = e.target.getAttribute('modelid');
             window.app.ar.addAnchor(
                 null,
                 transform
-            ).then(info => window.app.onARAddObject(info));
+            ).then(info => window.app.onARAddObject(info, modelId));
         },
         onTouchEnd: function(swiper, e) {
             moving = false;

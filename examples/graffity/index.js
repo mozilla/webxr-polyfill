@@ -31,6 +31,13 @@ class App {
         this.raycaster = new THREE.Raycaster();
         this.registerUIEvents();
     }
+    run() {
+        let render = (time) => {
+            this.render(time);
+            window.requestAnimationFrame(render);
+        };
+        render();
+    }
     setMode(mode) {
         this.mode = mode;
     }
@@ -206,7 +213,6 @@ class App {
                     loader.load(url, (gltf) => {
                         const mesh = gltf.scene.children[0];
                         this.protos[model.modelId] = mesh;
-                        this.scene.add(mesh);
                     });
                 }
             );
@@ -275,7 +281,7 @@ class App {
 
         this.camera = new THREE.PerspectiveCamera(37.94, this.width / this.height, 0.001, 1000);
 
-        this.camera.position.set(0, 1.6, 0);
+        this.camera.position.set(0, 1.6, 10);
         this.camera.lookAt(new THREE.Vector3(0, 1.6, -100));
 
         this.scene.add(this.camera);
@@ -287,7 +293,7 @@ class App {
 
         /*@todo remove this cube */
         const cubeMesh = this.createCube('cube1');
-        cubeMesh.position.set(0, 1.6, 0);
+        cubeMesh.position.set(0, 1, 0);
         cubeMesh.scale.set(10, 10, 10);
         this.scene.add(cubeMesh);
         this.cubeMesh = cubeMesh;
@@ -425,13 +431,23 @@ class App {
             transform
         ).then(info => this.onARAddObject(info));
     }
-    onARAddObject(info) {
-        const cubeMesh = this.createCube(info.uuid);
-        cubeMesh.matrixAutoUpdate = false;
+    onARAddObject(info, modelId) {
+        let mesh;
+        if (modelId) {
+            mesh = this.protos[modelId];
+            if (!mesh) {
+                return;
+            }
+            mesh.name = info.uuid;
+        } else {
+            mesh = this.createCube(info.uuid);
+            info.transform.v3.y += CUBE_SIZE / 2;
+        }
+        mesh.matrixAutoUpdate = false;
 
-        info.transform.v3.y += CUBE_SIZE / 2;
-        cubeMesh.matrix.fromArray(this.ar.flattenARMatrix(info.transform));
-        this.scene.add(cubeMesh);
+        mesh.matrix.fromArray(this.ar.flattenARMatrix(info.transform));
+        this.scene.add(mesh);
+
         this.cubesNum++;
 
         this.requestAnimationFrame();
