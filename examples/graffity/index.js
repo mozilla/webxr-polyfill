@@ -54,6 +54,7 @@ class App {
     }
     removePickedMesh() {
         this.editControls.removePickedMesh();
+        this.getPickableMeshes(true);
     }
     initAR() {
         this.ar = ARKitWrapper.GetOrCreate();
@@ -239,6 +240,7 @@ class App {
         this.hideMessage();
         document.querySelector('#ui').style.display = '';
         document.querySelector('.swiper-container').style.display = '';
+        this.getPickableMeshes(true);
     }
     auth() {
         // @todo: this logic should be inside MRS class
