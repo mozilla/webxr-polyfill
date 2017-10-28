@@ -61,18 +61,18 @@ class App {
             ui: {
                 arkit: {
                     statistics: this.isDebug,
-                    plane: true,
+                    plane: false,
                     focus: true,
-                    anchors: true,
+                    anchors: false,
                     points: false
                 },
                 custom: {
                     rec: true,
                     rec_time: true,
                     mic: true,
-                    build: true,
-                    warnings: true,
-                    debug: true,
+                    build: false,
+                    warnings: false,
+                    debug: false,
                     showUIAtOnce: false
                 }
             }
