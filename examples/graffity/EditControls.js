@@ -243,7 +243,7 @@ export default class EditControls {
     }
     removePickedMesh() {
         if (this.pickedMesh) {
-            this.scene.remove(this.pickedMesh);
+            this.app.scene.remove(this.pickedMesh);
             this.reset();
             this.app.setMode(EditControls.MODE_VIEW);
         }

@@ -73,6 +73,7 @@ class App {
                     build: false,
                     warnings: false,
                     debug: false,
+                    browser: false,
                     showUIAtOnce: false
                 }
             }
