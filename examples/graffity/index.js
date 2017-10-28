@@ -61,8 +61,8 @@ class App {
             ui: {
                 arkit: {
                     statistics: this.isDebug,
-                    plane: false,
-                    focus: true,
+                    plane: true,
+                    focus: false,
                     anchors: false,
                     points: false
                 },
