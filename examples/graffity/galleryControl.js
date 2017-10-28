@@ -21,8 +21,6 @@
             moving = true;
         },
         onTap: function(swiper, e) {
-            window.app.scene.children[0].lookAt(new THREE.Vector3(0,0,0));
-
             window.app.raycaster.setFromCamera(
                 {x: 0, y: 0},
                 window.app.camera

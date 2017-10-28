@@ -557,7 +557,7 @@ class App {
         var cnt = this.scene.children.length;
         for (var i = 0; i < cnt; i++) {
             const mesh = this.scene.children[i];
-            if (mesh.type != 'Mesh') {
+            if (mesh.type != 'Mesh' && mesh.type != 'Object3D') {
                 continue;
             }
             
