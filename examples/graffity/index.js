@@ -476,6 +476,7 @@ class App {
 
         this.cubesNum++;
 
+        this.getPickableMeshes(true);
         this.requestAnimationFrame();
     }
 
