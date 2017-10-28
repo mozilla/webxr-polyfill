@@ -9,6 +9,7 @@ const CUBE_SIZE = 0.1;
 
 class App {
     constructor(canvasId) {
+        this.showMessage('LOADING...');
         this.mode = EditControls.MODE_VIEW;
         
         this.isDebug = false;
@@ -234,6 +235,7 @@ class App {
             );
     }
     onGalleryLoaded() {
+        this.hideMessage();
         document.querySelector('#ui').style.display = '';
         document.querySelector('.swiper-container').style.display = '';
     }
@@ -563,6 +565,9 @@ class App {
     showMessage(txt) {
         document.querySelector('#message').textContent = txt;
         document.querySelector('#message').style.display = 'block';
+    }
+    hideMessage() {
+        document.querySelector('#message').style.display = 'none';
     }
 }
 
