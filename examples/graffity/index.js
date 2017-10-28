@@ -52,9 +52,7 @@ class App {
         }
     }
     removePickedMesh() {
-        if (this.editControls.pickedMesh) {
-            this.scene.remove(this.editControls.pickedMesh);
-        }
+        this.editControls.removePickedMesh();
     }
     initAR() {
         this.ar = ARKitWrapper.GetOrCreate();

@@ -241,6 +241,13 @@ export default class EditControls {
         this.cameraBasis.y.normalize();
         this.cameraBasis.z.normalize();
     }
+    removePickedMesh() {
+        if (this.editControls.pickedMesh) {
+            this.scene.remove(this.editControls.pickedMesh);
+            this.reset();
+            this.app.setMode(EditControls.MODE_VIEW);
+        }
+    }
 }
 
 EditControls.EVENT_DOUBLETAP = 'double-tap';
