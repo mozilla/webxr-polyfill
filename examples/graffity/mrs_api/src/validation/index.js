@@ -1,4 +1,4 @@
-import Joi from 'joi-browser';
+// import Joi from 'joi-browser';
 
 const schema = {
   getLayerById: {
@@ -83,4 +83,4 @@ const schema = {
   }
 };
 
-module.exports = schema;
+export default schema;

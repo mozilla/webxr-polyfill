@@ -106,7 +106,10 @@ export default class EditControls {
         const savedTouch = this.touches[0];
         const dx = touch.clientX - savedTouch.clientX;
         const dy = touch.clientY - savedTouch.clientY;
-        
+
+        this.pickedMesh.rotation.setFromRotationMatrix(this.pickedMesh.matrix);
+        this.pickedMesh.position.setFromMatrixPosition(this.pickedMesh.matrix);
+        this.pickedMesh.scale.setFromMatrixScale(this.pickedMesh.matrix);
         if (Math.abs(dx) >= Math.abs(dy)) {
             // move along camera X axis
             this.pickedMesh.position.addScaledVector(this.cameraBasis.x, MOVE_SPEED * dx);
@@ -114,7 +117,7 @@ export default class EditControls {
             // move along camera Z axis
             this.pickedMesh.position.addScaledVector(this.cameraBasis.z, MOVE_SPEED * dy);
         }
-        
+
         this.pickedMesh.updateMatrix();
         this.pickedMesh.updateMatrixWorld(true);
         
@@ -174,7 +177,10 @@ export default class EditControls {
         }
         
         let scaleDistance = this.getTouchesDistance(touch1, touch2);
-        
+
+        this.pickedMesh.rotation.setFromRotationMatrix(this.pickedMesh.matrix);
+        this.pickedMesh.position.setFromMatrixPosition(this.pickedMesh.matrix);
+        this.pickedMesh.scale.setFromMatrixScale(this.pickedMesh.matrix);
         if (!isScale) {
             // move along camera Y axis
             this.pickedMesh.position.addScaledVector(new THREE.Vector3(0, -1, 0), MOVE_SPEED * dy1);
@@ -188,6 +194,9 @@ export default class EditControls {
         this.saveTouchInfo(touch2, 1);
         
         this.scaleDistance = scaleDistance;
+
+        this.pickedMesh.updateMatrix();
+        this.pickedMesh.updateMatrixWorld(true);
     }
     onTouchEnd(e) {
         e.preventDefault();
@@ -218,6 +227,8 @@ export default class EditControls {
         } else {
             this.state = STATE_NONE;
         }
+
+        this.app.requestAnimationFrame();
     }
 
     getTouchPos(e) {
@@ -240,6 +251,13 @@ export default class EditControls {
         this.cameraBasis.x.normalize();
         this.cameraBasis.y.normalize();
         this.cameraBasis.z.normalize();
+    }
+    removePickedMesh() {
+        if (this.pickedMesh) {
+            this.app.scene.remove(this.pickedMesh);
+            this.reset();
+            this.app.setMode(EditControls.MODE_VIEW);
+        }
     }
 }
 

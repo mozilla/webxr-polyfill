@@ -1,5 +1,4 @@
-import Joi from 'joi-browser';
-import schema from '../validation';
+import schema from '../validation/index.js';
 
 export default class API {
   constructor(url) {
@@ -13,11 +12,15 @@ export default class API {
   fetch(url, fetchData) {
     const headers = {
       headers: {
-        "x-access-token": this.token || null,
         "Content-Type": "application/json"
       },
     };
+    if(window.localStorage.apiKey) {
+        headers.headers["x-access-token"] = window.localStorage.apiKey;
+    }
+
     const fd = Object.assign({}, fetchData, headers);
+    console.log(`${this.url}${url}`);
     return fetch(`${this.url}${url}`, fd)
       .then(res => {
         const contentType = res.headers.get('Content-Type');
@@ -80,11 +83,11 @@ export default class API {
         const query = Object.keys(qs)
           .map(k => esc(k) + '=' + esc(qs[k]))
           .join('&');
-        const url = /layer/${option.id}/anchor/?${query};
+        const url = `/layer/${option.id}/anchor/?${query}`;
 
         return this.fetch(url);
       } else {
-        const url = /layer/${option.id}/anchor/?page=${option.page};
+        const url = `/layer/${option.id}/anchor/?page=${option.page}`;
 
         return this.fetch(url);
       }
