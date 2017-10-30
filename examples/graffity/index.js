@@ -322,14 +322,6 @@ class App {
 
         this.camera.matrixAutoUpdate = false;
 
-        /*@todo remove this cube */
-        const cubeMesh = this.createCube('cube1');
-        cubeMesh.position.set(0, 1, 0);
-        cubeMesh.scale.set(10, 10, 10);
-        this.scene.add(cubeMesh);
-        this.cubeMesh = cubeMesh;
-        this.cubesNum++;
-
         this.fpsStats = new Stats();
         this.fpsStats.setMode(0);
         this.fpsStats.domElement.style.display = 'none';
