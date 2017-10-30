@@ -77,7 +77,7 @@ class App {
                     warnings: false,
                     debug: false,
                     browser: false,
-                    showUIAtOnce: false
+                    showUIAtOnce: true
                 }
             }
         }).then(this.onARInit.bind(this));
@@ -209,6 +209,7 @@ class App {
             .then(gallery => gallery[0].id)
             .then(id => MRS_API.getGalleryModels(id, 1))
             .then(models => {
+                    models = [models[1]];
                     models.forEach(model => {
                             console.log('model', model);
                             let swiperSlide = document.createElement('div');
@@ -229,6 +230,9 @@ class App {
                     let url = MRS_URL + '/' + model.Model.modelPath;
                     loader.load(url, (gltf) => {
                         const mesh = gltf.scene.children[0];
+                        mesh.position.set(0, 0, 0);
+                        mesh.scale.set(0.1, 0.1, 0.1);
+                        mesh.rotation.set(0, 0, 0);
                         this.protos[model.modelId] = mesh;
                         if (models.length == Object.keys(this.protos).length) {
                             this.isGalleryLoaded = true;
@@ -352,14 +356,6 @@ class App {
 
     registerUIEvents() {
         this.tapPos = {x: 0, y: 0};
-        this.canvas.addEventListener('click', e => {
-            let normX = e.clientX / this.width;
-            let normY = e.clientY / this.height;
-
-            this.tapPos = {x: 2 * normX - 1, y: -2 * normY + 1};
-
-            this.ar.hitTest(normX, normY).then(data => this.onARHitTest(data)).catch(e => e);
-        });
 
         document.querySelector('#message').onclick = function() {
             this.style.display = 'none';

@@ -50,19 +50,18 @@ class webkitSimulatorMessageHandler {
                         this.data.location.longitude = pos.coords.longitude;
                         
                         this.data.camera = {};
-                        //~ this.data.camera.projection_camera = [1.636377, 0, 0, 0,  0, 2.909114, 0, 0,  0.004712701, 0.02586138, -1.000002, -1,  0, 0, -0.002000002, 0];
 
                         this.data.camera.projectionCamera = {
                             v0: {x: 1.636377, y: 0, z: 0, w: 0},
                             v1: {x: 0, y: 2.909114, z: 0, w: 0},
                             v2: {x: 0.004712701, y: 0.02586138, z: -1.000002, w: -1},
-                            v3: {x: 0, y: 2, z: -0.002000002, w: 1}
+                            v3: {x: 0, y: 0, z: -0.002000002, w: 0}
                         };
                         this.data.camera.cameraTransform = {
                             v0: {x: 1, y: 0, z: 0, w: 0},
                             v1: {x: 0, y: 1, z: 0, w: 0},
                             v2: {x: 0, y: 0, z: 1, w: 0},
-                            v3: {x: 0, y: 2, z: 0, w: 1}
+                            v3: {x: 0, y: 2, z: 10, w: 1}
                         };
                         
                         console.log('this.data', this.data);
@@ -80,18 +79,7 @@ class webkitSimulatorMessageHandler {
             } else {
                 setTimeout(() => {
                     if (this.name === 'addObject' || this.name === 'addAnchor') {
-                        //~ data.worldTransform = {
-                            //~ v0: {x: 0.9914429783821106, y: -0.10326667129993439, z: 0.079854816198349, w: 0},
-                            //~ v1: {x: 0.12760323286056519, y: 0.8956893682479858, z: -0.4259788990020752, w: 0},
-                            //~ v2: {x: -0.0275356974452734, y: 0.4325235188007355, z: 0.9012021422386169, w: 0},
-                            //~ v3: {x: 0.07370418310165405, y: -0.8629032373428345, z: -1.7984013557434082, w: 1}
-                        //~ }
-                        data.transform = {
-                            v0: {x: 1, y: 0, z: 0, w: 0},
-                            v1: {x: 0, y: 1, z: 0, w: 0},
-                            v2: {x: 0, y: 0, z: 1, w: 0},
-                            v3: {x: 0, y: 1, z: 0, w: 1}
-                        }
+                        data.transform = data.options.transform;
                         window[data.callback](data);
                         return;
                     } else if (this.name === 'hitTest') {
