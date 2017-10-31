@@ -17,7 +17,7 @@ export default class IndexPage extends Page {
 		this.realities = new Realities()
 		this.layers = new Layers()
 		this.controlGroup = obj.group().appendTo(this.scene) // This will contain the scenic groups
-
+		this.controlGroup.position.set(0, 0, -10)
 		this.scene.add(new THREE.AmbientLight(0xFFFFFF, 0.6))
 
 		// Set up the navbar at the top during flat and overlay and the main nav in the controlGroup when in scenic
@@ -87,6 +87,7 @@ export default class IndexPage extends Page {
 				this.mainNav.el.style.display = 'none'
 				this.overlayEl.style.display = 'none'
 				this.controlGroup.visible = true
+				this.rightCol.removeChild(this.engine.el)
 				break;
 			default:
 				console.error('unknown mode', mode)

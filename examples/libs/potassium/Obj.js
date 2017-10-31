@@ -52,6 +52,18 @@ obj.nodeFunction = function(clazz, ...params){
 
 obj.engine = (scene, camera) => { return new Engine(scene, camera) }
 
+obj.obj = (path) => {
+	let geometry = path.split('/')[path.split('/').length - 1]
+	let baseURL = path.substring(0, path.length - geometry.length)
+	let group = obj.group()
+	loadObj(baseURL, geometry).then(obj => {
+		group.add(obj)
+	}).catch((...params) => {
+		console.error('could not load obj', ...params)
+	})
+	return group
+}
+
 obj.gltf = (path) => {
 	let group = obj.group()
 	loadGLTF(path).then(gltf => {

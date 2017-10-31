@@ -23,6 +23,11 @@ let Engine = class {
 			alpha: false
 		})
 		this.renderer.autoClear = true
+
+		this.displays = null
+		this.display = null
+		this.session = null
+
 		setTimeout(this._initRenderer.bind(this), 1000) // TODO HACK!
 	}
 	get el(){
@@ -32,10 +37,13 @@ let Engine = class {
 		if(this.mode === mode) return
 		if(Engine.MODES.indexOf(mode) === -1){
 			console.error('Unknown mode', mode)
-			return
+			throw new Error('Unknown mode', mode)
 		}
 		return new Promise((resolve, reject) => {
 			this.mode = mode
+
+			THIS IS WHERE I STOPPED. START AND STOP SESSIONS AS THIS SWITCHES MODES
+
 			resolve(mode)
 		})
 	}
