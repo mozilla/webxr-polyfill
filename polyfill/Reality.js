@@ -67,13 +67,12 @@ export default class Reality extends EventHandlerBase {
 	_findFloorAnchor(display, uid=null){
 		// Copy the head model matrix for the current pose so we have it in the promise below
 		const headModelMatrix = new Float32Array(display._headPose.poseModelMatrix)
-
 		return new Promise((resolve, reject) => {
 			// For now, just create an anchor at origin level. Maybe in the future search for a surface?
-			const coordinates = new XRCoordinates(display, display._trackerCoordinateSystem)
 			headModelMatrix[13] = 0 // Set height to 0
-			coordinates.poseMatrix = headModelMatrix
-			const anchor = new XRAnchor(coordinates, uid)
+			const coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+			coordinateSystem._relativeMatrix = headModelMatrix
+			const anchor = new XRAnchor(coordinateSystem, uid)
 			this._addAnchor(anchor, display)
 			resolve(new XRAnchorOffset(anchor.uid))
 		})

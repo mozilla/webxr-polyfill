@@ -241,16 +241,8 @@ class XRExampleBase {
 			throttledConsoleLog('Unknown anchor uid', anchorOffset.anchorUID)
 			return
 		}
-
 		node.matrixAutoUpdate = false
-		const offsetCoordinates = anchorOffset.getTransformedCoordinates(anchor)
-		if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.TRACKER){
-			node.matrix.fromArray(offsetCoordinates.poseMatrix)
-		} else {
-			node.matrix.fromArray(
-				offsetCoordinates.getTransformedCoordinates(frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)).poseMatrix
-			)
-		}
+		node.matrix.fromArray(anchorOffset.getOffsetTransform(anchor.coordinateSystem))
 		node.updateMatrixWorld(true)
 	}
 }

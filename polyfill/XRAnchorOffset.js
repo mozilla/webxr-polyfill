@@ -2,7 +2,6 @@ import MatrixMath from './fill/MatrixMath.js'
 import Quaternion from './fill/Quaternion.js'
 
 import XRAnchor from './XRAnchor.js'
-import XRCoordinates from './XRCoordinates.js'
 
 /*
 XRAnchorOffset represents a pose in relation to an XRAnchor
@@ -43,11 +42,9 @@ export default class XRAnchorOffset {
 	}
 
 	/*
-	Return an XRCoordinates in the same coordinate system as `anchor` that is offset by this XRAnchorOffset.poseMatrix
+	Return a transform matrix that is offset by this XRAnchorOffset.poseMatrix relative to coordinateSystem
 	*/
-	getTransformedCoordinates(anchor){
-		const coordinates = new XRCoordinates(anchor.coordinates._display, anchor.coordinates.coordinateSystem)
-		MatrixMath.mat4_multiply(coordinates.poseMatrix, this._poseMatrix, anchor.coordinates.poseMatrix)
-		return coordinates
+	getOffsetTransform(coordinateSystem){
+		return MatrixMath.mat4_multiply(new Float32Array(16), this._poseMatrix, coordinateSystem._poseModelMatrix)
 	}
 }

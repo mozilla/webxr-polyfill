@@ -14,7 +14,6 @@ import XRView from './XRView.js'
 import XRViewport from './XRViewport.js'
 import XRCartographicCoordinates from './XRCartographicCoordinates.js'
 import XRCoordinateSystem from './XRCoordinateSystem.js'
-import XRCoordinates from './XRCoordinates.js'
 import XRViewPose from './XRViewPose.js'
 import XRLayer from './XRLayer.js'
 import XRWebGLLayer from './XRWebGLLayer.js'
@@ -50,7 +49,6 @@ class XRPolyfill extends EventHandlerBase {
 		window.XRViewport = XRViewport
 		window.XRCartographicCoordinates = XRCartographicCoordinates
 		window.XRCoordinateSystem = XRCoordinateSystem
-		window.XRCoordinates = XRCoordinates
 		window.XRViewPose = XRViewPose
 		window.XRLayer = XRLayer
 		window.XRWebGLLayer = XRWebGLLayer

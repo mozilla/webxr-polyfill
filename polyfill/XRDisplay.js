@@ -1,7 +1,10 @@
+import MatrixMath from './fill/MatrixMath.js'
 import EventHandlerBase from './fill/EventHandlerBase.js'
-import XRFieldOfView from './XRFieldOfView.js'
 
 import VirtualReality from './reality/VirtualReality.js'
+
+import XRFieldOfView from './XRFieldOfView.js'
+
 
 /*
 Each XRDisplay represents a method of using a specific type of hardware to render AR or VR realities and layers.
@@ -22,12 +25,7 @@ export default class XRDisplay extends EventHandlerBase {
 
 		this._headPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
 		this._eyeLevelPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
-		this._trackerPoseModelMatrix = new Float32Array([
-			1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1
-		])
+		this._trackerPoseModelMatrix = MatrixMath.mat4_generateIdentity()
 
 		var fov = 50/2;
 		this._fov = new XRFieldOfView(fov, fov, fov, fov)

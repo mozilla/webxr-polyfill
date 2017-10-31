@@ -84,20 +84,10 @@
 				// Called once per frame
 				updateScene(frame){
 					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
-					const trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
-
 					// Create anchors and start tracking them
 					for(let anchorToAdd of this.anchorsToAdd){
-						// Create an anchor that we'd like to add, relative to the current head position
-						const anchorCoordinates = new XRCoordinates(
-							this.session.display,
-							headCoordinateSystem,
-							[anchorToAdd.x, anchorToAdd.y, anchorToAdd.z]
-						)
-						const anchor = new XRAnchor(anchorCoordinates)
-
 						// Create the anchor and tell the base class to update the node with its position
-						const anchorUID = frame.addAnchor(anchor)
+						const anchorUID = frame.addAnchor(headCoordinateSystem, [anchorToAdd.x, anchorToAdd.y, anchorToAdd.z])
 						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
 					}
 					this.anchorsToAdd = []

@@ -1,5 +1,4 @@
 import MatrixMath from './fill/MatrixMath.js'
-import XRCoordinates from './XRCoordinates.js'
 
 /*
 XRCoordinateSystem represents the origin of a 3D coordinate system positioned at a known frame of reference.
@@ -16,11 +15,33 @@ export default class XRCoordinateSystem {
 		this._display = display
 		this._type = type
 		this._cartographicCoordinates = cartographicCoordinates
+
+		this.__relativeMatrix = MatrixMath.mat4_generateIdentity()
+		this._workingMatrix = MatrixMath.mat4_generateIdentity()
 	}
 
 	get cartographicCoordinates(){ return this._cartographicCoordinates }
 
 	get type(){ return this._type }
+
+	getTransformTo(otherCoordinateSystem){
+		// apply inverse of the poseModelMatrix to the identity matrix
+		let inverse = MatrixMath.mat4_invert(new Float32Array(16), otherCoordinateSystem._poseModelMatrix)
+		let out = MatrixMath.mat4_generateIdentity()
+		MatrixMath.mat4_multiply(out, inverse, out)
+
+		// apply the other system's poseModelMatrix
+		MatrixMath.mat4_multiply(out, this._poseModelMatrix, out)
+		return out
+	}
+
+	get _relativeMatrix(){ return this.__relativeMatrix }
+
+	set _relativeMatrix(value){
+		for(let i=0; i < 16; i++){
+			this.__relativeMatrix[i] = value[i]
+		}
+	}
 
 	get _poseModelMatrix(){
 		switch(this._type){
@@ -29,34 +50,14 @@ export default class XRCoordinateSystem {
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._display._eyeLevelPose.poseModelMatrix
 			case XRCoordinateSystem.TRACKER:
-				return this._display._trackerPoseModelMatrix
+
+				MatrixMath.mat4_multiply(this._workingMatrix, this.__relativeMatrix, this._display._trackerPoseModelMatrix)
+				return this._workingMatrix
 			case XRCoordinateSystem.GEOSPATIAL:
-				throw 'This polyfill does not yet handle geospatial coordinate systems'
+				throw new Error('This polyfill does not yet handle geospatial coordinate systems')
 			default:
-				throw 'Unknown coordinate system type: ' + this._type
+				throw new Error('Unknown coordinate system type: ' + this._type)
 		}
-	}
-
-	getCoordinates(position=[0,0,0], orientation=[0,0,0,1]){
-		return new XRCoordinates(this._display, this, position, orientation)
-	}
-	
-	getTransformTo(otherCoordinateSystem){
-		let out = new Float32Array([
-			1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1
-		])
-
-		// apply inverse of other system's poseModelMatrix to the identity matrix
-		let inverse = new Float32Array(16)
-		MatrixMath.mat4_invert(inverse, otherCoordinateSystem._poseModelMatrix)
-		MatrixMath.mat4_multiply(out, inverse, out)
-
-		// apply this system's poseModelMatrix
-		MatrixMath.mat4_multiply(out, this._poseModelMatrix, out)
-		return out
 	}
 }
 
