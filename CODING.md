@@ -88,12 +88,12 @@ Anchors are places in space that the AR system is tracking for you. They could b
 
 The reason that you use anchors instead of just placing objects in a global coordinate system is that AR systems may change their relative position over time as they sense the world. A table may shift. The system may refine its estimate of the location of the floor or a wall.
 
-First, let's add an anchor just floated in space. This code uses the `XRPresentationFrame`, so it would live in the `handleFrame` method above, where the '// XXX' comment is:
+First, let's add an anchor just floated in space a meter in front of the current head position.
 
-			const anchorCoordinates = headCoordinateSystem.getCoordinates([0, 0, -1]) // A meter in front of the camera
-			const anchor = new XRAnchor(anchorCoordinates)
+This code uses the `XRPresentationFrame`, so it would live in the `handleFrame` method above, where the '// XXX' comment is:
+
 			const sceneNode = createSceneNode() // if using Three.js, could be an Object3D or a Group
-			frame.addAnchor(anchor) // Now WebXR is tracking the anchor
+			let anchorUID = frame.addAnchor(headCoordinateSystem, [0, 0, -1]) 
 			scene.add(sceneNode)	// Now the node is in the scene
 			// Save this info for update during each frame
 			anchoredNodes.push({
@@ -123,14 +123,10 @@ You now have a couple of anchored nodes save in `anchoredNodes`, so during each 
 			for(let anchoredNode of anchoredNodes){
 				// Get the updated anchor info
 				const anchor = frame.getAnchor(anchoredNode.anchorOffset.anchorUID)
-				// Get the offset coordinates relative to the anchor
-				let offsetCoordinates = anchoredNode.anchorOffset.getTransformedCoordinates(anchor)
-				// Now use the offset coordinates, possibly by converting to the tracker coordinate system.
-				if(offsetCoordinates.coordinateSystem.type === XRCoordinateSystem.TRACKER){
-					anchoredNode.node.matrix = offsetCoordinates.poseMatrix
-				} else {
-					anchoredNode.node.matrix = offsetCoordinates.getTransformedCoordinates(trackerCoordinateSystem).poseMatrix
-				}
+				// Get the offset coordinates relative to the anchor's coordinate system
+				let offsetTransform = anchoredNode.anchorOffset.getOffsetTransform(anchor.coordinateSystem)
+				// Now use the offset transform to position the anchored node in the scene
+				anchoredNode.node.matrix = offsetTransform
 			}
 
 
