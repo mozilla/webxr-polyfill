@@ -172,7 +172,7 @@ class XRExampleBase {
 
 	_handleFrame(frame){
 		const nextFrameRequest = this.session.requestFrame(this._boundHandleFrame)
-		const headPose = frame.getViewPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+		const headPose = frame.getDisplayPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
 
 		// If we haven't already, request the floor anchor offset
 		if(this.requestedFloor === false){

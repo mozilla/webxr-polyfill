@@ -10,7 +10,7 @@ THIS SOFTWARE IS PRERELEASE, IS *NOT* READY FOR PRODUCTION USE, AND *WILL* SOON 
 
 NOTHING IN THIS REPO COMES WITH ANY WARRENTY WHATSOEVER. DO NOT USE IT FOR ANYTHING EXCEPT EXPERIMENTS.
 
-There are a lot of pieces of the WebXR polyfill that are stubbed out and throw 'Not implemented' when called. The paths that are used by the examples are filled in, but things like cartographic coordinates and geospatial coordinate systems are not yet implemented.
+There are a lot of pieces of the WebXR polyfill that are stubbed out and throw 'Not implemented' when called.
 
 ## Running the examples
 

@@ -4,25 +4,22 @@ import MatrixMath from './fill/MatrixMath.js'
 XRCoordinateSystem represents the origin of a 3D coordinate system positioned at a known frame of reference.
 The XRCoordinateSystem is a string from XRCoordinateSystem.TYPES:
 
+These types are used by the app code when requesting a coordinate system from the session:
 - XRCoordinateSystem.HEAD_MODEL: origin is aligned with the pose of the head, as sensed by HMD or handset trackers
 - XRCoordinateSystem.EYE_LEVEL: origin is at a fixed distance above the ground
+
+This is an internal type, specific to just this polyfill and not visible to the app code
 - XRCoordinateSystem.TRACKER: The origin of this coordinate system is at floor level at or below the origin of the HMD or handset provided tracking system
-- XRCoordinateSystem.GEOSPATIAL: origin is at the East, Up, South plane tangent to the planet at the latitude, longitude, and altitude represented by the `XRCoordinateSystem.cartographicCoordinates`.
 
 */
 export default class XRCoordinateSystem {
-	constructor(display, type, cartographicCoordinates=null){
+	constructor(display, type){
 		this._display = display
 		this._type = type
-		this._cartographicCoordinates = cartographicCoordinates
 
 		this.__relativeMatrix = MatrixMath.mat4_generateIdentity()
 		this._workingMatrix = MatrixMath.mat4_generateIdentity()
 	}
-
-	get cartographicCoordinates(){ return this._cartographicCoordinates }
-
-	get type(){ return this._type }
 
 	getTransformTo(otherCoordinateSystem){
 		// apply inverse of the poseModelMatrix to the identity matrix
@@ -50,11 +47,8 @@ export default class XRCoordinateSystem {
 			case XRCoordinateSystem.EYE_LEVEL:
 				return this._display._eyeLevelPose.poseModelMatrix
 			case XRCoordinateSystem.TRACKER:
-
 				MatrixMath.mat4_multiply(this._workingMatrix, this.__relativeMatrix, this._display._trackerPoseModelMatrix)
 				return this._workingMatrix
-			case XRCoordinateSystem.GEOSPATIAL:
-				throw new Error('This polyfill does not yet handle geospatial coordinate systems')
 			default:
 				throw new Error('Unknown coordinate system type: ' + this._type)
 		}
@@ -64,11 +58,9 @@ export default class XRCoordinateSystem {
 XRCoordinateSystem.HEAD_MODEL = 'headModel'
 XRCoordinateSystem.EYE_LEVEL = 'eyeLevel'
 XRCoordinateSystem.TRACKER = 'tracker'
-XRCoordinateSystem.GEOSPATIAL = 'geospatial'
 
 XRCoordinateSystem.TYPES = [
 	XRCoordinateSystem.HEAD_MODEL,
 	XRCoordinateSystem.EYE_LEVEL,
 	XRCoordinateSystem.TRACKER,
-	XRCoordinateSystem.GEOSPATIAL
 ]

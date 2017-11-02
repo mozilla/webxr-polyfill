@@ -93,9 +93,9 @@ export default class XRPresentationFrame {
 		return this._session._getCoordinateSystem(...types)
 	}
 
-	getViewPose(coordinateSystem){
-		// XRViewPose? getViewPose(XRCoordinateSystem coordinateSystem);
-		switch(coordinateSystem.type){
+	getDisplayPose(coordinateSystem){
+		// XRViewPose? getDisplayPose(XRCoordinateSystem coordinateSystem);
+		switch(coordinateSystem._type){
 			case XRCoordinateSystem.HEAD_MODEL:
 				return this._session._display._headPose
 			case XRCoordinateSystem.EYE_LEVEL:

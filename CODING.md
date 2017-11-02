@@ -57,12 +57,9 @@ The scene, camera, and renderer objects below are representative APIs that have 
 		// Set up for the next frame
 		session.requestFrame(frame => { handleFrame(frame) })
 
-		// Get the pose for the HMD or handset tracker coordinate system
-		let trackerCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
-
 		// Get the pose for the head
 		let headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
-		let headPose = frame.getViewPose(frame.getCoordinateSystem(headCoordinateSystem)
+		let headPose = frame.getDsiplayPose(frame.getCoordinateSystem(headCoordinateSystem)
 
 		// XXX Below we will add code here to add and manage anchors
 

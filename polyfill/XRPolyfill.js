@@ -12,7 +12,6 @@ import XRStageBoundsPoint from './XRStageBoundsPoint.js'
 import XRPresentationFrame from './XRPresentationFrame.js'
 import XRView from './XRView.js'
 import XRViewport from './XRViewport.js'
-import XRCartographicCoordinates from './XRCartographicCoordinates.js'
 import XRCoordinateSystem from './XRCoordinateSystem.js'
 import XRViewPose from './XRViewPose.js'
 import XRLayer from './XRLayer.js'
@@ -47,7 +46,6 @@ class XRPolyfill extends EventHandlerBase {
 		window.XRPresentationFrame = XRPresentationFrame
 		window.XRView = XRView
 		window.XRViewport = XRViewport
-		window.XRCartographicCoordinates = XRCartographicCoordinates
 		window.XRCoordinateSystem = XRCoordinateSystem
 		window.XRViewPose = XRViewPose
 		window.XRLayer = XRLayer

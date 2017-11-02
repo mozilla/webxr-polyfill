@@ -5,7 +5,7 @@ Other XR platforms sometimes refer to this concept as "room scale" or "standing 
 */
 export default class XRStageBounds {
 	get center(){
-		//readonly attribute XRCoordinates center;
+		//readonly attribute XRCoordinateSystem center;
 		throw new Error('Not implemented')
 	}
 
