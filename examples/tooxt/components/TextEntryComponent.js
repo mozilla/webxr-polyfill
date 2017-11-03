@@ -15,15 +15,5 @@ export default class TextEntryComponent extends Component {
 		)
 		box.position.set(0, 0, -2)
 		this.obj.add(box)
-
-
-		// Temporarily add a model just so we can see something before we make a 3D text entry 
-		/*
-		this.model = obj.gltf('../models/BoomBox/gltf/BoomBox.gltf')
-		this.model.scale.set(15, 15, 15)
-		this.model.position.set(0, 0, -1.2)
-		this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI)
-		this.obj.add(this.model)
-		*/
 	}
 }

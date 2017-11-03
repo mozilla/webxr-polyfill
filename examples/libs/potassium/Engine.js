@@ -7,7 +7,7 @@ Engine wraps up the THREE.Renderer and manages moving into and out of XRSessions
 */
 let Engine = class {
 	constructor(scene, camera){
-		this._boundRender = this._render.bind(this)
+		this._render = this._render.bind(this)
 		this.mode = Engine.FLAT
 		this.scene = scene
 		this.camera = camera
@@ -24,9 +24,9 @@ let Engine = class {
 			antialias: false,
 			alpha: false
 		})
-		this.renderer.autoClear = true
+		//this.renderer.autoClear = true
 
-		this.session = null
+		this.session = null // An XRSession
 
 		setTimeout(this._initRenderer.bind(this), 1000) // TODO HACK!
 	}
@@ -87,7 +87,7 @@ let Engine = class {
 					this.session = session
 					// Set the session's base layer into which the app will render
 					this.session.baseLayer = new XRWebGLLayer(this.session, this.glContext)
-					this.session.requestFrame(this._boundRender)
+					this.session.requestFrame(this._render)
 					this.mode = mode
 					resolve(mode)
 					return
@@ -103,18 +103,18 @@ let Engine = class {
 	}
 	_initRenderer(){
 		this.renderer.setPixelRatio(1)
-		this.renderer.autoClear = false
 		this.renderer.setClearColor('#000', 0)
 		this.renderer.setSize(this.el.offsetWidth, this.el.offsetHeight)
-		window.requestAnimationFrame(this._boundRender)
+		window.requestAnimationFrame(this._render)
 	}
 	_render(frame){
 		if(this.session === null){
-			window.requestAnimationFrame(this._boundRender)
+			window.requestAnimationFrame(this._render)
+			this.renderer.setSize(this.el.offsetWidth, this.el.offsetHeight)
 			this.renderer.render(this.scene, this.camera)
 			return
 		}
-		this.session.requestFrame(this._boundRender)
+		this.session.requestFrame(this._render)
 		if(typeof frame === 'number') return // This happens when switching from window.requestAnimationFrame to session.requestFrame
 		const headPose = frame.getDisplayPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
 		this.renderer.autoClear = false
