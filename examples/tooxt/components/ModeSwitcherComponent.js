@@ -15,12 +15,18 @@ let ModeSwitcherComponent = class extends Component {
 		this.flatButton = new ButtonComponent(null, { text: 'Flat' })
 		this.el.appendChild(this.flatButton.el)
 		this.obj.add(this.flatButton.obj)
-		this.listenTo('click', this.flatButton.el, ev => { this.setMode(Engine.FLAT) })
+		this.listenTo('click', this.flatButton.el, ev => {
+			this.trigger(ModeSwitcherComponent.ModeChangedEvent, Engine.FLAT)
+		})
 
 		this.overlayButton = el.button({ type: 'button' }, 'Overlay').appendTo(this.el)
-		this.listenTo('click', this.overlayButton, ev => { this.setMode(Engine.OVERLAY) })
+		this.listenTo('click', this.overlayButton, ev => {
+			this.trigger(ModeSwitcherComponent.ModeChangedEvent, Engine.OVERLAY)
+		})
 		this.scenicButton = el.button({ type: 'button' }, 'Scenic').appendTo(this.el)
-		this.listenTo('click', this.scenicButton, ev => { this.setMode(Engine.SCENIC) })
+		this.listenTo('click', this.scenicButton, ev => {
+			this.trigger(ModeSwitcherComponent.ModeChangedEvent, Engine.SCENIC)
+		})
 
 		this.setMode(Engine.FLAT)
 	}
@@ -47,7 +53,6 @@ let ModeSwitcherComponent = class extends Component {
 				return
 		}
 		this._mode = mode
-		this.trigger(ModeSwitcherComponent.ModeChangedEvent, this._mode)
 	}
 }
 

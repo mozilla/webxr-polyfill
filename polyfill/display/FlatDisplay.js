@@ -79,6 +79,9 @@ export default class FlatDisplay extends XRDisplay {
 
 	_stop(){
 		// TODO figure out how to stop ARKit and ARCore so that CameraReality can still work
+		if(this.running === false) return
+		this.running = false
+		this._reality._stop()
 	}
 
 	/*

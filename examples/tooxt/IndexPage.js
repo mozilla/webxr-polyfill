@@ -74,20 +74,23 @@ export default class IndexPage extends Page {
 				this.leftCol.appendChild(this.textEntryComponent.el)
 				this.rightCol.appendChild(this.engine.el)
 				this.controlGroup.visible = false
+				this.modeSwitcherComponent.setMode(Engine.FLAT)
 				break;
 			case Engine.OVERLAY:
 				this.mainNav.el.style.display = ''
 				this.overlayEl.style.display = ''
 				this.leftCol.appendChild(this.modeSwitcherComponent.el)
 				this.leftCol.appendChild(this.textEntryComponent.el)
-				this.rightCol.removeChild(this.engine.el)
+				//this.engine.el.remove()
 				this.controlGroup.visible = false
+				this.modeSwitcherComponent.setMode(Engine.OVERLAY)
 				break;
 			case Engine.SCENIC:
 				this.mainNav.el.style.display = 'none'
 				this.overlayEl.style.display = 'none'
 				this.controlGroup.visible = true
-				this.rightCol.removeChild(this.engine.el)
+				//this.engine.el.remove()
+				this.modeSwitcherComponent.setMode(Engine.SCENIC)
 				break;
 			default:
 				console.error('unknown mode', mode)

@@ -67,7 +67,6 @@ export default class XRDisplay extends EventHandlerBase {
 		return window.cancelAnimationFrame(handle)		
 	}
 
-
 	_createSession(parameters){
 		return new XRSession(this._xr, this, parameters)
 	}
