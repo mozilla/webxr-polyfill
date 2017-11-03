@@ -33,7 +33,7 @@
 				font-size: 20px;
 			}
 		</style>
-
+		<link rel="stylesheet" href="../common.css"/>
 		<script src="../libs/three.js"></script>
 		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 		<script nomodule src="../../dist/webxr-polyfill.js"></script>
@@ -41,6 +41,11 @@
 	</head>
 	<body>
 		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>Anchors</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Position boxes by tapping. The box positions are updated using ARKit anchors.</p>
+		</div>
 		<script>
 			class ARAnchorExample extends XRExampleBase {
 				constructor(domElement){
