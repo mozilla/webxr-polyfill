@@ -34,12 +34,12 @@ export default class IndexPage extends Page {
 		this.settingsComponent = new SettingsComponent()
 		this.controlGroup.add(this.settingsComponent.obj)
 
-		this.textEntryComponent = new TextEntryComponent()
+		this.textEntryComponent = new TextEntryComponent(this.layers)
 		this.controlGroup.add(this.textEntryComponent.obj)
 
-		// Frame out one row with two columns or a single center column for flat mode
+		// For flat mode, create one row with two columns (for editing) or a single center column (for settings)
 		this.row = el.div({
-			class: 'row top-row flat-only'
+			class: 'row top-row flat-only' // the flat-only class is a handy way to only show elements when in flat mode 
 		}).appendTo(this.el)
 		this.leftCol = el.div(
 			{ class: 'col-6' }
@@ -52,7 +52,9 @@ export default class IndexPage extends Page {
 		).appendTo(this.row)
 
 		// Create a div for overlay mode
-		this.overlayEl = el.div({ class: 'overlay overlay-only' }).appendTo(this.el)
+		this.overlayEl = el.div({
+			class: 'overlay overlay-only' // overlay-only is a handy way to only show elements when in overlay mode
+		}).appendTo(this.el)
 
 		this._displayMode(Engine.FLAT)
 
@@ -64,15 +66,6 @@ export default class IndexPage extends Page {
 
 		// Ok, everything is set up so fetch the initial data
 		DataObject.fetchAll(this.realities, this.layers)
-
-		/*
-		fetch('data:...').then(response => response.blob()).then(blob => { console.log('blob', blob) })
-		var reader = new FileReader();
-		reader.addEventListener("loadend", () => {
-		   // reader.result contains the contents of blob as a typed array
-		});
-		reader.readAsArrayBuffer(blob) or reader.readAsText()
-		*/
 	}
 	_handleRoutes(eventName, path, ...params){
 		switch(eventName){
@@ -86,7 +79,6 @@ export default class IndexPage extends Page {
 		}
 	}
 	_showSettings(){
-		console.log('show settings')
 		this.leftCol.style.display = 'none'
 		this.rightCol.style.display = 'none'
 		this.centerCol.style.display = ''
@@ -94,7 +86,6 @@ export default class IndexPage extends Page {
 		this.settingsComponent.el.style.display = ''
 	}
 	_showEdit(){
-		console.log('show edit')
 		this.leftCol.style.display = ''
 		this.rightCol.style.display = ''
 		this.centerCol.style.display = 'none'

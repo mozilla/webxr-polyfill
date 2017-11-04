@@ -109,6 +109,23 @@ let Content = class extends DataModel {
 		if(this.isNew) return apiBaseURL + 'content/'
 		return apiBaseURL + 'content/' + this.get('uuid')
 	}
+	fetchPrimary(){
+		if(this.get('uuid', null) === null){
+			return new Promise((resolve, reject) => { reject() })
+		}
+		return new Promise((resolve, reject) => {
+			let contentAsset = new ContentAsset({}, { contentUUID: this.get('uuid') })
+			contentAsset.fetch().then(() => {
+				contentAsset.fetchData().then(data => {
+					resolve(data)
+				}).catch(err => {
+					reject(err)
+				})
+			}).catch(err => {
+				reject(err)
+			})
+		})
+	}
 }
 let Contents = class extends DataCollection {
 	constructor(data=[], options={}){
@@ -140,6 +157,29 @@ let ContentAsset = class extends DataModel {
 		}
 		if(this.isNew) return apiBaseURL + 'content-asset/'
 		return apiBaseURL + 'content-asset/' + this.get('uuid')
+	}
+	fetchData(){
+		if(!this.get('uri')){
+			return new Promise((resolve, reject) => {
+				reject('ContentAsset has no uri field')
+			})
+		}
+		return new Promise((resolve, reject) => {
+			// This should work with both data and http URIs
+			fetch(this.get('uri')).then(response => response.blob()).then(blob => {
+				var reader = new FileReader();
+				reader.addEventListener("loadend", () => {
+					resolve(reader.result)
+				})
+				if(this.get('mimetype', '').indexOf('text/') === 0){
+					reader.readAsText(blob) // TODO assuming UTF-8 for now
+				} else {
+					reader.readAsArrayBuffer(blob)
+				}
+			}).catch(err => {
+				reject(err)
+			})
+		})
 	}
 }
 let ContentAssets = class extends DataCollection {
