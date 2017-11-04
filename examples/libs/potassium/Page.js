@@ -22,6 +22,8 @@ let Page = EventMixin(
 			this._scene = obj.scene()					
 			this._camera = obj.perspectiveCamera([45, 1, 0.5, 10000]).appendTo(this._scene)
 			this._engine = obj.engine(this._scene, this._camera)
+
+			this._updateClasses()
 		}
 
 		get router(){ return this._router }
@@ -33,10 +35,17 @@ let Page = EventMixin(
 		setMode(mode){
 			if(this.engine.mode === mode) return
 			this.engine.setMode(mode).then(newMode => {
+				this._updateClasses()
 				this._displayMode(newMode)
 			}).catch(err => {
 				console.error('Error switching mode', err)
 			})
+		}
+		_updateClasses(){
+			this.el.removeClass('flat-mode')
+			this.el.removeClass('overlay-mode')
+			this.el.removeClass('scenic-mode')
+			this.el.addClass(this._engine.mode + '-mode')
 		}
 	}
 )

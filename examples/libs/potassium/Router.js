@@ -2,7 +2,21 @@ import EventMixin from './EventMixin.js'
 
 /*
 	Router maps window.history events and URL path fragments to events
-	For example, routing /^blog\/([0-9]+)\/page\/([0-9a-z]+)$/ to an event with parameters for blog and page IDs
+	For example, routing /^blog\/([0-9]+)\/page\/([0-9a-z]+)$/ to an event with parameters for blog and page IDs:
+
+		let router = new Router()
+
+		// Set up a couple of routes, each with a URL matching regexs and a route name
+		router.addRoute(/^$/, 'default') // matches http://<domain>/<path> and http://<domain>/<path>#
+		router.addRoute(/^blog\/([0-9]+)\/page\/([0-9a-z\-]+)$/, 'blog-page') // matches http://<domain>/<path>#blog/1123/page/abc-123
+
+		// Listen for the route
+		router.addListener((routeName, hash, ...regexMatches) => {
+			// If this was an event triggered by routing to #blog/1123/page/abc-123 then:
+			// `routeName` would be 'blog-page'
+			// `hash` would be 'blog/1123/page/abc-123'
+			// `regexMatches` would be ['1123', 'abc-123']
+		}, 'blog-page')
 */
 let Router = EventMixin(class {
 	constructor(){

@@ -8,12 +8,13 @@ Engine wraps up the THREE.Renderer and manages moving into and out of XRSessions
 let Engine = class {
 	constructor(scene, camera){
 		this._render = this._render.bind(this)
+		this._el = el.div({ class: 'engine' }) // This will contain the rendering canvas
 		this.mode = Engine.FLAT
 		this.scene = scene
 		this.camera = camera
 		this.scene.add(this.camera)
 
-		this.glCanvas = el.canvas()
+		this.glCanvas = el.canvas().appendTo(this._el)
 		this.glContext = this.glCanvas.getContext('webgl')
 		if(this.glContext === null){
 			throw new Error('Could not create GL context')
@@ -30,9 +31,7 @@ let Engine = class {
 
 		setTimeout(this._initRenderer.bind(this), 1000) // TODO HACK!
 	}
-	get el(){
-		return this.renderer.domElement
-	}
+	get el(){ return this._el }
 	setMode(mode){
 		if(this.mode === mode) return
 		if(Engine.MODES.indexOf(mode) === -1){
@@ -104,13 +103,12 @@ let Engine = class {
 	_initRenderer(){
 		this.renderer.setPixelRatio(1)
 		this.renderer.setClearColor('#000', 0)
-		this.renderer.setSize(this.el.offsetWidth, this.el.offsetHeight)
 		window.requestAnimationFrame(this._render)
 	}
 	_render(frame){
 		if(this.session === null){
 			window.requestAnimationFrame(this._render)
-			this.renderer.setSize(this.el.offsetWidth, this.el.offsetHeight)
+			this.renderer.setSize(this._el.offsetWidth, this._el.offsetHeight)
 			this.renderer.render(this.scene, this.camera)
 			return
 		}

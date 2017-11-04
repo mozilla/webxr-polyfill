@@ -8,7 +8,7 @@ export default class ButtonComponent extends Component {
 		super(dataObject, Object.assign({ el: el.button() }, options))
 		this._text = options.text || ''
 		this.el.innerHTML = this._text
-		this.obj = obj.obj('./models/Button.obj')
+		this.obj = obj.obj('./components/models/Button.obj')
 	}
 
 	set text(value){

@@ -89,41 +89,7 @@ button:active {
 	text-align: right;
 }
 
-.main-nav-component {
-	position: relative;
-	height: var(--main-nav-height);
-	padding: 0 0;
-	margin-bottom: var(--main-nav-margin);
-	background-color: #EFEFEF;
-	color: #888;
-}
-.main-nav-component nav {
-	position: relative;
-	line-height: var(--main-nav-height);
-}
-.main-nav-component h1 {
-	margin-left: var(--row-padding);
-	display: inline-block;
-}
-.main-nav-component .right-links {
-	position: absolute;
-	top: 0;
-	right: var(--row-padding);
-}
-.main-nav-component .right-links li {
-	padding-left: 10px;
-}
-
-.login-component {
-	width: 100%;
-	max-width: 20em;
-}
-.login-component .error {
-	font-size: 14px;
-	margin-bottom: 12px;
-	color: red;
-}
-
+/* Row and column flexbox classes */
 .row {
 	display: flex;
 	flex-direction: row;
@@ -161,7 +127,55 @@ button:active {
 	margin-top: 60px;
 }
 
-.page canvas {
+.main-nav-component {
+	position: relative;
+	height: var(--main-nav-height);
+	padding: 0 0;
+	margin-bottom: var(--main-nav-margin);
+	background-color: #EFEFEF;
+	color: #888;
+}
+.main-nav-component nav {
+	position: relative;
+	line-height: var(--main-nav-height);
+}
+.main-nav-component h1 {
+	margin-left: var(--row-padding);
+	display: inline-block;
+}
+.main-nav-component .right-links {
+	position: absolute;
+	top: 0;
+	right: var(--row-padding);
+}
+.main-nav-component .right-links li {
+	padding-left: 10px;
+}
+
+.main-nav-component .mode-switcher {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.login-component {
+	width: 100%;
+	max-width: 20em;
+}
+.login-component .error {
+	font-size: 14px;
+	margin-bottom: 12px;
+	color: red;
+}
+
+/* Handy display mode exclusion and inclusion classes */
+.page.flat-mode .overlay-only, .page.flat-mode .scenic-only { display: none; }
+.page.overlay-mode .flat-only, .page.overlay-mode .scenic-only { display: none; }
+.page.scenic-mode .flat-only, .page.scenic-mode .overlay-only { display: none; }
+
+
+.page .engine {
 	background-color: #eee;
 	width: 100%;
 	min-height: 300px;
@@ -169,4 +183,8 @@ button:active {
 
 .mode-switcher .selected {
 	background-color: #99FF99;
+}
+
+.overlay {
+	margin: 20% 20px;
 }
