@@ -15,12 +15,14 @@ import {Anchors, ContentAsset, Contents, Layers, Realities} from './dataObjects.
 export default class IndexPage extends Page {
 	constructor(){
 		super()
+		this.el.addClass('index-page')
 		this.realities = new Realities()
 		this.layers = new Layers()
 
 		// The controlGroup will hold all of the scenic UI controls
 		this.controlGroup = obj.group({ name: 'control group' }).appendTo(this.scene)
-		this.controlGroup.position.set(0, 0, -5)
+		this.controlGroup.position.set(0, 0, -0.75)
+		this.controlGroup.quaternion.setFromEuler(new THREE.Euler(Math.PI / -6, 0, 0, 'YXZ'))
 		this.scene.add(new THREE.AmbientLight(0xFFFFFF, 0.6))
 
 		// Set up the navbar at the top during flat and overlay and the main nav in the controlGroup when scenic
@@ -96,7 +98,7 @@ export default class IndexPage extends Page {
 		switch (mode) {
 			case Engine.FLAT:
 				this.mainNavComponent.el.style.display = ''
-				this.controlGroup.visible = false
+				this.controlGroup.visible = true //TODO this is for debuggins, should be false
 				this.leftCol.appendChild(this.textEntryComponent.el)
 				this.rightCol.appendChild(this.engine.el)
 				this.centerCol.appendChild(this.settingsComponent.el)

@@ -44,6 +44,10 @@ let Engine = class {
 					this.session = null
 				}
 				this.mode = mode
+				this.camera.position.set(0, 0, 0)
+				this.camera.quaternion.set(0, 0, 0, 1)
+				this.camera.updateMatrixWorld(true)
+				this._el.appendChild(this.glCanvas)
 				resolve(mode)
 				return
 			}
@@ -108,6 +112,8 @@ let Engine = class {
 	_render(frame){
 		if(this.session === null){
 			window.requestAnimationFrame(this._render)
+			this.camera.aspect = this._el.offsetWidth / this._el.offsetHeight
+			this.camera.updateProjectionMatrix()
 			this.renderer.setSize(this._el.offsetWidth, this._el.offsetHeight)
 			this.renderer.render(this.scene, this.camera)
 			return

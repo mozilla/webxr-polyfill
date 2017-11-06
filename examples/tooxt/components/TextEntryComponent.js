@@ -10,10 +10,9 @@ export default class TextEntryComponent extends Component {
 		this.inputEl = el.input({ type: 'text', 'placeholder': 'Placeholder'}).appendTo(this.el)
 
 		const box = new THREE.Mesh(
-			new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+			new THREE.BoxBufferGeometry(0.2, 0.2, 0.01),
 			new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
 		)
-		box.position.set(0, 0, -2)
 		this.obj.add(box)
 	}
 }
