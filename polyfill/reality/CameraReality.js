@@ -128,7 +128,6 @@ export default class CameraReality extends Reality {
 	_stop(){
 		if(this._running === false) return
 		this._running = false
-		console.log('Reality stop')
 		if(ARKitWrapper.HasARKit()){
 			if(this._arKitWrapper === null){
 				return
