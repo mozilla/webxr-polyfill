@@ -4,10 +4,10 @@ import Page from '../libs/potassium/Page.js'
 import Engine from '../libs/potassium/Engine.js'
 import Component from '../libs/potassium/Component.js'
 import DataObject from '../libs/potassium/DataObject.js'
+import CollectionComponent from '../libs/potassium/CollectionComponent.js'
 
 import MainNavComponent from './components/MainNavComponent.js'
 import SettingsComponent from './components/SettingsComponent.js'
-import TextEntryComponent from './components/TextEntryComponent.js'
 import ModeSwitcherComponent from './components/ModeSwitcherComponent.js'
 
 import {Anchors, ContentAsset, Contents, Layers, Realities} from './dataObjects.js'
@@ -18,6 +18,7 @@ export default class IndexPage extends Page {
 		this.el.addClass('index-page')
 		this.realities = new Realities()
 		this.layers = new Layers()
+		this.anchors = new Anchors()
 
 		// The controlGroup will hold all of the scenic UI controls
 		this.controlGroup = obj.group({ name: 'control group' }).appendTo(this.scene)
@@ -36,8 +37,8 @@ export default class IndexPage extends Page {
 		this.settingsComponent = new SettingsComponent()
 		this.controlGroup.add(this.settingsComponent.obj)
 
-		this.textEntryComponent = new TextEntryComponent(this.layers)
-		this.controlGroup.add(this.textEntryComponent.obj)
+		this.anchorsComponent = new CollectionComponent(this.anchors)
+		this.controlGroup.add(this.anchorsComponent.obj)
 
 		// For flat mode, create one row with two columns (for editing) or a single center column (for settings)
 		this.row = el.div({
@@ -67,7 +68,11 @@ export default class IndexPage extends Page {
 		this._router.start()
 
 		// Ok, everything is set up so fetch the initial data
-		DataObject.fetchAll(this.realities, this.layers)
+		DataObject.fetchAll(this.realities, this.layers).then(() => {
+			// Now just use the first layer and fetch anchors
+			this.anchors.options.layerUUID = this.layers.at(0).get('uuid')
+			this.anchors.fetch()
+		})
 	}
 	_handleRoutes(eventName, path, ...params){
 		switch(eventName){
@@ -84,14 +89,14 @@ export default class IndexPage extends Page {
 		this.leftCol.style.display = 'none'
 		this.rightCol.style.display = 'none'
 		this.centerCol.style.display = ''
-		this.textEntryComponent.el.style.display = 'none'
+		this.anchorsComponent.el.style.display = 'none'
 		this.settingsComponent.el.style.display = ''
 	}
 	_showEdit(){
 		this.leftCol.style.display = ''
 		this.rightCol.style.display = ''
 		this.centerCol.style.display = 'none'
-		this.textEntryComponent.el.style.display = ''
+		this.anchorsComponent.el.style.display = ''
 		this.settingsComponent.el.style.display = 'none'
 	}
 	_displayMode(mode){
@@ -99,7 +104,7 @@ export default class IndexPage extends Page {
 			case Engine.FLAT:
 				this.mainNavComponent.el.style.display = ''
 				this.controlGroup.visible = true //TODO this is for debuggins, should be false
-				this.leftCol.appendChild(this.textEntryComponent.el)
+				this.leftCol.appendChild(this.anchorsComponent.el)
 				this.rightCol.appendChild(this.engine.el)
 				this.centerCol.appendChild(this.settingsComponent.el)
 				this.mainNavComponent.setMode(Engine.FLAT)
@@ -107,7 +112,7 @@ export default class IndexPage extends Page {
 			case Engine.OVERLAY:
 				this.mainNavComponent.el.style.display = ''
 				this.controlGroup.visible = false
-				this.overlayEl.appendChild(this.textEntryComponent.el)
+				this.overlayEl.appendChild(this.anchorsComponent.el)
 				this.overlayEl.appendChild(this.settingsComponent.el)
 				// The Page will move this.engine.el
 				this.mainNavComponent.setMode(Engine.OVERLAY)

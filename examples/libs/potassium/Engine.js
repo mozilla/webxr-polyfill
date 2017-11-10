@@ -89,6 +89,8 @@ let Engine = class {
 				display.requestSession(sessionInitParamers).then(session => {
 					this.session = session
 					// Set the session's base layer into which the app will render
+					this.glCanvas.style.width = ''
+					this.glCanvas.style.height = ''
 					this.session.baseLayer = new XRWebGLLayer(this.session, this.glContext)
 					this.session.requestFrame(this._render)
 					this.mode = mode

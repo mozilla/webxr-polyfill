@@ -123,6 +123,16 @@ button:active {
 	}
 }
 
+/* Style the WebXR polyfill elements */
+.webxr-sessions, .webxr-realities {
+	width: 100%;
+	height: 100%;
+}
+.webxr-sessions canvas {
+	width: 100%;
+	height: 100%;
+}
+
 .top-row {
 	margin-top: 60px;
 }
