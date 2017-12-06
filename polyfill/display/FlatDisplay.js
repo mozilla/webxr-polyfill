@@ -89,8 +89,8 @@ export default class FlatDisplay extends XRDisplay {
 	FlatDisplay just adds the layer's canvas to DOM elements created by the XR polyfill
 	*/
 	_handleNewBaseLayer(baseLayer){
-		baseLayer._context.canvas.width = window.innerWidth
-		baseLayer._context.canvas.height = window.innerHeight
+		baseLayer._context.canvas.style.width = "100%";
+		baseLayer._context.canvas.style.height = "100%";
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
 	}
 
