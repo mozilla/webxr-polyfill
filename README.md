@@ -1,8 +1,12 @@
 # WebXR polyfill with examples
 
-This repository holds a polyfill and example applications for a proposed API for building AR and VR applications in web browsers.
+This repository holds a polyfill and sample code for a proposed API for building AR and VR applications in web browsers.
 
-You can find the proposed API description in the [webxr-api repository](https://github.com/mozilla/webxr-api).
+We initially created this polyfill when the community group was calling the specification "WebVR", so using "WebXR" was not confusing. Now that the community group is working towards changing the name of the spec, this repo is a bit confusing. So, we're working to bring this repo's master branch in line with the community group's draft spec and will use a separate branch for experimental features like AR support.
+
+That work is not yet complete.
+
+In the meantime, you can compare the two from the [community group's draft spec](https://w3c.github.io/webvr/spec/latest/) and our experimental [API description](https://github.com/mozilla/webxr-api).
 
 ## WARNING
 
@@ -10,7 +14,7 @@ THIS SOFTWARE IS PRERELEASE, IS *NOT* READY FOR PRODUCTION USE, AND *WILL* SOON 
 
 NOTHING IN THIS REPO COMES WITH ANY WARRENTY WHATSOEVER. DO NOT USE IT FOR ANYTHING EXCEPT EXPERIMENTS.
 
-There are a lot of pieces of the WebXR polyfill that are stubbed out and throw 'Not implemented' when called.
+There are a lot of pieces of the polyfill that are stubbed out and throw 'Not implemented' when called.
 
 ## Running the examples
 
