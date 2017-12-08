@@ -91,6 +91,15 @@ export default class FlatDisplay extends XRDisplay {
 	_handleNewBaseLayer(baseLayer){
 		baseLayer._context.canvas.style.width = "100%";
 		baseLayer._context.canvas.style.height = "100%";
+		baseLayer._context.canvas.width = this._xr._sessionEls.clientWidth;
+		baseLayer._context.canvas.height = this._xr._sessionEls.clientHeight;
+
+		// TODO:  Need to remove this listener if a new base layer is set
+		window.addEventListener('resize', () => {
+			baseLayer._context.canvas.width = baseLayer._context.canvas.clientWidth;
+			baseLayer._context.canvas.height = baseLayer._context.canvas.clientHeight;
+		}, false)
+
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
 	}
 

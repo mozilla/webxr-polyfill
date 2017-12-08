@@ -45,14 +45,15 @@ export default class XRWebGLLayer extends XRLayer {
 	get framebufferWidth(){
 		// not using this for now, on iOS it's not good.  
 		// var pr = window.devicePixelRatio || 1;
-		return this._context.canvas.clientWidth; 
+		//return this._context.canvas.clientWidth;
+		return this._context.canvas.width; 
 	}
 
 	get framebufferHeight(){
 		// not using this for now, on iOS it's not good.  
 		// var pr = window.devicePixelRatio || 1;
-
-		return this._context.canvas.clientHeight;
+		//return this._context.canvas.clientHeight;
+		return this._context.canvas.height;
 	}
 
 	requestViewportScaling(viewportScaleFactor){
