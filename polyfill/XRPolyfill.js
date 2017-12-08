@@ -51,6 +51,7 @@ class XRPolyfill extends EventHandlerBase {
 		window.XRLayer = XRLayer
 		window.XRWebGLLayer = XRWebGLLayer
 
+		this._getVRDisplaysFinished = false;
 
 		// Reality instances that may be shared by multiple XRSessions
 		this._sharedRealities = [new CameraReality(this)]
@@ -66,7 +67,11 @@ class XRPolyfill extends EventHandlerBase {
 						this._displays.push(new HeadMountedDisplay(this, this._sharedRealities[0], display))
 					}
 				}
+				this._getVRDisplaysFinished = true;
 			})
+		} else {
+			// if no WebVR, we don't need to wait
+			this._getVRDisplaysFinished = true;
 		}
 
 		// These elements are at the beginning of the body and absolutely positioned to fill the entire window
@@ -90,8 +95,16 @@ class XRPolyfill extends EventHandlerBase {
 	}
 
 	getDisplays(){
+		var self=this
+		var waitTillDisplaysChecked = function(resolve) {
+			if (!self._getVRDisplaysFinished) {
+				setTimeout(waitTillDisplaysChecked.bind(self, resolve), 30);
+			} else {
+				resolve(self._displays);
+			}
+		}
 		return new Promise((resolve, reject) => {
-			resolve(this._displays)
+			waitTillDisplaysChecked(resolve);
 		})
 	}
 
