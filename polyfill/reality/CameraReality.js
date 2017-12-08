@@ -54,15 +54,18 @@ export default class CameraReality extends Reality {
 						if(this._elContext === null){
 							throw 'Could not create CameraReality GL context'
 						}
-						window.addEventListener('resize', () => {
-							this._arCoreCanvas.width = window.innerWidth
-							this._arCoreCanvas.height = window.innerHeight
-						}, false)
 						break
 					}
 				}
 			})
 		}
+
+		window.addEventListener('resize', () => {
+			if(this._arCoreCanvas){
+				this._arCoreCanvas.width = window.innerWidth
+				this._arCoreCanvas.height = window.innerHeight
+			}
+		}, false)
 	}
 
 	/*
@@ -116,19 +119,26 @@ export default class CameraReality extends Reality {
 					this._running = false
 				})
 			} else {
+				this._xr._realityEls.appendChild(this._videoEl)
 				this._videoEl.play()
 			}
 		}
 	}
 
 	_stop(){
+		if(this._running === false) return
+		this._running = false
 		if(ARKitWrapper.HasARKit()){
 			if(this._arKitWrapper === null){
 				return
 			}
 			this._arKitWrapper.stop()
+		} else if(this._arCoreCanvas){
+			this._xr._realityEls.removeChild(this._arCoreCanvas)
+			this._arCoreCanvas = null
 		} else if(this._videoEl !== null){
 			this._videoEl.pause()
+			this._xr._realityEls.removeChild(this._videoEl)
 		}
 	}
 

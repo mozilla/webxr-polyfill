@@ -10,6 +10,7 @@ export default class XRSession extends EventHandlerBase {
 		this._xr = xr
 		this._display = display
 		this._createParameters = createParameters
+		this._ended = false
 
 		this._baseLayer = null
 		this._stageBounds = null
@@ -43,6 +44,7 @@ export default class XRSession extends EventHandlerBase {
 	get stageBounds(){ return this._stageBounds }
 
 	requestFrame(callback){
+		if(this._ended) return null
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
 		}
@@ -60,8 +62,12 @@ export default class XRSession extends EventHandlerBase {
 	}
 
 	end(){
-		//returns Promise<void>
-		throw 'Not implemented'
+		if(this._ended) return
+		this._ended = true
+		this._display._stop()
+		return new Promise((resolve, reject) => {
+			resolve()
+		})
 	}
 
 	_createPresentationFrame(){
