@@ -96,8 +96,8 @@ export default class FlatDisplay extends XRDisplay {
 
 		// TODO:  Need to remove this listener if a new base layer is set
 		window.addEventListener('resize', () => {
-			baseLayer._context.canvas.width = baseLayer._context.canvas.clientWidth;
-			baseLayer._context.canvas.height = baseLayer._context.canvas.clientHeight;
+			baseLayer.framebufferWidth = baseLayer._context.canvas.clientWidth;
+			baseLayer.framebufferHeight = baseLayer._context.canvas.clientHeight;
 		}, false)
 
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)

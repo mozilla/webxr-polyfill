@@ -51,8 +51,8 @@ export default class HeadMountedDisplay extends XRDisplay {
 		}]).then(() => {
 			const leftEye = this._vrDisplay.getEyeParameters('left')
 			const rightEye = this._vrDisplay.getEyeParameters('right')
-			baseLayer._context.canvas.width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2
-			baseLayer._context.canvas.height = Math.max(leftEye.renderHeight, rightEye.renderHeight)
+			baseLayer.framebufferWidth = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2
+			baseLayer.framebufferHeight = Math.max(leftEye.renderHeight, rightEye.renderHeight)
 			baseLayer._context.canvas.style.position = 'absolute'
 			baseLayer._context.canvas.style.bottom = '1px'
 			baseLayer._context.canvas.style.right = '1px'
