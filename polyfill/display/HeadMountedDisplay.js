@@ -51,15 +51,24 @@ export default class HeadMountedDisplay extends XRDisplay {
 		}]).then(() => {
 			const leftEye = this._vrDisplay.getEyeParameters('left')
 			const rightEye = this._vrDisplay.getEyeParameters('right')
-			baseLayer._context.canvas.width = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2
-			baseLayer._context.canvas.height = Math.max(leftEye.renderHeight, rightEye.renderHeight)
+			baseLayer.framebufferWidth = Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2
+			baseLayer.framebufferHeight = Math.max(leftEye.renderHeight, rightEye.renderHeight)
 			baseLayer._context.canvas.style.position = 'absolute'
 			baseLayer._context.canvas.style.bottom = '1px'
 			baseLayer._context.canvas.style.right = '1px'
-			document.body.appendChild(baseLayer._context.canvas)
+			baseLayer._context.canvas.style.width = "100%";
+			baseLayer._context.canvas.style.height = "100%";
+				document.body.appendChild(baseLayer._context.canvas)
 		}).catch(e => {
 			console.error('Unable to init WebVR 1.1 display', e)
 		})
+	}
+
+	_stop(){
+		// TODO figure out how to stop ARKit and ARCore so that CameraReality can still work
+		if(this.running === false) return
+		this.running = false
+		this._reality._stop()
 	}
 
 	/*
