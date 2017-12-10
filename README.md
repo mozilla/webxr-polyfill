@@ -64,7 +64,7 @@ If you run these apps on a device with no VR or AR tracking, the apps will use t
 
 ## Supported Realities
 
-- Camera Reality (ARKit on Mozilla iOS Test App, WebARonARCore on Android, WebARonARKit on iOS (NOT YET), WebRTC video stream (PARTIAL))
+- Camera Reality (ARKit on Mozilla iOS Test App, WebARonARCore on Android, WebARonARKit on iOS, WebRTC video stream (PARTIAL))
 - Virtual Reality (Desktop Firefox with Vive and Rift, Daydream (NOT TESTED), GearVR (Not Tested), Edge with MS MR headsets (NOT TESTED))
 - Passthrough Reality (NOT YET)
 
@@ -72,7 +72,7 @@ If you run these apps on a device with no VR or AR tracking, the apps will use t
 
 - Mozilla [WebXR Playground](https://github.com/mozilla/webxr-ios) iOS App using ARKit
 - Google [ARCore Test Chrome on Android](https://github.com/google-ar/WebARonARCore)
-- Google [ARCore Test Chrome on iOS](https://github.com/google-ar/WebARonARKit) (NOT YET)
+- Google [ARKit Test Chrome on iOS](https://github.com/google-ar/WebARonARKit)
 - Desktop Firefox with WebVR 1.1 HMDs
 - Mobile Safari, Chrome, and Firefox (PARTIAL, Daydream NOT TESTED)
 - GearVR Internet (NOT TESTED)
