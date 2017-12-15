@@ -95,6 +95,8 @@ export default class FlatDisplay extends XRDisplay {
 		baseLayer._context.canvas.style.height = "100%";
 		baseLayer._context.canvas.width = this._xr._sessionEls.clientWidth;
 		baseLayer._context.canvas.height = this._xr._sessionEls.clientHeight;
+		baseLayer.framebufferWidth = this._xr._sessionEls.clientWidth;
+		baseLayer.framebufferHeight = this._xr._sessionEls.clientHeight;
 
 		if (this._arKitWrapper === null) {
 			// TODO:  Need to remove this listener if a new base layer is set
