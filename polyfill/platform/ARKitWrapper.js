@@ -49,7 +49,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitWillEnterForeground', ARKitWrapper.WILL_ENTER_FOREGROUND_EVENT],
 			['arkitInterrupted', ARKitWrapper.INTERRUPTED_EVENT],
 			['arkitInterruptionEnded', ARKitWrapper.INTERRUPTION_ENDED_EVENT], 
-			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT]
+			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
+			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -62,7 +63,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 							detail: detail
 						}
 					)
-				)
+				)	
 			}
 		}
 	}
@@ -408,6 +409,7 @@ ARKitWrapper.WILL_ENTER_FOREGROUND_EVENT = 'arkit-will-enter-foreground'
 ARKitWrapper.INTERRUPTED_EVENT = 'arkit-interrupted'
 ARKitWrapper.INTERRUPTION_ENDED_EVENT = 'arkit-interruption-ended'
 ARKitWrapper.SHOW_DEBUG_EVENT = 'arkit-show-debug'
+ARKitWrapper.WINDOW_RESIZE_EVENT = 'arkit-window-resize'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1

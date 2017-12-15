@@ -57,6 +57,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
 				this._arKitWrapper.addEventListener(ARKitWrapper.INIT_EVENT, this._handleARKitInit.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitUpdate.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.WINDOW_RESIZE_EVENT, this._handleARKitWindowResize.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -89,16 +90,19 @@ export default class FlatDisplay extends XRDisplay {
 	FlatDisplay just adds the layer's canvas to DOM elements created by the XR polyfill
 	*/
 	_handleNewBaseLayer(baseLayer){
+		this.baseLayer = baseLayer;
 		baseLayer._context.canvas.style.width = "100%";
 		baseLayer._context.canvas.style.height = "100%";
 		baseLayer._context.canvas.width = this._xr._sessionEls.clientWidth;
 		baseLayer._context.canvas.height = this._xr._sessionEls.clientHeight;
 
-		// TODO:  Need to remove this listener if a new base layer is set
-		window.addEventListener('resize', () => {
-			baseLayer.framebufferWidth = baseLayer._context.canvas.clientWidth;
-			baseLayer.framebufferHeight = baseLayer._context.canvas.clientHeight;
-		}, false)
+		if (this._arKitWrapper === null) {
+			// TODO:  Need to remove this listener if a new base layer is set
+			window.addEventListener('resize', () => {
+				baseLayer.framebufferWidth = baseLayer._context.canvas.clientWidth;
+				baseLayer.framebufferHeight = baseLayer._context.canvas.clientHeight;
+			}, false)	
+		}
 
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
 	}
@@ -160,6 +164,11 @@ export default class FlatDisplay extends XRDisplay {
 				light_intensity: true
 			})
 		}, 1000)
+	}
+
+	_handleARKitWindowResize(ev){
+		this.baseLayer.framebufferWidth = ev.detail.width;
+		this.baseLayer.framebufferHeight = ev.detail.height;
 	}
 
 	_createSession(parameters){
