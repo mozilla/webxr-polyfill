@@ -46,13 +46,15 @@ export default class CameraReality extends Reality {
 					if(display.capabilities.hasPassThroughCamera){ // This is the ARCore extension to WebVR 1.1
 						this._vrDisplay = display
 						this._vrFrameData = new VRFrameData()
-						this._arCoreCanvas = document.createElement('canvas')
-						this._xr._realityEls.appendChild(this._arCoreCanvas)
-						this._arCoreCanvas.width = window.innerWidth
-						this._arCoreCanvas.height = window.innerHeight
-						this._elContext = this._arCoreCanvas.getContext('webgl')
-						if(this._elContext === null){
-							throw 'Could not create CameraReality GL context'
+						if (!window.WebARonARKitSetData) {							
+							this._arCoreCanvas = document.createElement('canvas')
+							this._xr._realityEls.appendChild(this._arCoreCanvas)
+							this._arCoreCanvas.width = window.innerWidth
+							this._arCoreCanvas.height = window.innerHeight
+							this._elContext = this._arCoreCanvas.getContext('webgl')
+							if(this._elContext === null){
+								throw 'Could not create CameraReality GL context'
+							}
 						}
 						break
 					}
