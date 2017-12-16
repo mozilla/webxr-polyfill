@@ -72,8 +72,10 @@ export default class CameraReality extends Reality {
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
 	_handleNewFrame(frame){
-		if(this._arCoreCameraRenderer){
-			this._arCoreCameraRenderer.render()
+		if(this._vrDisplay){
+			if (this._arCoreCameraRenderer) {
+				this._arCoreCameraRenderer.render()
+			}
 			this._vrDisplay.getFrameData(this._vrFrameData)
 		}
 
@@ -84,8 +86,12 @@ export default class CameraReality extends Reality {
 		if(this._running) return
 		this._running = true
 
-		if(this._vrDisplay !== null){ // Using ARCore
-			this._arCoreCameraRenderer = new ARCoreCameraRenderer(this._vrDisplay, this._elContext)
+		if(this._vrDisplay !== null){ // Using WebAR
+			if (window.WebARonARKitSetData) {
+				// WebARonARKit renders camera separately
+			} else {
+				this._arCoreCameraRenderer = new ARCoreCameraRenderer(this._vrDisplay, this._elContext)
+			}
 			this._initialized = true
 		} else if(ARKitWrapper.HasARKit()){ // Using ARKit
 			if(this._initialized === false){
