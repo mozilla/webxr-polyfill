@@ -165,7 +165,7 @@ export default class CameraReality extends Reality {
 	_updateAnchorFromARKitUpdate(uid, anchorInfo){
 		const anchor = this._anchors.get(uid) || null
 		if(anchor === null){
-			console.log('unknown anchor', anchor)
+			// console.log('unknown anchor', anchor)
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
@@ -191,12 +191,13 @@ export default class CameraReality extends Reality {
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
 		return new Promise((resolve, reject) => {
-			if(this._arKitWrapper !== null){
+			if(this._arKitWrapper !== null){	
 				// Perform a hit test using the ARKit integration
+				var test = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
 				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
-						console.log('miss')
+						// console.log('miss')
 						return
 					}
 					const hit = this._pickARKitHit(hits)
@@ -287,5 +288,30 @@ export default class CameraReality extends Reality {
 			info = data[0]
 		}
 		return info
+	}
+
+	/*
+	Found intersections with anchors and planes by a ray normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
+	returns an Array of VRHit
+	*/
+	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
+		if(this._arKitWrapper !== null){
+			// Perform a hit test using the ARKit integration
+			let hits = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
+			if(hits.length == 0){
+				return null;
+			}
+			return hits;
+		} else if(this._vrDisplay !== null) {
+			// Perform a hit test using the ARCore data
+			let hits = this._vrDisplay.hitTest(normalizedScreenX, normalizedScreenY)
+			if(hits.length == 0){
+				return null;
+			}
+			return hits;
+		} else {
+			// No platform support for finding anchors
+			return null;
+		}
 	}
 }

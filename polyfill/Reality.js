@@ -87,5 +87,8 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _removeAnchor')
 	}
 
+	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
+		throw new Error('Exending classes should implement _hitTestNoAnchor')
+	}
 	// attribute EventHandler onchange;
 }

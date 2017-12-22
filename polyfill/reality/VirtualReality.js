@@ -46,4 +46,8 @@ export default class VirtualReality extends Reality {
 	_removeAnchor(uid){
 		this._anchors.delete(uid)
 	}
+
+	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
+		return null
+	}
 }

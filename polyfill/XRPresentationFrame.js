@@ -66,6 +66,11 @@ export default class XRPresentationFrame {
 		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
 	}
 
+	hitTestNoAnchor(normalizedScreenX, normalizedScreenY){
+		// Array<VRHit> hitTestNoAnchor(float32, float32); // cast a ray to find all plane intersections in the Reality
+		return this._session.reality._hitTestNoAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
+	}
+
 	/*
 	Find an XRAnchorOffset that is at floor level below the current head pose
 	uid will be the resulting anchor uid (if any), or if null one will be assigned
