@@ -193,7 +193,6 @@ export default class CameraReality extends Reality {
 		return new Promise((resolve, reject) => {
 			if(this._arKitWrapper !== null){	
 				// Perform a hit test using the ARKit integration
-				var test = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
 				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
@@ -298,6 +297,9 @@ export default class CameraReality extends Reality {
 		if(this._arKitWrapper !== null){
 			// Perform a hit test using the ARKit integration
 			let hits = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
+			for (let i = 0; i < hits.length; i++) {
+				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+			}
 			if(hits.length == 0){
 				return null;
 			}
@@ -305,6 +307,9 @@ export default class CameraReality extends Reality {
 		} else if(this._vrDisplay !== null) {
 			// Perform a hit test using the ARCore data
 			let hits = this._vrDisplay.hitTest(normalizedScreenX, normalizedScreenY)
+			for (let i = 0; i < hits.length; i++) {
+				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+			}
 			if(hits.length == 0){
 				return null;
 			}
