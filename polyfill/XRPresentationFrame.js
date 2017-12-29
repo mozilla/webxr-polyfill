@@ -28,12 +28,12 @@ export default class XRPresentationFrame {
 
 	get hasLightEstimate(){
 		//readonly attribute boolean hasLightEstimate;
-		return false
+		return this._session.reality._getHasLightEstimate();
 	}
 
 	get lightEstimate(){
 		//readonly attribute XRLightEstimate? lightEstimate;
-		return null
+		return this._session.reality._getLightAmbientIntensity();
 	}
 
 	/*

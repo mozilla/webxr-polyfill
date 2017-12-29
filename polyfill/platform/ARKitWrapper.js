@@ -39,6 +39,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
+		this.lightIntensity = 1000;
 		/**
      * The current projection matrix of the device.
      * @type {Float32Array}
@@ -680,6 +681,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			detail: this._rawARData
 		}))
 
+		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
 

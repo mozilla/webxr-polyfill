@@ -90,5 +90,9 @@ export default class Reality extends EventHandlerBase {
 	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
 		throw new Error('Exending classes should implement _hitTestNoAnchor')
 	}
+
+	_getLightAmbientIntensity(){
+		throw new Error('Exending classes should implement _getLightAmbientIntensity')
+	}
 	// attribute EventHandler onchange;
 }

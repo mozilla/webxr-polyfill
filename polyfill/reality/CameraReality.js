@@ -4,6 +4,8 @@ import XRViewPose from '../XRViewPose.js'
 
 import XRAnchorOffset from '../XRAnchorOffset.js'
 
+import XRLightEstimate from '../XRLightEstimate.js'
+
 import MatrixMath from '../fill/MatrixMath.js'
 import Quaternion from '../fill/Quaternion.js'
 
@@ -37,6 +39,8 @@ export default class CameraReality extends Reality {
 		this._elContext = null
 		this._vrDisplay = null
 		this._vrFrameData = null
+
+		this._lightEstimate = new XRLightEstimate();
 
 		// Try to find a WebVR 1.1 display that supports Google's ARCore extensions
 		if(typeof navigator.getVRDisplays === 'function'){
@@ -155,6 +159,7 @@ export default class CameraReality extends Reality {
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 			}
+
 		}
 	}
 
@@ -316,6 +321,24 @@ export default class CameraReality extends Reality {
 			return hits;
 		} else {
 			// No platform support for finding anchors
+			return null;
+		}
+	}
+
+	_getHasLightEstimate(){
+		if(this._arKitWrapper !== null){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	_getLightAmbientIntensity(){
+		if(this._arKitWrapper !== null){
+			this._lightEstimate.ambientIntensity = this._arKitWrapper.lightIntensity;
+			return this._lightEstimate.ambientIntensity;
+		}else{
+			// No platform support for ligth estimation
 			return null;
 		}
 	}
