@@ -205,6 +205,8 @@ class XRExampleBase {
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
 			// Each XRView has its own projection matrix, so set the camera to use that
+			this.camera.matrixWorldInverse.fromArray(view.viewMatrix)
+			this.camera.matrixWorld.fromArray(this.camera.matrixWorldInverse)
 			this.camera.projectionMatrix.fromArray(view.projectionMatrix)
 			this.camera.matrix.fromArray(headPose.poseModelMatrix)
 			this.camera.updateMatrixWorld(true)
