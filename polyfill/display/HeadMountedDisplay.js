@@ -92,8 +92,8 @@ export default class HeadMountedDisplay extends XRDisplay {
 
 	_updateFromVRFrameData(){
 		this._vrDisplay.getFrameData(this._vrFrameData)
-		this._leftView.setViewMatrix(this._vrFrameData.rightViewMatrix)
-		this._rightView.setViewMatrix(this._vrFrameData.rightProjectionMatrix)
+		this._leftView.setViewMatrix(this._vrFrameData.leftViewMatrix)
+		this._rightView.setViewMatrix(this._vrFrameData.rightViewMatrix)
 		this._leftView.setProjectionMatrix(this._vrFrameData.leftProjectionMatrix)
 		this._rightView.setProjectionMatrix(this._vrFrameData.rightProjectionMatrix)
 		if(this._vrFrameData.pose){

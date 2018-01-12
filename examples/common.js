@@ -200,16 +200,15 @@ class XRExampleBase {
 		this.renderer.autoClear = false
 		this.renderer.setSize(this.session.baseLayer.framebufferWidth, this.session.baseLayer.framebufferHeight, false)
 		this.renderer.clear()
-		this.camera.matrixAutoUpdate = false
 
+		this.camera.matrixAutoUpdate = false
+		this.camera.matrix.fromArray(headPose.poseModelMatrix)
+		this.camera.updateMatrixWorld()
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
 			// Each XRView has its own projection matrix, so set the camera to use that
 			this.camera.matrixWorldInverse.fromArray(view.viewMatrix)
-			this.camera.matrixWorld.fromArray(this.camera.matrixWorldInverse)
 			this.camera.projectionMatrix.fromArray(view.projectionMatrix)
-			this.camera.matrix.fromArray(headPose.poseModelMatrix)
-			this.camera.updateMatrixWorld(true)
 
 			// Set up the renderer to the XRView's viewport and then render
 			this.renderer.clearDepth()
@@ -217,6 +216,24 @@ class XRExampleBase {
 			this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
 			this.doRender()
 		}
+
+		// this.camera.matrixAutoUpdate = false
+
+		// // Render each view into this.session.baseLayer.context
+		// for(const view of frame.views){
+		// 	// Each XRView has its own projection matrix, so set the camera to use that
+		// 	this.camera.matrixWorldInverse.fromArray(view.viewMatrix)
+		// 	this.camera.matrixWorld.fromArray(this.camera.matrixWorldInverse)
+		// 	this.camera.projectionMatrix.fromArray(view.projectionMatrix)
+		// 	this.camera.matrix.fromArray(headPose.poseModelMatrix)
+		// 	this.camera.updateMatrixWorld(true)
+
+		// 	// Set up the renderer to the XRView's viewport and then render
+		// 	this.renderer.clearDepth()
+		// 	const viewport = view.getViewport(this.session.baseLayer)
+		// 	this.renderer.setViewport(viewport.x, viewport.y, viewport.width, viewport.height)
+		// 	this.doRender()
+		// }
 	}
 
 	doRender(){
