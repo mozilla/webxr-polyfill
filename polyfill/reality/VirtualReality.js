@@ -50,4 +50,8 @@ export default class VirtualReality extends Reality {
 	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
 		return null
 	}
+
+	_getHasLightEstimate(){
+		return false;
+	}
 }
