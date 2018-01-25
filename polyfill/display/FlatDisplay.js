@@ -58,6 +58,8 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.INIT_EVENT, this._handleARKitInit.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitUpdate.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.WINDOW_RESIZE_EVENT, this._handleARKitWindowResize.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.ON_ERROR, this._handleOnError.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -169,6 +171,23 @@ export default class FlatDisplay extends XRDisplay {
 	_handleARKitWindowResize(ev){
 		this.baseLayer.framebufferWidth = ev.detail.width;
 		this.baseLayer.framebufferHeight = ev.detail.height;
+	}
+
+	_handleOnError(ev){
+		//"domain": "error domain",
+		//"code": 1234,
+		//"message": "error message"
+		// Ex: > {code: 3, message: "error.localizedDescription", domain: "error.domain"}
+	}
+
+	_handleArTrackingChanged(ev){
+		// ev.detail values
+		// #define WEB_AR_TRACKING_STATE_NORMAL               @"ar_tracking_normal"
+		// #define WEB_AR_TRACKING_STATE_LIMITED              @"ar_tracking_limited"
+		// #define WEB_AR_TRACKING_STATE_LIMITED_INITIALIZING @"ar_tracking_limited_initializing"
+		// #define WEB_AR_TRACKING_STATE_LIMITED_MOTION       @"ar_tracking_limited_excessive_motion"
+		// #define WEB_AR_TRACKING_STATE_LIMITED_FEATURES     @"ar_tracking_limited_insufficient_features"
+		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
 	}
 
 	_createSession(parameters){

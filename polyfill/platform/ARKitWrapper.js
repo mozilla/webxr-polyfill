@@ -77,7 +77,9 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitInterrupted', ARKitWrapper.INTERRUPTED_EVENT],
 			['arkitInterruptionEnded', ARKitWrapper.INTERRUPTION_ENDED_EVENT], 
 			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
-			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT]
+			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
+			['onError', ARKitWrapper.ON_ERROR],
+			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -799,6 +801,8 @@ ARKitWrapper.INTERRUPTED_EVENT = 'arkit-interrupted'
 ARKitWrapper.INTERRUPTION_ENDED_EVENT = 'arkit-interruption-ended'
 ARKitWrapper.SHOW_DEBUG_EVENT = 'arkit-show-debug'
 ARKitWrapper.WINDOW_RESIZE_EVENT = 'arkit-window-resize'
+ARKitWrapper.ON_ERROR = 'on-error'
+ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
