@@ -28,12 +28,12 @@ export default class XRPresentationFrame {
 
 	get hasLightEstimate(){
 		//readonly attribute boolean hasLightEstimate;
-		return false
+		return this._session.reality._getHasLightEstimate();
 	}
 
 	get lightEstimate(){
 		//readonly attribute XRLightEstimate? lightEstimate;
-		return null
+		return this._session.reality._getLightAmbientIntensity();
 	}
 
 	/*
@@ -64,6 +64,11 @@ export default class XRPresentationFrame {
 	findAnchor(normalizedScreenX, normalizedScreenY){
 		// Promise<XRAnchorOffset?> findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
 		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
+	}
+
+	hitTestNoAnchor(normalizedScreenX, normalizedScreenY){
+		// Array<VRHit> hitTestNoAnchor(float32, float32); // cast a ray to find all plane intersections in the Reality
+		return this._session.reality._hitTestNoAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
 	}
 
 	/*

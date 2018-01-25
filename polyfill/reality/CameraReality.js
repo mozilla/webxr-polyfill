@@ -4,6 +4,8 @@ import XRViewPose from '../XRViewPose.js'
 
 import XRAnchorOffset from '../XRAnchorOffset.js'
 
+import XRLightEstimate from '../XRLightEstimate.js'
+
 import MatrixMath from '../fill/MatrixMath.js'
 import Quaternion from '../fill/Quaternion.js'
 
@@ -38,6 +40,8 @@ export default class CameraReality extends Reality {
 		this._vrDisplay = null
 		this._vrFrameData = null
 
+		this._lightEstimate = new XRLightEstimate();
+
 		// Try to find a WebVR 1.1 display that supports Google's ARCore extensions
 		if(typeof navigator.getVRDisplays === 'function'){
 			navigator.getVRDisplays().then(displays => {
@@ -46,13 +50,15 @@ export default class CameraReality extends Reality {
 					if(display.capabilities.hasPassThroughCamera){ // This is the ARCore extension to WebVR 1.1
 						this._vrDisplay = display
 						this._vrFrameData = new VRFrameData()
-						this._arCoreCanvas = document.createElement('canvas')
-						this._xr._realityEls.appendChild(this._arCoreCanvas)
-						this._arCoreCanvas.width = window.innerWidth
-						this._arCoreCanvas.height = window.innerHeight
-						this._elContext = this._arCoreCanvas.getContext('webgl')
-						if(this._elContext === null){
-							throw 'Could not create CameraReality GL context'
+						if (!window.WebARonARKitSetData) {							
+							this._arCoreCanvas = document.createElement('canvas')
+							this._xr._realityEls.appendChild(this._arCoreCanvas)
+							this._arCoreCanvas.width = window.innerWidth
+							this._arCoreCanvas.height = window.innerHeight
+							this._elContext = this._arCoreCanvas.getContext('webgl')
+							if(this._elContext === null){
+								throw 'Could not create CameraReality GL context'
+							}
 						}
 						break
 					}
@@ -72,8 +78,10 @@ export default class CameraReality extends Reality {
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
 	_handleNewFrame(frame){
-		if(this._arCoreCameraRenderer){
-			this._arCoreCameraRenderer.render()
+		if(this._vrDisplay){
+			if (this._arCoreCameraRenderer) {
+				this._arCoreCameraRenderer.render()
+			}
 			this._vrDisplay.getFrameData(this._vrFrameData)
 		}
 
@@ -84,8 +92,12 @@ export default class CameraReality extends Reality {
 		if(this._running) return
 		this._running = true
 
-		if(this._vrDisplay !== null){ // Using ARCore
-			this._arCoreCameraRenderer = new ARCoreCameraRenderer(this._vrDisplay, this._elContext)
+		if(this._vrDisplay !== null){ // Using WebAR
+			if (window.WebARonARKitSetData) {
+				// WebARonARKit renders camera separately
+			} else {
+				this._arCoreCameraRenderer = new ARCoreCameraRenderer(this._vrDisplay, this._elContext)
+			}
 			this._initialized = true
 		} else if(ARKitWrapper.HasARKit()){ // Using ARKit
 			if(this._initialized === false){
@@ -147,6 +159,7 @@ export default class CameraReality extends Reality {
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 			}
+
 		}
 	}
 
@@ -157,7 +170,7 @@ export default class CameraReality extends Reality {
 	_updateAnchorFromARKitUpdate(uid, anchorInfo){
 		const anchor = this._anchors.get(uid) || null
 		if(anchor === null){
-			console.log('unknown anchor', anchor)
+			// console.log('unknown anchor', anchor)
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
@@ -183,12 +196,12 @@ export default class CameraReality extends Reality {
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
 		return new Promise((resolve, reject) => {
-			if(this._arKitWrapper !== null){
+			if(this._arKitWrapper !== null){	
 				// Perform a hit test using the ARKit integration
 				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
-						console.log('miss')
+						// console.log('miss')
 						return
 					}
 					const hit = this._pickARKitHit(hits)
@@ -279,5 +292,54 @@ export default class CameraReality extends Reality {
 			info = data[0]
 		}
 		return info
+	}
+
+	/*
+	Found intersections with anchors and planes by a ray normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
+	returns an Array of VRHit
+	*/
+	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
+		if(this._arKitWrapper !== null){
+			// Perform a hit test using the ARKit integration
+			let hits = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
+			for (let i = 0; i < hits.length; i++) {
+				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+			}
+			if(hits.length == 0){
+				return null;
+			}
+			return hits;
+		} else if(this._vrDisplay !== null) {
+			// Perform a hit test using the ARCore data
+			let hits = this._vrDisplay.hitTest(normalizedScreenX, normalizedScreenY)
+			for (let i = 0; i < hits.length; i++) {
+				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+			}
+			if(hits.length == 0){
+				return null;
+			}
+			return hits;
+		} else {
+			// No platform support for finding anchors
+			return null;
+		}
+	}
+
+	_getHasLightEstimate(){
+		if(this._arKitWrapper !== null){
+			return true;
+		}else{
+			return false;
+		}
+	}
+
+	_getLightAmbientIntensity(){
+		if(this._arKitWrapper !== null){
+			this._lightEstimate.ambientIntensity = this._arKitWrapper.lightIntensity;
+			return this._lightEstimate.ambientIntensity;
+		}else{
+			// No platform support for ligth estimation
+			return null;
+		}
 	}
 }
