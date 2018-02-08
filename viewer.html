@@ -15,16 +15,53 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
 		<style>
+            /*
+            colors
+             */
+
+            /*https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/wp-content/themes/frontierline/fonts/ZillaSlab-Regular.woff2*/
+
+
+            @font-face { font-family: 'Zilla Slab'; font-weight: normal; font-style: normal; src: url("https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/wp-content/themes/frontierline/fonts/ZillaSlab-Regular.woff2") format("woff2"), url("https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/wp-content/themes/frontierline/fonts/ZillaSlab-Regular.woff") format("woff"); }
+            @font-face { font-family: 'Zilla Slab'; font-weight: bold; font-style: normal; src: url("https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/wp-content/themes/frontierline/fonts/ZillaSlab-Bold.woff2") format("woff2"), url("https://ffp4g1ylyit3jdyti1hqcvtb-wpengine.netdna-ssl.com/wp-content/themes/frontierline/fonts/ZillaSlab-Bold.woff") format("woff"); }
+            /*@font-face { font-family: 'Zilla Slab'; font-weight: normal; font-style: italic; src: url("fonts/ZillaSlab-RegularItalic.woff2") format("woff2"), url("fonts/ZillaSlab-RegularItalic.woff") format("woff"); }*/
+            /*@font-face { font-family: 'Zilla Slab'; font-weight: bold; font-style: italic; src: url("fonts/ZillaSlab-BoldItalic.woff2") format("woff2"), url("fonts/ZillaSlab-BoldItalic.woff") format("woff"); }*/
+            /*@font-face { font-family: 'Open Sans'; font-weight: normal; font-style: normal; src: url("fonts/opensans-regular.woff2") format("woff2"), url("fonts/opensans-regular.woff") format("woff"); }*/
+            /*@font-face { font-family: 'Open Sans'; font-weight: bold; font-style: normal; src: url("fonts/opensans-bold.woff2") format("woff2"), url("fonts/opensans-bold.woff") format("woff"); }*/
+
+
+            body, html {
+                background-color: #ffffff;
+                color: #221E1D;
+                font-family: "Zilla Slab", "Open Sans", X-LocaleSpecific, sans-serif;
+                /*font-size: 12px;*/
+                line-height: 1.3em;
+            }
+
+            h1, h2, h3 {
+                background-color: #221E1D;
+                color: white;
+                padding: 0.25rem 0.25rem 0.5rem 0.4rem;
+                font-weight: normal;
+                margin: 2rem 0 0 0;
+            }
+
+            a {
+                color: #00a7e0;
+            }
+
+            li {
+                border: 1px solid #ccc;
+                background-color: #eee;
+            }
+
+            /* layout */
+
 			body, html {
 				padding: 0;
 				margin: 0;
 				width: 100%;
 				height: 100%;
-				background-color: #ECEAE0;
-				color: #221E1D;
-				font-family: sans-serif;
-				font-size: 12px;
-				line-height: 1.3em;
 				padding-bottom: 200px;
 			}
 
@@ -32,37 +69,10 @@
 				margin: 0.5rem;
 			}
 			section > * {
-				margin: 0.5rem;
+				margin-left: 0.5rem;
+                margin-right: 0.5rem;
 			}
 
-			h1, h2, h3 {
-				border: 1px solid #ccc;
-				border-width: 0 0 1px 0;
-				padding-bottom: 0.2rem;
-				padding-top: 0.5rem;
-				color: #221E1D;
-				font-weight: normal;
-			}
-
-
-
-			/* grid code */
-
-			ul {
-				list-style: none;
-				padding:0;
-				margin:0;
-				display: flex;
-				flex-flow: wrap row;
-				justify-content: flex-start;
-			}
-			ul li {
-				max-width: 15em;
-				border: 1px solid #ccc;
-				background-color: #FFFFFF;
-				padding: 0.5em;
-				margin: 0.5em;
-			}
 			ul li img {
 				width: 100%;
 				height: auto;
@@ -70,7 +80,6 @@
 				padding:0;
 			}
 
-			/* example item contents */
 			.intro {
 				max-width: 40em;
 				padding: 0.5rem 0;
@@ -82,7 +91,6 @@
 			
 			a {
 				text-decoration: none;
-				color: #E9633B;
 			}
 
 			li a {
@@ -91,6 +99,29 @@
 
 			li p {
 				margin-top: 0.5rem;
+			}
+
+			ul {
+				list-style: none;
+				margin:0;
+				padding:0;
+				width: 100%;
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(150px,1fr));
+			}
+			li {
+				display: flex;
+				flex-direction: column;
+				padding: 0.5em;
+				margin: 0.5rem;
+				justify-content: flex-start;
+			}
+			li a.img {
+				flex: 1;
+				justify-self: flex-end;
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-end;
 			}
 		</style>
 	</head>
@@ -107,22 +138,56 @@
 			</p>
 		</section>
 		<section>
-			<h2>Examples</h2>
+			<h2>Samples</h2>
+
+
+			<ul>
+				<li>
+					<a href="http://apainter.webxrexperiments.com/">A-Painter</a>
+					<a class='source' href="wxrv://apainter.webxrexperiments.com/">wxrv</a>
+					<p>Draw in 3D</p>
+					<a class="img" href="http://apainter.webxrexperiments.com/">
+						<img src="./screenshots/apainter.png" width="300" height="200"/>
+					</a>
+				</li>
+
+				<li>
+					<a href="http://apainter.webxrexperiments.com/?url=https://ucarecdn.com/0b45b93b-e651-42d8-ba49-b2df907575f3/">A-painter fox</a>
+					<a class='source' href="wxrv://apainter.webxrexperiments.com/?url=https://ucarecdn.com/0b45b93b-e651-42d8-ba49-b2df907575f3/">wxrv</a>
+					<p>A-Painter Fox</p>
+					<a class="img"  href="http://apainter.webxrexperiments.com/?url=https://ucarecdn.com/0b45b93b-e651-42d8-ba49-b2df907575f3/">
+						<img src="./screenshots/apainter.png" width="300" height="200"/>
+					</a>
+				</li>
+
+				<li>
+					<a href="http://apainter.webxrexperiments.com/?url=https://ucarecdn.com/962b242b-87a9-422c-b730-febdc470f203/">A-painter Balrog</a>
+					<a class='source' href="wxrv://apainter.webxrexperiments.com/?url=https://ucarecdn.com/962b242b-87a9-422c-b730-febdc470f203/">wxrv</a>
+					<p>A-Painter Balrog</p>
+					<a  class="img" href="http://apainter.webxrexperiments.com/?url=https://ucarecdn.com/962b242b-87a9-422c-b730-febdc470f203/">
+						<img src="./screenshots/apainter.png" width="300" height="200"/>
+					</a>
+				</li>
+
+
+			</ul>
+			<h2>Simple Examples</h2>
 
 			<ul>
 				<li>
 					<a href="examples/ar_simplest/">Simplest AR</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_simplest/index.html">source</a>
 					<p>Use Three.js to position the Utah Teapot in an augmented reality scene.</p>
-					<a href="examples/ar_simplest/">
+					<a  class="img" href="examples/ar_simplest/">
 						<img src="examples/ar_simplest/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
+
 				<li>
 					<a href="examples/ar_anchors/">Anchors</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_anchors/index.html">source</a>
 					<p>Position boxes in space and receive updated positions using ARKit anchors.</p>
-					<a href="examples/ar_anchors/">
+					<a  class="img" href="examples/ar_anchors/">
 						<img src="examples/ar_anchors/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
@@ -130,7 +195,7 @@
 					<a href="examples/hit_test/">Hit testing</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/hit_test/index.html">source</a>
 					<p>Find anchors by tapping to search for surfaces.</p>
-					<a href="examples/hit_test/">
+					<a  class="img" href="examples/hit_test/">
 						<img src="examples/hit_test/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
@@ -138,7 +203,7 @@
 					<a href="examples/peoples/">Peoples</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/peoples/index.html">source</a>
 					<p>Place animated people on surfaces.</p>
-					<a href="examples/peoples/">
+					<a  class="img" href="examples/peoples/">
 						<img src="examples/peoples/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
@@ -146,7 +211,7 @@
 					<a href="examples/boombox/">Boom box</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/boombox/index.html">source</a>
 					<p>A shiny boom box in an environment map</p>
-					<a href="examples/boombox/">
+					<a  class="img" href="examples/boombox/">
 						<img src="examples/boombox/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
@@ -154,7 +219,7 @@
 					<a href="examples/reticle/">Reticle</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/reticle/index.html">source</a>
 					<p>Place a reticle on surfaces.</p> 
-					<a href="examples/reticle/">
+					<a class="img" href="examples/reticle/">
 						<img src="examples/reticle/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
@@ -162,7 +227,7 @@
 					<a href="examples/light/">Light</a>
 					<a class="source" href="https://github.com/mozilla/webxr-polyfill/blob/master/examples/light/index.html">source</a>
 					<p>Place a reticle on surfaces with light estimation.</p> 
-					<a href="examples/light/">
+					<a  class="img" href="examples/light/">
 						<img src="examples/light/screenshot.jpeg" width="300" height="200"/>
 					</a>
 				</li>
