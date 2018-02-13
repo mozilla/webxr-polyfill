@@ -86,12 +86,18 @@ class XRPolyfill extends EventHandlerBase {
 			el.style.height = '100%'
 		}
 
-		document.addEventListener('DOMContentLoaded', () => {
-			document.body.style.width = '100%'
-			document.body.style.height = '100%'
-			document.body.prepend(this._sessionEls)
-			document.body.prepend(this._realityEls) // realities must render behind the sessions
-		})
+		function prependElements() {
+			document.body.style.width = '100%';
+			document.body.style.height = '100%';
+			document.body.prepend(this._sessionEls);
+			document.body.prepend(this._realityEls); // realities must render behind the sessions
+		}
+
+		if(document.readyState !== 'loading') {
+			prependElements.bind(this);
+		} else {
+			document.addEventListener('DOMContentLoaded', prependElements.bind(this));
+		}
 	}
 
 	getDisplays(){
