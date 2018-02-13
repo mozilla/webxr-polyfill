@@ -94,7 +94,7 @@ class XRPolyfill extends EventHandlerBase {
 		}
 
 		if(document.readyState !== 'loading') {
-			prependElements();
+			prependElements.bind(this);
 		} else {
 			document.addEventListener('DOMContentLoaded', prependElements.bind(this));
 		}
