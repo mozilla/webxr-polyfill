@@ -86,7 +86,7 @@ class XRPolyfill extends EventHandlerBase {
 			el.style.height = '100%'
 		}
 
-		function prependElements() {
+		let prependElements = () => {
 			document.body.style.width = '100%';
 			document.body.style.height = '100%';
 			document.body.prepend(this._sessionEls);
@@ -94,9 +94,9 @@ class XRPolyfill extends EventHandlerBase {
 		}
 
 		if(document.readyState !== 'loading') {
-			prependElements.bind(this);
+			prependElements();
 		} else {
-			document.addEventListener('DOMContentLoaded', prependElements.bind(this));
+			document.addEventListener('DOMContentLoaded', prependElements);
 		}
 	}
 
