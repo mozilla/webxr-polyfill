@@ -97,12 +97,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
-		 * This structure has a single property - modelMatrix - which encodes the
+		 * This structure has a single property - transform - which encodes the
 		 * translation of the intersection of the hit in the form of a 4x4 matrix.
 		 * @constructor
 		 */
 		function VRHit() {
-			this.modelMatrix = new Float32Array(16);
+			this.transform = new Float32Array(16);
 			return this;
 		};
 
@@ -205,7 +205,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			*/
 		 var sortFunction = function(a, b) {
 			 // Get the matrix of hit a.
-			 setMat4FromArray(hitVars.planeMatrix, a.modelMatrix);
+			 setMat4FromArray(hitVars.planeMatrix, a.transform);
 			 // Get the translation component of a's matrix.
 			 mat4.getTranslation(hitVars.planeIntersection, hitVars.planeMatrix);
 			 // Get the distance from the intersection point to the camera.
@@ -215,7 +215,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 );
  
 			 // Get the matrix of hit b.
-			 setMat4FromArray(hitVars.planeMatrix, b.modelMatrix);
+			 setMat4FromArray(hitVars.planeMatrix, b.transform);
 			 // Get the translation component of b's matrix.
 			 mat4.getTranslation(hitVars.planeIntersection, hitVars.planeMatrix);
 			 // Get the distance from the intersection point to the camera.
@@ -285,7 +285,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 for (var i = 0; i < planes.length; i++) {
 				 var plane = planes[i];
 				 // Get the anchor transform.
-				 setMat4FromArray(hitVars.planeMatrix, plane.modelMatrix);
+				 setMat4FromArray(hitVars.planeMatrix, plane.transform);
  
 				 // Get the position of the anchor in world-space.
 				 vec3.set(
@@ -380,7 +380,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
 				var hit = new VRHit();
 				 for (var j = 0; j < 16; j++) {
-					 hit.modelMatrix[j] = hitVars.planeHit[j];
+					 hit.transform[j] = hitVars.planeHit[j];
 				 }
 				 hit.i = i;
 				 hits.push(hit);
@@ -695,12 +695,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 						id: element.uuid,
 						center: element.h_plane_center,
 						extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-						modelMatrix: element.transform
+						transform: element.transform
 					});
 				}else{
 					this.anchors_.set(element.uuid, {
 						id: element.uuid,
-						modelMatrix: element.transform
+						transform: element.transform
 					});
 				}
 			}

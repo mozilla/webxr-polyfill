@@ -243,7 +243,7 @@ export default class CameraReality extends Reality {
 				let anchor = this._getAnchor(hits[0].uuid)
 				if(anchor === null){
 					let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
-					coordinateSystem._relativeMatrix = hits[0].modelMatrix
+					coordinateSystem._relativeMatrix = hits[0].transform
 					coordinateSystem._relativeMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 					anchor = new XRAnchor(coordinateSystem)
 					this._anchors.set(anchor.uid, anchor)
@@ -303,7 +303,7 @@ export default class CameraReality extends Reality {
 			// Perform a hit test using the ARKit integration
 			let hits = this._arKitWrapper.hitTestNoAnchor(normalizedScreenX, normalizedScreenY);
 			for (let i = 0; i < hits.length; i++) {
-				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+				hits[i].transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 			}
 			if(hits.length == 0){
 				return null;
@@ -313,7 +313,7 @@ export default class CameraReality extends Reality {
 			// Perform a hit test using the ARCore data
 			let hits = this._vrDisplay.hitTest(normalizedScreenX, normalizedScreenY)
 			for (let i = 0; i < hits.length; i++) {
-				hits[i].modelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
+				hits[i].transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 			}
 			if(hits.length == 0){
 				return null;

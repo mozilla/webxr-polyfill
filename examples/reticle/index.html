@@ -98,7 +98,7 @@
 						var tempScale = new THREE.Vector3();
 						if (hit && hit.length > 0) {
 							this.reticle.visible = true
-							model.fromArray(hit[0].modelMatrix);
+							model.fromArray(hit[0].transform);
 							model.decompose(tempPos, tempQuat, tempScale);
 							this.reticle.position.copy(tempPos);
 							this.reticle.quaternion.copy(tempQuat);
