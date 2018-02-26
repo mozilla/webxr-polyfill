@@ -97,12 +97,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
-		 * This structure has a single property - transform - which encodes the
+		 * This structure has a single property - modelMatrix - which encodes the
 		 * translation of the intersection of the hit in the form of a 4x4 matrix.
 		 * @constructor
 		 */
 		function VRHit() {
-			this.transform = new Float32Array(16);
+			this.modelMatrix = new Float32Array(16);
 			return this;
 		};
 
@@ -205,7 +205,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			*/
 		 var sortFunction = function(a, b) {
 			 // Get the matrix of hit a.
-			 setMat4FromArray(hitVars.planeMatrix, a.transform);
+			 setMat4FromArray(hitVars.planeMatrix, a.modelMatrix);
 			 // Get the translation component of a's matrix.
 			 mat4.getTranslation(hitVars.planeIntersection, hitVars.planeMatrix);
 			 // Get the distance from the intersection point to the camera.
@@ -215,7 +215,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 );
  
 			 // Get the matrix of hit b.
-			 setMat4FromArray(hitVars.planeMatrix, b.transform);
+			 setMat4FromArray(hitVars.planeMatrix, b.modelMatrix);
 			 // Get the translation component of b's matrix.
 			 mat4.getTranslation(hitVars.planeIntersection, hitVars.planeMatrix);
 			 // Get the distance from the intersection point to the camera.
@@ -285,7 +285,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 for (var i = 0; i < planes.length; i++) {
 				 var plane = planes[i];
 				 // Get the anchor transform.
-				 setMat4FromArray(hitVars.planeMatrix, plane.transform);
+				 setMat4FromArray(hitVars.planeMatrix, plane.modelMatrix);
  
 				 // Get the position of the anchor in world-space.
 				 vec3.set(
@@ -380,7 +380,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
 				var hit = new VRHit();
 				 for (var j = 0; j < 16; j++) {
-					 hit.transform[j] = hitVars.planeHit[j];
+					 hit.modelMatrix[j] = hitVars.planeHit[j];
 				 }
 				 hit.i = i;
 				 hits.push(hit);
@@ -553,6 +553,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				resolve();
 				return;
 			}
+			console.log('----STOP');
 			window.webkit.messageHandlers.stopAR.postMessage({
 				callback: this._createPromiseCallback('stop', resolve)
 			})
@@ -591,6 +592,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			options: options,
 			callback: this._globalCallbacksMap.onWatch
 		}
+		console.log('----WATCH');
 		window.webkit.messageHandlers.watchAR.postMessage(data)
 		return true
 	}
@@ -638,6 +640,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 	*/
 	_sendInit(options){
 		// get device id
+		console.log('----INIT');
 		window.webkit.messageHandlers.initAR.postMessage({
 			options: options,
 			callback: this._globalCallbacksMap.onInit
@@ -695,12 +698,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 						id: element.uuid,
 						center: element.h_plane_center,
 						extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-						transform: element.transform
+						modelMatrix: element.transform
 					});
 				}else{
 					this.anchors_.set(element.uuid, {
 						id: element.uuid,
-						transform: element.transform
+						modelMatrix: element.transform
 					});
 				}
 			}
@@ -727,7 +730,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 							id: element.uuid,
 							center: element.h_plane_center,
 							extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-							transform: element.transform
+							modelMatrix: element.transform
 						});
 					} else {
 						plane.center = element.h_plane_center;
@@ -739,7 +742,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					if(!anchor){
 						this.anchors_.set(element.uuid, {
 							id: element.uuid,
-							transform: element.transform
+							modelMatrix: element.transform
 						});
 					}else{
 						anchor.transform = element.transform;
