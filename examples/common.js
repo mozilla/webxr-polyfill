@@ -251,6 +251,23 @@ class XRExampleBase {
 		this.scene.add(node)
 	}
 
+	/* 
+	Remove a node from the scene
+	*/
+	removeAnchoredNode(node) {
+		for (var i = 0; i < this.anchoredNodes.length; i++) {
+			if (node === this.anchoredNodes[i].node) {
+				this.anchoredNodes.splice(i,1);
+				return;
+			}
+		}
+	}
+
+	/*
+	Extending classes should override this to get notified when an anchor for node is removed
+	*/
+	anchoredNodeRemoved(node) {}
+	
 	/*
 	Get the anchor data from the frame and use it and the anchor offset to update the pose of the node, this must be an Object3D
 	*/
@@ -258,6 +275,8 @@ class XRExampleBase {
 		const anchor = frame.getAnchor(anchorOffset.anchorUID)
 		if(anchor === null){
 			throttledConsoleLog('Unknown anchor uid', anchorOffset.anchorUID)
+			this.anchoredNodeRemoved(node);
+			this.removeAnchoredNode(node);
 			return
 		}
 		node.matrixAutoUpdate = false
