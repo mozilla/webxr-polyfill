@@ -159,8 +159,16 @@ export default class CameraReality extends Reality {
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 			}
-
 		}
+		if (ev.detail && ev.detail.removedObjects) {
+			for (let removedAnchor of ev.detail.removedObjects) {
+				this._deleteAnchorFromARKitUpdate(removedAnchor)
+			}
+		}
+	}
+
+    _deleteAnchorFromARKitUpdate(anchorUUID) {
+        this._anchors.delete(anchorUUID)
 	}
 
 	_handleARKitAddObject(anchorInfo){

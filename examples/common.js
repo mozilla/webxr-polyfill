@@ -258,6 +258,7 @@ class XRExampleBase {
 		for (var i = 0; i < this.anchoredNodes.length; i++) {
 			if (node === this.anchoredNodes[i].node) {
 				this.anchoredNodes.splice(i,1);
+                this.scene.remove(node)
 				return;
 			}
 		}
