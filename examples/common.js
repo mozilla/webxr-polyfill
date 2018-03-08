@@ -179,8 +179,10 @@ class XRExampleBase {
 			this.requestedFloor = true
 			frame.findFloorAnchor('first-floor-anchor').then(anchorOffset => {
 				if(anchorOffset === null){
-					console.error('could not find the floor anchor')
-					return
+					console.log('could not find the floor anchor')
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0])
+					anchorOffset = new XRAnchorOffset(anchorUID)
 				}
 				this.addAnchoredNode(anchorOffset, this.floorGroup)
 			}).catch(err => {

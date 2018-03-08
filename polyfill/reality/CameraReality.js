@@ -350,4 +350,15 @@ export default class CameraReality extends Reality {
 			return null;
 		}
 	}
+
+	/*
+	No floor in AR
+	*/
+	_findFloorAnchor(display, uid=null){
+		return new Promise((resolve, reject) => {
+			resolve(null)
+		})
+	}
+
+	
 }
