@@ -79,7 +79,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
-			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED]
+			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
+            ['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -567,7 +568,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			location: boolean,
 			camera: boolean,
 			objects: boolean,
-			light_intensity: boolean
+			light_intensity: boolean,
+			computer_vision_data: boolean
 		}
 	*/
 	watch(options=null){
@@ -584,7 +586,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				location: true,
 				camera: true,
 				objects: true,
-				light_intensity: true
+				light_intensity: true,
+                computer_vision_data: true
 			}
 		}
 		
@@ -791,6 +794,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 			self['_' + callbackName](deviceData)
 		}
 	}
+
+	/*
+	Requests ARKit a new set of buffers for computer vision processing
+	 */
+    requestComputerVisionData() {
+        window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
+	}
 }
 
 // ARKitWrapper event names:
@@ -806,6 +816,7 @@ ARKitWrapper.SHOW_DEBUG_EVENT = 'arkit-show-debug'
 ARKitWrapper.WINDOW_RESIZE_EVENT = 'arkit-window-resize'
 ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
+ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1

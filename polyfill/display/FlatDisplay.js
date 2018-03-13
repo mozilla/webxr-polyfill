@@ -60,6 +60,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.WINDOW_RESIZE_EVENT, this._handleARKitWindowResize.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.ON_ERROR, this._handleOnError.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
 					this._arKitWrapper.watch()
 				})
@@ -163,7 +164,8 @@ export default class FlatDisplay extends XRDisplay {
 				location: true,
 				camera: true,
 				objects: true,
-				light_intensity: true
+				light_intensity: true,
+                computer_vision_data: true
 			})
 		}, 1000)
 	}
@@ -188,6 +190,59 @@ export default class FlatDisplay extends XRDisplay {
 		// #define WEB_AR_TRACKING_STATE_LIMITED_MOTION       @"ar_tracking_limited_excessive_motion"
 		// #define WEB_AR_TRACKING_STATE_LIMITED_FEATURES     @"ar_tracking_limited_insufficient_features"
 		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
+	}
+
+	/*
+	ev.detail contains:
+		{
+		  "frame": {
+			"buffers": [ // Array of base64 encoded string buffers
+			  {
+				"size": {
+				  "width": 320,
+				  "height": 180
+				},
+				"buffer": "e3x...d7d"
+			  },
+			  {
+				"size": {
+				  "width": 160,
+				  "height": 90
+				},
+				"buffer": "ZZF.../fIJ7"
+			  }
+			],
+			"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+			"timestamp": 337791
+		  },
+		  "camera": {
+			"cameraIntrinsics": [3x3 matrix],
+				fx 0   px
+				0  fy  py
+				0  0   1
+				fx and fy are the focal length in pixels.
+				px and py are the coordinates of the principal point in pixels.
+				The origin is at the center of the upper-left pixel.
+
+			"cameraImageResolution": {
+			  "width": 1280,
+			  "height": 720
+			},
+			"viewMatrix": [4x4 camera view matrix],
+			"interfaceOrientation": 3,
+				// 0 UIDeviceOrientationUnknown
+				// 1 UIDeviceOrientationPortrait
+				// 2 UIDeviceOrientationPortraitUpsideDown
+				// 3 UIDeviceOrientationLandscapeRight
+				// 4 UIDeviceOrientationLandscapeLeft
+			"projectionMatrix": [4x4 camera projection matrix]
+		  }
+		}
+	 */
+    _handleComputerVisionData(ev) {
+        // Do whatever is needed with the image buffers here, and then call
+		// this._arKitWrapper.requestComputerVisionData() to request a new one
+        this._arKitWrapper.requestComputerVisionData()
 	}
 
 	_createSession(parameters){
