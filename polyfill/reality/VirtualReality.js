@@ -54,4 +54,25 @@ export default class VirtualReality extends Reality {
 	_getHasLightEstimate(){
 		return false;
 	}
+
+	/*
+	Find an XRAnchorOffset that is at floor level below the current head pose
+	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown
+	*/
+	_findFloorAnchor(display, uid=null){
+		// Copy the head model matrix for the current pose so we have it in the promise below
+		const headModelMatrix = new Float32Array(display._headPose.poseModelMatrix)
+		return new Promise((resolve, reject) => {
+			// For now, just create an anchor at origin level.  Probably want to use stage more intelligently
+			headModelMatrix[13] = 0 
+			const coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+			coordinateSystem._relativeMatrix = headModelMatrix
+			const anchor = new XRAnchor(coordinateSystem, uid)
+			this._addAnchor(anchor, display)
+			resolve(new XRAnchorOffset(anchor.uid))
+		})
+	}
+
+
+
 }

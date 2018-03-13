@@ -666,17 +666,26 @@ export default class ARKitWrapper extends EventHandlerBase {
 	_onWatch is called from native ARKit on each frame:
 		data:
 		{
-			"camera_transform":[4x4 column major affine transform matrix],
+			"light_intensity": value
+			"camera_view":[4x4 column major affine transform matrix],
 			"projection_camera":[4x4 projection matrix],
-			"location":{
-				"altitude": 176.08457946777344,
-				"longitude": -79.222516606740456,
-				"latitude": 35.789005972772181
-			},
+			"newObjects": [
+				{
+					uuid: DOMString (unique UID),
+					transform: [4x4 column major affine transform],
+					h_plane_center: {x, y, z},  // only on planes
+					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+				}, ...
+			],
+			"removeObjects": [
+				uuid: DOMString (unique UID), ...
+			]
 			"objects":[
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform]
+					h_plane_center: {x, y, z},  // only on planes
+					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			]
 		}
@@ -715,10 +724,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.removedObjects.length){
 			for (let i = 0; i < data.removedObjects.length; i++) {
 				const element = data.removedObjects[i];
-				if(element.h_plane_center){
-					this.planes_.delete(element.uuid);
+				if(this.planes_.get(element)){
+					this.planes_.delete(element);
 				}else{
-					this.anchors_.delete(element.uuid);
+					this.anchors_.delete(element);
 				}
 			}
 		}

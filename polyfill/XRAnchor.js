@@ -4,8 +4,8 @@ In a virtual Reality these coordinates do not change.
 In a Reality based on environment mapping sensors, the anchors may change pose on a per-frame bases as the system refines its map.
 */
 export default class XRAnchor {
-	constructor(xrCoordinateSystem){
-		this._uid = XRAnchor._generateUID()
+	constructor(xrCoordinateSystem, uid=null){
+		this._uid = uid || XRAnchor._generateUID()
 		this._coordinateSystem = xrCoordinateSystem
 	}
 
