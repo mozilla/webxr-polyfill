@@ -747,7 +747,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					} else {
 						plane.center = element.h_plane_center;
 						plane.extent = [element.h_plane_extent.x, element.h_plane_extent.z];
-						plane.transform = element.transform;
+						plane.modelMatrix = element.transform;
 					}
 				}else{
 					var anchor = this.anchors_.get(element.uuid);
@@ -757,7 +757,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 							modelMatrix: element.transform
 						});
 					}else{
-						anchor.transform = element.transform;
+						anchor.modelMatrix = element.transform;
 					}
 				}
 			}

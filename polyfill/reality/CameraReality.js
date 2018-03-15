@@ -182,7 +182,7 @@ export default class CameraReality extends Reality {
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
-		anchor.coordinateSystem._relativeMatrix = anchorInfo.transform
+		anchor.coordinateSystem._relativeMatrix = anchorInfo.modelMatrix
 	}
 
 	_addAnchor(anchor, display){
