@@ -31,7 +31,11 @@ export default class EventHandlerBase {
 	dispatchEvent(event){
 		let listeners = this._listeners.get(event.type)
 		if(Array.isArray(listeners) === false) return
-		for(let listener of listeners){
+
+		// need a copy, since removeEventListener is often called inside listeners to create one-shots and it modifies the array, causing 
+		// listeners not to be called! 
+		var array = listeners.slice( 0 );
+		for(let listener of array){
 			listener(event)
 		}
 	}
