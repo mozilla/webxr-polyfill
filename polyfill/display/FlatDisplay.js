@@ -197,16 +197,20 @@ export default class FlatDisplay extends XRDisplay {
 
 
     _handleComputerVisionData(ev) {
-		this.dispatchEvent(
-			new CustomEvent(
-				"videoFrame",
-				{
-					source: this,
-					detail: ev.detail
-				}
-			)
-		)	
-
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					"videoFrame",
+					{
+						source: this,
+						detail: ev.detail
+					}
+				)
+			)	
+		} catch(e) {
+			console.error('computer vision callback error', e)
+		}
+		
         // Do whatever is needed with the image buffers here, and then call
 		// this._arKitWrapper.requestComputerVisionData() to request a new one
         this._arKitWrapper.requestComputerVisionData()

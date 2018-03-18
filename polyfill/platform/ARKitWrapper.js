@@ -831,14 +831,16 @@ export default class ARKitWrapper extends EventHandlerBase {
 			  {
 				"size": {
 				  "width": 320,
-				  "height": 180
+				  "height": 180,
+				  "bytesPerRow": 384
 				},
 				"buffer": "e3x...d7d"
 			  },
 			  {
 				"size": {
 				  "width": 160,
-				  "height": 90
+				  "height": 90,
+				  "bytesPerRow": 384
 				},
 				"buffer": "ZZF.../fIJ7"
 			  }

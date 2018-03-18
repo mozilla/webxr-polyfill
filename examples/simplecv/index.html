@@ -19,22 +19,27 @@
 			}
 			.text-box {
 				position: absolute;
-				bottom: 20px;
+				top: 10%;
 				left: 50%;
+				color: white;
+				background: rgba(27,55,55,0.75);;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
 				transform: translate(-50%, -50%);
-				font-size: 2em;
-				padding: 10px;
+				font-size: 0.8em;
 			}
 			.common-message {
 				position: absolute;
 				top: 50%;
 				left: 50%;
 				transform: translate(-50%, -50%);
-				font-size: 20px;
+				font-size: 10px;
 			}
 		</style>
 		<link rel="stylesheet" href="../common.css"/>
 		<script src="../libs/three.js"></script>
+		<script src="../libs/stats.js"></script>
 		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 		<script nomodule src="../../dist/webxr-polyfill.js"></script>
 		<script src="../common.js"></script>
@@ -47,13 +52,19 @@
 			<p>Compute the average intensity of the video image pixels.</p>
 		</div>
 		<script>
+			var stats = new Stats();
+			stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+			document.body.appendChild( stats.dom );
+			
 			class ARAnchorExample extends XRExampleBase {
 				constructor(domElement){
-					super(domElement, false, false, true)
+					super(domElement, false, true, true)
+
 
 					this.textBox = document.createElement('span')
 					this.textBox.setAttribute('class', 'text-box')
 					this.textBox.innerText = '0.0'
+					this.intensity = 0;
 					this.el.appendChild(this.textBox)
 				}
 
@@ -73,9 +84,47 @@
 					this.scene.add(directionalLight)
 				}
 
-				handleVideoFrame(ev) {
-					// new video frame
+				updateScene(frame){
+					stats.update()
+					this.textBox.innerHTML = "ARKit Light Estimate: " + frame.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2);
 				}
+
+				//////
+				averageIntensity(buffer) {
+					//stats.begin();
+
+					var w = buffer.size.width;
+					var h = buffer.size.height;
+					var pad = buffer.size.bytesPerRow - w;
+					var pixels = buffer.buffer;
+
+					var intensity = 0.0;
+					var p = 0;
+					for (var r = 0; r < h; r++) {
+						var v = 0;
+						for (var i = 0; i < w; i++) {
+							if (p < pixels.length) {
+								v += pixels[p++]
+							} else {
+								console.error("overflow pixel buffer")
+							}
+						}
+						intensity += v / w;
+						p += pad;
+					}
+					this.intensity = (intensity / h) / 255.0;
+					//stats.end();
+				}
+
+				handleVideoFrame(ev) {
+					var frame = ev.detail.frame
+					var camera = ev.detail.camera
+					switch (frame.pixelFormat) {
+						case "YUV420P":
+							this.averageIntensity(frame.buffers[0])
+					}
+				}
+
 			}
 
 			window.addEventListener('DOMContentLoaded', () => {
