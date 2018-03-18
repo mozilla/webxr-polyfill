@@ -27,7 +27,7 @@ export default class Reality extends EventHandlerBase {
 	/*
 	Called when at least one active XRSession is using this Reality
 	*/
-	_start(){
+	_start(parameters){
 		throw new Error('Exending classes should implement _start')
 	}
 

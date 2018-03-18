@@ -3,6 +3,7 @@ import * as glMatrix from "../fill/gl-matrix/common.js";
 import * as mat4 from "../fill/gl-matrix/mat4.js";
 import * as quat from "../fill/gl-matrix/quat.js";
 import * as vec3 from "../fill/gl-matrix/vec3.js";
+import base64 from "../fill/base64-binary.js";
 
 /*	
 ARKitWrapper talks	 to Apple ARKit, as exposed by Mozilla's test ARDemo app.
@@ -41,17 +42,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 		this.lightIntensity = 1000;
 		/**
-     * The current projection matrix of the device.
-     * @type {Float32Array}
-     * @private
-     */
-    this.projectionMatrix_ = new Float32Array(16);
-    /**
-     * The current view matrix of the device.
-     * @type {Float32Array}
-     * @private
-     */
-    this.viewMatrix_ = new Float32Array(16);
+		 * The current projection matrix of the device.
+		 * @type {Float32Array}
+		 * @private
+		 */
+		this.projectionMatrix_ = new Float32Array(16);
+		/**
+		 * The current view matrix of the device.
+		 * @type {Float32Array}
+		 * @private
+		 */
+		this.viewMatrix_ = new Float32Array(16);
 			/**
 		 * The list of planes coming from ARKit.
 		 * @type {Map<number, ARPlane}
@@ -67,7 +68,16 @@ export default class ARKitWrapper extends EventHandlerBase {
 		for(let i=0; i < callbackNames.length; i++){
 			this._generateGlobalCallback(callbackNames[i], i)
 		}
-
+			
+		// default options for initializing ARKit
+		this._defaultOptions = {
+			location: true,
+			camera: true,
+			objects: true,
+			light_intensity: true,
+			computer_vision_data: true
+		}
+			
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called
 		let eventCallbacks = [
 			['arkitStartRecording', ARKitWrapper.RECORD_START_EVENT],
@@ -79,8 +89,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
-			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
-            ['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
+			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED]
+            //,['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -96,6 +106,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 				)	
 			}
 		}
+		/*
+		 * Computer vision needs massaging
+		 */
+		window['onComputerVisionData'] = (detail) => {
+			this._onComputerVisionData(detail);
+		}
+			
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
 		 * This structure has a single property - modelMatrix - which encodes the
@@ -545,6 +562,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 		})
 	}
 
+	/* 
+	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
+	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
+	*/
+
 	/*
 	If this instance is currently watching, send the stopAR message to ARKit to request that it stop sending data on onWatch
 	*/
@@ -572,6 +594,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			computer_vision_data: boolean
 		}
 	*/
+
 	watch(options=null){
 		if (!this._isInitialized){
 			return false
@@ -581,18 +604,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 		this._isWatching = true
 
-		if(options === null){
-			options = {
-				location: true,
-				camera: true,
-				objects: true,
-				light_intensity: true,
-                computer_vision_data: true
-			}
+		var newO = Object.assign({}, this._defaultOptions);
+
+		if(options != null) {
+			newO = Object.assign(newO, options)
 		}
 		
 		const data = {
-			options: options,
+			options: newO,
 			callback: this._globalCallbacksMap.onWatch
 		}
 		console.log('----WATCH');
@@ -804,6 +823,88 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 	}
 
+	/*
+	ev.detail contains:
+		{
+		  "frame": {
+			"buffers": [ // Array of base64 encoded string buffers
+			  {
+				"size": {
+				  "width": 320,
+				  "height": 180
+				},
+				"buffer": "e3x...d7d"
+			  },
+			  {
+				"size": {
+				  "width": 160,
+				  "height": 90
+				},
+				"buffer": "ZZF.../fIJ7"
+			  }
+			],
+			"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+			"timestamp": 337791
+		  },
+		  "camera": {
+			"cameraIntrinsics": [3x3 matrix],
+				fx 0   px
+				0  fy  py
+				0  0   1
+				fx and fy are the focal length in pixels.
+				px and py are the coordinates of the principal point in pixels.
+				The origin is at the center of the upper-left pixel.
+
+			"cameraImageResolution": {
+			  "width": 1280,
+			  "height": 720
+			},
+			"viewMatrix": [4x4 camera view matrix],
+			"interfaceOrientation": 3,
+				// 0 UIDeviceOrientationUnknown
+				// 1 UIDeviceOrientationPortrait
+				// 2 UIDeviceOrientationPortraitUpsideDown
+				// 3 UIDeviceOrientationLandscapeRight
+				// 4 UIDeviceOrientationLandscapeLeft
+			"projectionMatrix": [4x4 camera projection matrix]
+		  }
+		}
+	 */
+	_onComputerVisionData(detail) {
+		// convert the arrays
+		if (!detail.frame || !detail.frame.buffers || detail.frame.buffers.length <= 0) {
+			console.error("detail passed to _onComputerVisionData is bad, no buffers")
+			return;
+		}
+
+		// convert buffers in place
+		var buffers = detail.frame.buffers;
+		for (var i = 0; i < buffers.length; i++) {
+			var bufflen = buffers[i].buffer.length;
+			buffers[i].buffer = base64.decode(buffers[i].buffer);
+			var buffersize = buffers[i].buffer.length;
+			var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
+		}
+		switch(detail.frame.pixelFormatType) {
+			case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+				detail.frame.pixelFormat = "YUV420P";
+				break;
+			default:
+				detail.frame.pixelFormat = detail.frame.pixelFormatType; 
+				break;
+		}
+
+		this.dispatchEvent(
+			new CustomEvent(
+				ARKitWrapper.COMPUTER_VISION_DATA,
+				{
+					source: this,
+					detail: detail
+				}
+			)
+		)	
+	}
+	
 	/*
 	Requests ARKit a new set of buffers for computer vision processing
 	 */

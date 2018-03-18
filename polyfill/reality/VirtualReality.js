@@ -11,7 +11,7 @@ export default class VirtualReality extends Reality {
 	/*
 	Called when at least one active XRSession is using this Reality
 	*/
-	_start(){
+	_start(parameters){
 	}
 
 	/*

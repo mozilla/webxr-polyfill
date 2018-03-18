@@ -70,6 +70,10 @@ export default class XRSession extends EventHandlerBase {
 		})
 	}
 
+	requestVideoFrames(callback) {
+		this._display.addEventListener("videoFrame", callback)
+	}
+
 	_createPresentationFrame(){
 		return new XRPresentationFrame(this)
 	}
@@ -91,7 +95,7 @@ export default class XRSession extends EventHandlerBase {
 		}
 		return null
 	}
-
+	
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;

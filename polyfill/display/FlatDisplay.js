@@ -41,7 +41,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._views.push(new XRView(this._fov, this._depthNear, this._depthFar))
 	}
 
-	_start(){
+	_start(parameters=null){
 		if(this._reality._vrDisplay){ // Use ARCore
 			if(this._vrFrameData === null){
 				this._vrFrameData = new VRFrameData()
@@ -62,10 +62,12 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
-					this._arKitWrapper.watch()
+					// doing this in the reality
+					// this._arKitWrapper.watch()
 				})
 			} else {
-				this._arKitWrapper.watch()
+				// doing this in the reality
+				// this._arKitWrapper.watch()
 			}
 		} else { // Use device orientation
 			if(this._initialized === false){
@@ -78,7 +80,7 @@ export default class FlatDisplay extends XRDisplay {
 			}
 		}
 		this.running = true
-		this._reality._start()
+		this._reality._start(parameters)
 	}
 
 	_stop(){
@@ -159,15 +161,16 @@ export default class FlatDisplay extends XRDisplay {
 	}
 
 	_handleARKitInit(ev){
-		setTimeout(() => {
-			this._arKitWrapper.watch({
-				location: true,
-				camera: true,
-				objects: true,
-				light_intensity: true,
-                computer_vision_data: true
-			})
-		}, 1000)
+		// doing this in the reality
+		// 	setTimeout(() => {
+		// 		this._arKitWrapper.watch({
+		// 			location: true,
+		// 			camera: true,
+		// 			objects: true,
+		// 			light_intensity: true,
+		//             computer_vision_data: true
+		// 		})
+		// 	}, 1000)
 	}
 
 	_handleARKitWindowResize(ev){
@@ -192,66 +195,30 @@ export default class FlatDisplay extends XRDisplay {
 		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
 	}
 
-	/*
-	ev.detail contains:
-		{
-		  "frame": {
-			"buffers": [ // Array of base64 encoded string buffers
-			  {
-				"size": {
-				  "width": 320,
-				  "height": 180
-				},
-				"buffer": "e3x...d7d"
-			  },
-			  {
-				"size": {
-				  "width": 160,
-				  "height": 90
-				},
-				"buffer": "ZZF.../fIJ7"
-			  }
-			],
-			"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
-			"timestamp": 337791
-		  },
-		  "camera": {
-			"cameraIntrinsics": [3x3 matrix],
-				fx 0   px
-				0  fy  py
-				0  0   1
-				fx and fy are the focal length in pixels.
-				px and py are the coordinates of the principal point in pixels.
-				The origin is at the center of the upper-left pixel.
 
-			"cameraImageResolution": {
-			  "width": 1280,
-			  "height": 720
-			},
-			"viewMatrix": [4x4 camera view matrix],
-			"interfaceOrientation": 3,
-				// 0 UIDeviceOrientationUnknown
-				// 1 UIDeviceOrientationPortrait
-				// 2 UIDeviceOrientationPortraitUpsideDown
-				// 3 UIDeviceOrientationLandscapeRight
-				// 4 UIDeviceOrientationLandscapeLeft
-			"projectionMatrix": [4x4 camera projection matrix]
-		  }
-		}
-	 */
     _handleComputerVisionData(ev) {
+		this.dispatchEvent(
+			new CustomEvent(
+				"videoFrame",
+				{
+					source: this,
+					detail: ev.detail
+				}
+			)
+		)	
+
         // Do whatever is needed with the image buffers here, and then call
 		// this._arKitWrapper.requestComputerVisionData() to request a new one
         this._arKitWrapper.requestComputerVisionData()
 	}
 
-	_createSession(parameters){
-		this._start()
+	_createSession(parameters=null){
+		this._start(parameters)
 		return super._createSession(parameters)
 	}
 
 	_supportedCreationParameters(parameters){
-		return parameters.type === XRSession.AUGMENTATION && parameters.exclusive === false		
+		return parameters.type === XRSession.AUGMENTATION && parameters.exclusive === false	
 	}
 
 	//attribute EventHandler ondeactivate; // FlatDisplay never deactivates

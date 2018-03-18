@@ -88,7 +88,7 @@ export default class CameraReality extends Reality {
 		// TODO update the anchor positions using ARCore or ARKit
 	}
 
-	_start(){
+	_start(parameters=null){
 		if(this._running) return
 		this._running = true
 
@@ -105,10 +105,10 @@ export default class CameraReality extends Reality {
 				this._arKitWrapper = ARKitWrapper.GetOrCreate()
 				this._arKitWrapper.addEventListener(ARKitWrapper.WATCH_EVENT, this._handleARKitWatch.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
-					this._arKitWrapper.watch()
+					this._arKitWrapper.watch(parameters)
 				})
 			} else {
-				this._arKitWrapper.watch()
+				this._arKitWrapper.watch(parameters)
 			}
 		} else { // Using WebRTC
 			if(this._initialized === false){
@@ -182,7 +182,7 @@ export default class CameraReality extends Reality {
 			return
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
-		anchor.coordinateSystem._relativeMatrix = anchorInfo.modelMatrix
+		anchor.coordinateSystem._relativeMatrix = anchorInfo.transform
 	}
 
 	_addAnchor(anchor, display){
