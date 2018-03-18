@@ -14,10 +14,11 @@
 
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
+		this.useComputerVision = useComputerVision
 
 		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
 
@@ -83,7 +84,8 @@ class XRExampleBase {
 	_startSession(){
 		let sessionInitParamers = {
 			exclusive: this.createVirtualReality,
-			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION
+			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION,
+			computer_vision_data: this.useComputerVision
 		}
 		for(let display of this.displays){
 			if(display.supportsSession(sessionInitParamers)){
@@ -104,6 +106,11 @@ class XRExampleBase {
 			this.session.addEventListener('focus', ev => { this.handleSessionFocus(ev) })
 			this.session.addEventListener('blur', ev => { this.handleSessionBlur(ev) })
 			this.session.addEventListener('end', ev => { this.handleSessionEnded(ev) })
+
+			// if this session is getting video frames, lets set up a callback.
+			// EVENTUALLY should look at properties on the session to see if user 
+			// approved it, but the app doesn't let us know this yet
+			this.session.requestVideoFrames(ev => { this.handleVideoFrame(ev) })
 
 			if(this.shouldStartPresenting){
 				// VR Displays need startPresenting called due to input events like a click
@@ -159,6 +166,8 @@ class XRExampleBase {
 	handleSessionEnded(ev){}
 	handleLayerFocus(ev){}
 	handleLayerBlur(ev){}
+
+	handleVideoFrame(ev){}
 
 	/*
 	Extending classes should override this to set up the scene during class construction
