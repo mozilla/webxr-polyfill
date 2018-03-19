@@ -47,15 +47,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 		var self = this;
 		this._worker.onmessage = function (ev) {
-			self.dispatchEvent(
-				new CustomEvent(
-					ARKitWrapper.COMPUTER_VISION_DATA,
-					{
-						source: self,
-						detail: ev.data
-					}
-				)
-			)	
+			setTimeout(function () {
+				self.dispatchEvent(
+					new CustomEvent(
+						ARKitWrapper.COMPUTER_VISION_DATA,
+						{
+							source: self,
+							detail: ev.data
+						}
+					)
+				)	
+			})
 		}
 
 		this.lightIntensity = 1000;

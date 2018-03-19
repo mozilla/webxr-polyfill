@@ -19,14 +19,14 @@
 			}
 			.text-box {
 				position: absolute;
-				top: 10%;
+				top: 5%;
 				left: 50%;
 				color: white;
 				background: rgba(27,55,55,0.75);;
 				outline: 1px solid rgba(127,255,255,0.75);
 				border: 0px;
 				padding: 5px 10px;
-				transform: translate(-50%, -50%);
+				transform: translate(-50%, 0%);
 				font-size: 0.8em;
 			}
 			.common-message {
@@ -35,6 +35,13 @@
 				left: 50%;
 				transform: translate(-50%, -50%);
 				font-size: 10px;
+			}
+			img.crosshair {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-left: -32px;
+				margin-top: -32px;
 			}
 		</style>
 		<link rel="stylesheet" href="../common.css"/>
@@ -45,6 +52,7 @@
 		<script src="../common.js"></script>
 	</head>
 	<body>
+		<img src="target-28139_64.png" class="crosshair" />
 		<div id="target" />
 		<div onclick="hideMe(this)" id="description">
 			<h2>Simple Computer Vision</h2>
@@ -164,6 +172,12 @@
 			//}, 500);
 		</script>
 		<script>
+			// RAINBOW Candy of a Certain Name colors
+			var colors = [
+				{ cr:  230, cb: 100, name: "RED" },
+				{ cr:  71, cb: 71, name: "GREEN" },
+				{ cr:  152, cb: 33, name: "YELLOW" }
+			] 
 			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 			
 			var stats = new Stats();
@@ -195,6 +209,7 @@
 					this.intensity = 0;
 					this.cr = 0;
 					this.cb = 0;
+					this.lightEstimate = 0;
 					this.el.appendChild(this.textBox)
 				}
 
@@ -211,8 +226,32 @@
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
 						self.cb = ev.data.cb;
+						setTimeout( () => {
+							var txt = "ARKit Light Estimate: " + self.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + self.intensity.toFixed(2)
+							+ "<br>Center R/B: " + self.cr.toFixed(2) + " / " + self.cb.toFixed(2) + "<br><center>";
+							
+							for (var i=0; i<colors.length; i++) {
+								var c = colors[i];
+								c.dist = Math.sqrt((c.cr - self.cr) * (c.cr - self.cr) + (c.cb - self.cb)*(c.cb - self.cb));
+								txt += c.dist.toFixed(1) + " " 
+							}
+							for (i=0; i<colors.length; i++) {
+								c = colors[i];
+								if (c.dist < 30) {
+									txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
+								} 
+							}
+							txt+="</center>"
+
+							self.messageText = txt;
+						},0);
 						updateCVFPS();
+
 					}
+					this.worker.addEventListener('error', (e) => { 
+						console.log("worker error:" + e) 
+					})
+
 					this.setVideoWorker(this.worker);
 					// this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
@@ -234,10 +273,11 @@
 				}
 
 				updateScene(frame){
+					this.lightEstimate = frame.lightEstimate || 0;
 					stats.update()
-					var le = frame.lightEstimate || -1;
-					this.textBox.innerHTML = "ARKit Light Estimate: " + le.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
-						+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2);
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
 				}
 
 				//////
