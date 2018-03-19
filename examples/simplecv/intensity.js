@@ -28,13 +28,20 @@ averageIntensity = function (buffer) {
     postMessage ((intensity / h) / 255.0);
 }
 
-onMessage = function (ev) {
-    //postMessage (Math.random() * 255.0);
+self.addEventListener('message',  function(event){
+    console.log("Help!")
+    self.postMessage (Math.random() * 255.0);
     
-    var frame = detail.frame
-    var camera = detail.camera
-    switch (frame.pixelFormat) {
-        case "YUV420P":
-    	this.averageIntensity(frame.buffers[0])
-    }
-}
+    // var frame = detail.frame
+    // var camera = detail.camera
+    // switch (frame.pixelFormat) {
+    //     case "YUV420P":
+    // 	this.averageIntensity(frame.buffers[0])
+    // }
+});
+setInterval( function(){
+    console.log("Help me!")
+ 
+    self.postMessage (Math.random() * 255.0);
+ 
+    }, 500);

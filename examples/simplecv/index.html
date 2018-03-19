@@ -71,13 +71,13 @@
 				}
 
 				newSession() {
-					// this.worker = new Worker("intensity.js");
-					// var self = this;
-					// this.worker.onmessage = function(ev) {
-					// 	self.intensity = ev;
-					// }
-					// this.setVideoWorker(this.worker);
-					this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
+					this.worker = new Worker("intensity.js");
+					var self = this;
+					this.worker.onmessage = function(ev) {
+						self.intensity = ev.data;
+					}
+					this.setVideoWorker(this.worker);
+					// this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
 
 				// Called during construction
@@ -98,7 +98,8 @@
 
 				updateScene(frame){
 					stats.update()
-					this.textBox.innerHTML = "ARKit Light Estimate: " + frame.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
+					var le = frame.lightEstimate || -1;
+					this.textBox.innerHTML = "ARKit Light Estimate: " + le.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
 						+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2);
 				}
 
