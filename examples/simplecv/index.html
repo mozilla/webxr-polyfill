@@ -51,6 +51,118 @@
 			<h5>(click to dismiss)</h5>
 			<p>Compute the average intensity of the video image pixels.</p>
 		</div>
+		<script id="worker1" type="javascript/worker">
+
+			/**
+			 * In the video callback,  ev.detail contains:
+				{
+				"frame": {
+					"buffers": [ // Array of base64 encoded string buffers
+					{
+						"size": {
+						"width": 320,
+						"height": 180,
+						"bytesPerRow": 384
+						},
+						"buffer": "e3x...d7d"   /// convert to Uint8 ArrayBuffer in code below
+					},
+					{
+						"size": {
+						"width": 160,
+						"height": 90,
+						"bytesPerRow": 384
+						},
+						"buffer": "ZZF.../fIJ7"  /// convert to Uint8 ArrayBuffer in code below
+					}
+					],
+					"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+					"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
+					"timestamp": 337791
+				},
+				"camera": {
+					"cameraIntrinsics": [3x3 matrix],
+						fx 0   px
+						0  fy  py
+						0  0   1
+						fx and fy are the focal length in pixels.
+						px and py are the coordinates of the principal point in pixels.
+						The origin is at the center of the upper-left pixel.
+
+					"cameraImageResolution": {
+					"width": 1280,
+					"height": 720
+					},
+					"viewMatrix": [4x4 camera view matrix],
+					"interfaceOrientation": 3,
+						// 0 UIDeviceOrientationUnknown
+						// 1 UIDeviceOrientationPortrait
+						// 2 UIDeviceOrientationPortraitUpsideDown
+						// 3 UIDeviceOrientationLandscapeRight
+						// 4 UIDeviceOrientationLandscapeLeft
+					"projectionMatrix": [4x4 camera projection matrix]
+				}
+				}
+			*/
+
+			var intensity = 0.0;
+			var cr = -1;
+			var cb = -1;
+
+			averageIntensity = function (buffer) {
+				var w = buffer.size.width;
+				var h = buffer.size.height;
+				var pad = buffer.size.bytesPerRow - w;
+				var pixels = new Uint8Array(buffer.buffer);
+			
+				intensity = 0.0;
+				var p = 0;
+				for (var r = 0; r < h; r++) {
+					var v = 0;
+					for (var i = 0; i < w; i++) {
+						if (p < pixels.length) {
+							v += pixels[p++]
+						} else {
+							console.error("overflow pixel buffer")
+						}
+					}
+					intensity += v / w;
+					p += pad;
+				}			
+				intensity = (intensity / h) / 255.0;
+			}
+			
+			colorAtCenter = function(buffer) {
+				//stats.begin();
+
+				var w = buffer.size.width;
+				var h = buffer.size.height;
+				var pixels = new Uint8Array(buffer.buffer);
+
+				var cx = w   // it's w/2 but then *2 since it's two bytes per!
+				var cy = h / 2;
+				var p = cy * buffer.size.bytesPerRow + cx;
+				cb = pixels[p++];
+				cr = pixels[p];
+				//stats.end();
+			}
+
+			self.addEventListener('message',  function(event){
+				var frame = event.data.frame
+				var camera = event.data.camera
+				switch (frame.pixelFormat) {
+					case "YUV420P":
+					this.averageIntensity(frame.buffers[0])
+					this.colorAtCenter(frame.buffers[1])
+					postMessage ({intensity: intensity, cr: cr, cb: cb});
+					
+				}
+			});
+			
+			// setInterval( function(){
+			//     console.log("Help me!")
+			//     self.postMessage (Math.random() * 255.0);
+			//}, 500);
+		</script>
 		<script>
 			var stats = new Stats();
 			stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
@@ -71,10 +183,18 @@
 				}
 
 				newSession() {
-					this.worker = new Worker("intensity.js");
+					var blob = new Blob([
+						document.querySelector('#worker1').textContent
+					], { type: "text/javascript" })
+
+					// Note: window.webkitURL.createObjectURL() in Chrome 10+.
+					this.worker = new Worker(window.URL.createObjectURL(blob));
+					
 					var self = this;
 					this.worker.onmessage = function(ev) {
-						self.intensity = ev.data;
+						self.intensity = ev.data.intensity;
+						self.cr = ev.data.cr;
+						self.cb = ev.data.cb;
 					}
 					this.setVideoWorker(this.worker);
 					// this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
@@ -104,108 +224,58 @@
 				}
 
 				//////
-				averageIntensity(buffer) {
-					//stats.begin();
+				////// NO LONGER USED (moved to worker above)
+				//////
+				// averageIntensity(buffer) {
+				// 	//stats.begin();
 
-					var w = buffer.size.width;
-					var h = buffer.size.height;
-					var pad = buffer.size.bytesPerRow - w;
-					var pixels = new Uint8Array(buffer.buffer);
+				// 	var w = buffer.size.width;
+				// 	var h = buffer.size.height;
+				// 	var pad = buffer.size.bytesPerRow - w;
+				// 	var pixels = new Uint8Array(buffer.buffer);
 
-					var intensity = 0.0;
-					var p = 0;
-					for (var r = 0; r < h; r++) {
-						var v = 0;
-						for (var i = 0; i < w; i++) {
-							if (p < pixels.length) {
-								v += pixels[p++]
-							} else {
-								console.error("overflow pixel buffer")
-							}
-						}
-						intensity += v / w;
-						p += pad;
-					}
-					this.intensity = (intensity / h) / 255.0;
-					//stats.end();
-				}
+				// 	var intensity = 0.0;
+				// 	var p = 0;
+				// 	for (var r = 0; r < h; r++) {
+				// 		var v = 0;
+				// 		for (var i = 0; i < w; i++) {
+				// 			if (p < pixels.length) {
+				// 				v += pixels[p++]
+				// 			} else {
+				// 				console.error("overflow pixel buffer")
+				// 			}
+				// 		}
+				// 		intensity += v / w;
+				// 		p += pad;
+				// 	}
+				// 	this.intensity = (intensity / h) / 255.0;
+				// 	//stats.end();
+				// }
 
-				colorAtCenter(buffer) {
-					//stats.begin();
+				// colorAtCenter(buffer) {
+				// 	//stats.begin();
 
-					var w = buffer.size.width;
-					var h = buffer.size.height;
-					var pixels = new Uint8Array(buffer.buffer);
+				// 	var w = buffer.size.width;
+				// 	var h = buffer.size.height;
+				// 	var pixels = new Uint8Array(buffer.buffer);
 
-					var cx = w   // it's w/2 but then *2 since it's two bytes per!
-					var cy = h / 2;
-					var p = cy * buffer.size.bytesPerRow + cx;
-					this.cb = pixels[p++];
-					this.cr = pixels[p];
-					//stats.end();
-				}
+				// 	var cx = w   // it's w/2 but then *2 since it's two bytes per!
+				// 	var cy = h / 2;
+				// 	var p = cy * buffer.size.bytesPerRow + cx;
+				// 	this.cb = pixels[p++];
+				// 	this.cr = pixels[p];
+				// 	//stats.end();
+				// }
 
-
-/*
-				In the video callback,  ev.detail contains:
-					{
-					"frame": {
-						"buffers": [ // Array of base64 encoded string buffers
-						{
-							"size": {
-							"width": 320,
-							"height": 180,
-							"bytesPerRow": 384
-							},
-							"buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
-						},
-						{
-							"size": {
-							"width": 160,
-							"height": 90,
-							"bytesPerRow": 384
-							},
-							"buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
-						}
-						],
-						"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
-						"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
-						"timestamp": 337791
-					},
-					"camera": {
-						"cameraIntrinsics": [3x3 matrix],
-							fx 0   px
-							0  fy  py
-							0  0   1
-							fx and fy are the focal length in pixels.
-							px and py are the coordinates of the principal point in pixels.
-							The origin is at the center of the upper-left pixel.
-
-						"cameraImageResolution": {
-						"width": 1280,
-						"height": 720
-						},
-						"viewMatrix": [4x4 camera view matrix],
-						"interfaceOrientation": 3,
-							// 0 UIDeviceOrientationUnknown
-							// 1 UIDeviceOrientationPortrait
-							// 2 UIDeviceOrientationPortraitUpsideDown
-							// 3 UIDeviceOrientationLandscapeRight
-							// 4 UIDeviceOrientationLandscapeLeft
-						"projectionMatrix": [4x4 camera projection matrix]
-					}
-					}
-				*/
-
-				handleVideoFrame(ev) {
-					var frame = ev.detail.frame
-					var camera = ev.detail.camera
-					switch (frame.pixelFormat) {
-						case "YUV420P":
-						this.averageIntensity(frame.buffers[0])
-						this.colorAtCenter(frame.buffers[1])
-					}
-				}
+				// handleVideoFrame(ev) {
+				// 	var frame = ev.detail.frame
+				// 	var camera = ev.detail.camera
+				// 	switch (frame.pixelFormat) {
+				// 		case "YUV420P":
+				// 		this.averageIntensity(frame.buffers[0])
+				// 		this.colorAtCenter(frame.buffers[1])
+				// 	}
+				// }
 
 			}
 

@@ -40,6 +40,24 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
+		// worker to convert buffers
+		var blobURL = this._buildWorkerBlob()
+		this._worker = new Worker(blobURL);
+		URL.revokeObjectURL(blobURL);
+
+		var self = this;
+		this._worker.onmessage = function (ev) {
+			self.dispatchEvent(
+				new CustomEvent(
+					ARKitWrapper.COMPUTER_VISION_DATA,
+					{
+						source: self,
+						detail: ev.data
+					}
+				)
+			)	
+		}
+
 		this.lightIntensity = 1000;
 		/**
 		 * The current projection matrix of the device.
@@ -880,32 +898,132 @@ export default class ARKitWrapper extends EventHandlerBase {
 			return;
 		}
 
-		// convert buffers in place
-		var buffers = detail.frame.buffers;
-		for (var i = 0; i < buffers.length; i++) {
-			var bufflen = buffers[i].buffer.length;
-			buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer);
-			var buffersize = buffers[i].buffer.length;
-			var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
-		}
-		switch(detail.frame.pixelFormatType) {
-			case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
-				detail.frame.pixelFormat = "YUV420P";
-				break;
-			default:
-				detail.frame.pixelFormat = detail.frame.pixelFormatType; 
-				break;
-		}
+		if (this._worker) {
+			this._worker.postMessage(detail);
+		} else {
+			// convert buffers in place
+			var buffers = detail.frame.buffers;
+			for (var i = 0; i < buffers.length; i++) {
+				var bufflen = buffers[i].buffer.length;
+				buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer);
+				var buffersize = buffers[i].buffer.length;
+				var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
+			}
+			switch(detail.frame.pixelFormatType) {
+				case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+					detail.frame.pixelFormat = "YUV420P";
+					break;
+				default:
+					detail.frame.pixelFormat = detail.frame.pixelFormatType; 
+					break;
+			}
 
-		this.dispatchEvent(
-			new CustomEvent(
-				ARKitWrapper.COMPUTER_VISION_DATA,
-				{
-					source: this,
-					detail: detail
-				}
+			this.dispatchEvent(
+				new CustomEvent(
+					ARKitWrapper.COMPUTER_VISION_DATA,
+					{
+						source: this,
+						detail: detail
+					}
+				)
 			)
-		)	
+		}	
+	}
+	_buildWorkerBlob() {
+		var blobURL = URL.createObjectURL( new Blob([ '(',
+
+		function(){
+			// could not get workers working, so am not using this.
+			//
+			// Tried to use Transferable ArrayBuffers but kept getting DOM Error 25. 
+			// 
+
+			var b64 = {
+				_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+				/* will return a  Uint8Array type */
+				decodeArrayBuffer: function (input) {
+					var bytes = (input.length/4) * 3;
+					var ab = new ArrayBuffer(bytes);
+					this.decode(input, ab);
+					
+					return ab;
+				},
+
+				removePaddingChars: function(input){
+					var lkey = this._keyStr.indexOf(input.charAt(input.length - 1));
+					if(lkey == 64){
+						return input.substring(0,input.length - 1);
+					}
+					return input;
+				},
+
+				decode: function(input, arrayBuffer) {
+					//get last chars to see if are valid
+					input = this.removePaddingChars(input);
+					input = this.removePaddingChars(input);
+
+					var bytes = parseInt((input.length / 4) * 3, 10);
+					
+					var uarray;
+					var chr1, chr2, chr3;
+					var enc1, enc2, enc3, enc4;
+					var i = 0;
+					var j = 0;
+					
+					if (arrayBuffer)
+						uarray = new Uint8Array(arrayBuffer);
+					else
+						uarray = new Uint8Array(bytes);
+					
+					input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+					
+					for (i=0; i<bytes; i+=3) {	
+						//get the 3 octects in 4 ascii chars
+						enc1 = this._keyStr.indexOf(input.charAt(j++));
+						enc2 = this._keyStr.indexOf(input.charAt(j++));
+						enc3 = this._keyStr.indexOf(input.charAt(j++));
+						enc4 = this._keyStr.indexOf(input.charAt(j++));
+
+						chr1 = (enc1 << 2) | (enc2 >> 4);
+						chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+						chr3 = ((enc3 & 3) << 6) | enc4;
+
+						uarray[i] = chr1;			
+						if (enc3 != 64) uarray[i+1] = chr2;
+						if (enc4 != 64) uarray[i+2] = chr3;
+					}
+
+					return uarray;	
+				}
+			}
+
+			self.addEventListener('message',  function(event){
+				var frame = event.data.frame
+				var camera = event.data.camera
+
+				// convert buffers in place
+				var buffers = frame.buffers;
+				var buffs = []
+				for (var i = 0; i < buffers.length; i++) {
+					buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer);
+					buffs.push(buffers[i].buffer)
+				}
+				switch(frame.pixelFormatType) {
+					case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+						frame.pixelFormat = "YUV420P";
+						break;
+					default:
+						frame.pixelFormat = frame.pixelFormatType; 
+						break;
+				}
+
+				postMessage(event.data, buffs);
+			});
+		}.toString(),
+		')()' ], { type: 'application/javascript' } ) )
+		
+		return( blobURL );			
 	}
 	
 	/*
