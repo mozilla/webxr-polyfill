@@ -40,25 +40,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
-		// worker to convert buffers
-		var blobURL = this._buildWorkerBlob()
-		this._worker = new Worker(blobURL);
-		URL.revokeObjectURL(blobURL);
+		// // worker to convert buffers
+		// var blobURL = this._buildWorkerBlob()
+		// this._worker = new Worker(blobURL);
+		// URL.revokeObjectURL(blobURL);
 
-		var self = this;
-		this._worker.onmessage = function (ev) {
-			setTimeout(function () {
-				self.dispatchEvent(
-					new CustomEvent(
-						ARKitWrapper.COMPUTER_VISION_DATA,
-						{
-							source: self,
-							detail: ev.data
-						}
-					)
-				)	
-			})
-		}
+		// var self = this;
+		// this._worker.onmessage = function (ev) {
+		// 	setTimeout(function () {
+		// 		self.dispatchEvent(
+		// 			new CustomEvent(
+		// 				ARKitWrapper.COMPUTER_VISION_DATA,
+		// 				{
+		// 					source: self,
+		// 					detail: ev.data
+		// 				}
+		// 			)
+		// 		)	
+		// 	})
+		// }
 
 		this.lightIntensity = 1000;
 		/**

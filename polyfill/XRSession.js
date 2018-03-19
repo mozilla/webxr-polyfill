@@ -70,7 +70,7 @@ export default class XRSession extends EventHandlerBase {
 		})
 	}
 
-	requestVideoFrames(callback) {
+	setVideoFrameHandler(callback) {
 		if (callback instanceof Worker) {
 			var worker = callback;
 			callback = 	(ev => { 
@@ -84,6 +84,10 @@ export default class XRSession extends EventHandlerBase {
 			})	
 		}
 		this._display.addEventListener("videoFrame", callback)
+	}
+
+	requestVideoFrame() {
+		this._display._requestVideoFrame();
 	}
 
 	_createPresentationFrame(){

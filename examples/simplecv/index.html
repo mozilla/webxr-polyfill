@@ -246,8 +246,9 @@
 							self.messageText = txt;
 						},0);
 						updateCVFPS();
-
+						self.requestVideoFrame();
 					}
+					
 					this.worker.addEventListener('error', (e) => { 
 						console.log("worker error:" + e) 
 					})

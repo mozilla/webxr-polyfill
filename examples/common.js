@@ -179,9 +179,13 @@ class XRExampleBase {
 		// if this session is getting video frames, lets set up a callback.
 		// EVENTUALLY should look at properties on the session to see if user 
 		// approved it, but the app doesn't let us know this yet
-		this.session.requestVideoFrames(worker)
+		this.session.setVideoFrameHandler(worker)
 	}
 
+	requestVideoFrame() {
+		this.session.requestVideoFrame();
+	}
+	
 	/*
 	Extending classes should override this to set up the scene during class construction
 	*/
