@@ -8,7 +8,7 @@ averageIntensity = function (buffer) {
     var w = buffer.size.width;
     var h = buffer.size.height;
     var pad = buffer.size.bytesPerRow - w;
-    var pixels = buffer.buffer;
+    var pixels = new Uint8Array(buffer.buffer);
 
     var intensity = 0.0;
     var p = 0;
@@ -29,8 +29,10 @@ averageIntensity = function (buffer) {
 }
 
 onMessage = function (ev) {
-    var frame = ev.detail.frame
-    var camera = ev.detail.camera
+    //postMessage (Math.random() * 255.0);
+    
+    var frame = detail.frame
+    var camera = detail.camera
     switch (frame.pixelFormat) {
         case "YUV420P":
     	this.averageIntensity(frame.buffers[0])

@@ -71,6 +71,12 @@
 				}
 
 				newSession() {
+					// this.worker = new Worker("intensity.js");
+					// var self = this;
+					// this.worker.onmessage = function(ev) {
+					// 	self.intensity = ev;
+					// }
+					// this.setVideoWorker(this.worker);
 					this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
 
@@ -103,7 +109,7 @@
 					var w = buffer.size.width;
 					var h = buffer.size.height;
 					var pad = buffer.size.bytesPerRow - w;
-					var pixels = buffer.buffer;
+					var pixels = new Uint8Array(buffer.buffer);
 
 					var intensity = 0.0;
 					var p = 0;
@@ -128,7 +134,7 @@
 
 					var w = buffer.size.width;
 					var h = buffer.size.height;
-					var pixels = buffer.buffer;
+					var pixels = new Uint8Array(buffer.buffer);
 
 					var cx = w   // it's w/2 but then *2 since it's two bytes per!
 					var cy = h / 2;

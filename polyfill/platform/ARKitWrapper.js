@@ -884,7 +884,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		var buffers = detail.frame.buffers;
 		for (var i = 0; i < buffers.length; i++) {
 			var bufflen = buffers[i].buffer.length;
-			buffers[i].buffer = base64.decode(buffers[i].buffer);
+			buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer);
 			var buffersize = buffers[i].buffer.length;
 			var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
 		}
