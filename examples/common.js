@@ -107,10 +107,7 @@ class XRExampleBase {
 			this.session.addEventListener('blur', ev => { this.handleSessionBlur(ev) })
 			this.session.addEventListener('end', ev => { this.handleSessionEnded(ev) })
 
-			// if this session is getting video frames, lets set up a callback.
-			// EVENTUALLY should look at properties on the session to see if user 
-			// approved it, but the app doesn't let us know this yet
-			this.session.requestVideoFrames(ev => { this.handleVideoFrame(ev) })
+			this.newSession();
 
 			if(this.shouldStartPresenting){
 				// VR Displays need startPresenting called due to input events like a click
@@ -121,6 +118,11 @@ class XRExampleBase {
 			this.showMessage('Could not initiate the session')
 		})
 	}
+
+	/*
+	  Clients should override to be called when a new session is created
+	  */
+	newSession() {}
 
 	/*
 		Empties this.el, adds a div with the message text, and shows a button to test rendering the scene to this.el
@@ -167,7 +169,18 @@ class XRExampleBase {
 	handleLayerFocus(ev){}
 	handleLayerBlur(ev){}
 
-	handleVideoFrame(ev){}
+	/*
+	* set up the video processing
+	*/
+	setVideoWorker(worker){
+		//
+		// NOTE:  not a worker, a callback!  Couldn't get workers working!
+		//
+		// if this session is getting video frames, lets set up a callback.
+		// EVENTUALLY should look at properties on the session to see if user 
+		// approved it, but the app doesn't let us know this yet
+		this.session.requestVideoFrames(worker)
+	}
 
 	/*
 	Extending classes should override this to set up the scene during class construction

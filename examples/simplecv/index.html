@@ -68,6 +68,10 @@
 					this.el.appendChild(this.textBox)
 				}
 
+				newSession() {
+					this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
+				}
+
 				// Called during construction
 				initializeScene(){
 					// Add a box at the scene origin
@@ -121,7 +125,7 @@
 					var camera = ev.detail.camera
 					switch (frame.pixelFormat) {
 						case "YUV420P":
-							this.averageIntensity(frame.buffers[0])
+						this.averageIntensity(frame.buffers[0])
 					}
 				}
 
