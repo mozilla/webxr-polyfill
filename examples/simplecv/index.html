@@ -167,6 +167,7 @@
 			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 			
 			var stats = new Stats();
+			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
 			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
 			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 
