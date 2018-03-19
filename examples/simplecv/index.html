@@ -119,6 +119,56 @@
 					this.intensity = (intensity / h) / 255.0;
 					//stats.end();
 				}
+				/*
+				In the video callback,  ev.detail contains:
+					{
+					"frame": {
+						"buffers": [ // Array of base64 encoded string buffers
+						{
+							"size": {
+							"width": 320,
+							"height": 180,
+							"bytesPerRow": 384
+							},
+							"buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
+						},
+						{
+							"size": {
+							"width": 160,
+							"height": 90,
+							"bytesPerRow": 384
+							},
+							"buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
+						}
+						],
+						"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+						"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
+						"timestamp": 337791
+					},
+					"camera": {
+						"cameraIntrinsics": [3x3 matrix],
+							fx 0   px
+							0  fy  py
+							0  0   1
+							fx and fy are the focal length in pixels.
+							px and py are the coordinates of the principal point in pixels.
+							The origin is at the center of the upper-left pixel.
+
+						"cameraImageResolution": {
+						"width": 1280,
+						"height": 720
+						},
+						"viewMatrix": [4x4 camera view matrix],
+						"interfaceOrientation": 3,
+							// 0 UIDeviceOrientationUnknown
+							// 1 UIDeviceOrientationPortrait
+							// 2 UIDeviceOrientationPortraitUpsideDown
+							// 3 UIDeviceOrientationLandscapeRight
+							// 4 UIDeviceOrientationLandscapeLeft
+						"projectionMatrix": [4x4 camera projection matrix]
+					}
+					}
+				*/
 
 				handleVideoFrame(ev) {
 					var frame = ev.detail.frame

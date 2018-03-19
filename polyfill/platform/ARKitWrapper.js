@@ -834,7 +834,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				  "height": 180,
 				  "bytesPerRow": 384
 				},
-				"buffer": "e3x...d7d"
+				"buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
 			  },
 			  {
 				"size": {
@@ -842,10 +842,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 				  "height": 90,
 				  "bytesPerRow": 384
 				},
-				"buffer": "ZZF.../fIJ7"
+				"buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
 			  }
 			],
 			"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+			"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
 			"timestamp": 337791
 		  },
 		  "camera": {
