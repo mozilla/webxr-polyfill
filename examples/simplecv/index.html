@@ -164,10 +164,25 @@
 			//}, 500);
 		</script>
 		<script>
-			var stats = new Stats();
-			stats.showPanel( 1 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-			document.body.appendChild( stats.dom );
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 			
+			var stats = new Stats();
+			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
+			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+
+			var updateCVFPS = function () {
+				frames ++;
+				var time = ( performance || Date ).now();
+				if ( time >= prevTime + 1000 ) {
+					cvPanel.update( ( frames * 1000 ) / ( time - prevTime ), 100 );
+					prevTime = time;
+					frames = 0;
+				}
+				beginTime = time;
+			}
+
+			document.body.appendChild( stats.dom );
+
 			class ARAnchorExample extends XRExampleBase {
 				constructor(domElement){
 					super(domElement, false, true, true)
@@ -195,6 +210,7 @@
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
 						self.cb = ev.data.cb;
+						updateCVFPS();
 					}
 					this.setVideoWorker(this.worker);
 					// this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
