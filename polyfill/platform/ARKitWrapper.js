@@ -75,7 +75,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			camera: true,
 			objects: true,
 			light_intensity: true,
-			computer_vision_data: true
+			computer_vision_data: false
 		}
 			
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called

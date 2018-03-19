@@ -65,6 +65,8 @@
 					this.textBox.setAttribute('class', 'text-box')
 					this.textBox.innerText = '0.0'
 					this.intensity = 0;
+					this.cr = 0;
+					this.cb = 0;
 					this.el.appendChild(this.textBox)
 				}
 
@@ -90,7 +92,8 @@
 
 				updateScene(frame){
 					stats.update()
-					this.textBox.innerHTML = "ARKit Light Estimate: " + frame.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2);
+					this.textBox.innerHTML = "ARKit Light Estimate: " + frame.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
+						+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2);
 				}
 
 				//////
@@ -119,7 +122,24 @@
 					this.intensity = (intensity / h) / 255.0;
 					//stats.end();
 				}
-				/*
+
+				colorAtCenter(buffer) {
+					//stats.begin();
+
+					var w = buffer.size.width;
+					var h = buffer.size.height;
+					var pixels = buffer.buffer;
+
+					var cx = w   // it's w/2 but then *2 since it's two bytes per!
+					var cy = h / 2;
+					var p = cy * buffer.size.bytesPerRow + cx;
+					this.cb = pixels[p++];
+					this.cr = pixels[p];
+					//stats.end();
+				}
+
+
+/*
 				In the video callback,  ev.detail contains:
 					{
 					"frame": {
@@ -176,6 +196,7 @@
 					switch (frame.pixelFormat) {
 						case "YUV420P":
 						this.averageIntensity(frame.buffers[0])
+						this.colorAtCenter(frame.buffers[1])
 					}
 				}
 
