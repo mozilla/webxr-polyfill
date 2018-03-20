@@ -109,7 +109,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
-			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED]
+			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
+			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA]
             //,['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
@@ -1050,6 +1051,7 @@ ARKitWrapper.WINDOW_RESIZE_EVENT = 'arkit-window-resize'
 ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
 ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
+ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
