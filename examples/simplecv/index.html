@@ -226,6 +226,10 @@
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
 						self.cb = ev.data.cb;
+
+						// doing this in a timeout call because I've been
+						// having issues and trying to decouple things.  Probably
+						// don't need to do this.
 						setTimeout( () => {
 							var txt = "ARKit Light Estimate: " + self.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + self.intensity.toFixed(2)
 							+ "<br>Center R/B: " + self.cr.toFixed(2) + " / " + self.cb.toFixed(2) + "<br><center>";
@@ -245,6 +249,7 @@
 
 							self.messageText = txt;
 						},0);
+
 						updateCVFPS();
 						self.requestVideoFrame();
 					}
