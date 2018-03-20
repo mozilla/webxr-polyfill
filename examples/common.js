@@ -173,12 +173,6 @@ class XRExampleBase {
 	* set up the video processing
 	*/
 	setVideoWorker(worker){
-		//
-		// NOTE:  not a worker, a callback!  Couldn't get workers working!
-		//
-		// if this session is getting video frames, lets set up a callback.
-		// EVENTUALLY should look at properties on the session to see if user 
-		// approved it, but the app doesn't let us know this yet
 		this.session.setVideoFrameHandler(worker)
 	}
 
