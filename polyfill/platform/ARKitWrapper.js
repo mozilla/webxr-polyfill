@@ -40,25 +40,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
-		// // worker to convert buffers
-		// var blobURL = this._buildWorkerBlob()
-		// this._worker = new Worker(blobURL);
-		// URL.revokeObjectURL(blobURL);
+		// worker to convert buffers
+		var blobURL = this._buildWorkerBlob()
+		this._worker = new Worker(blobURL);
+		URL.revokeObjectURL(blobURL);
 
-		// var self = this;
-		// this._worker.onmessage = function (ev) {
-		// 	setTimeout(function () {
-		// 		self.dispatchEvent(
-		// 			new CustomEvent(
-		// 				ARKitWrapper.COMPUTER_VISION_DATA,
-		// 				{
-		// 					source: self,
-		// 					detail: ev.data
-		// 				}
-		// 			)
-		// 		)	
-		// 	})
-		// }
+		var self = this;
+		this._worker.onmessage = function (ev) {
+			setTimeout(function () {
+				self.dispatchEvent(
+					new CustomEvent(
+						ARKitWrapper.COMPUTER_VISION_DATA,
+						{
+							source: self,
+							detail: ev.data
+						}
+					)
+				)	
+			})
+		}
 
 		this.lightIntensity = 1000;
 		/**
@@ -911,17 +911,22 @@ export default class ARKitWrapper extends EventHandlerBase {
 			return;
 		}
 
+		// convert buffers in place
+		var buffers = detail.frame.buffers;
+
+		// if there are too many cached array buffers, drop the unneeded ones
+		if (this._ab.length > buffers.length) {
+			this._ab = this._ab.slice(0, buffer.length)
+		}
+		
 		if (this._worker) {
-			this._worker.postMessage(detail);
-		} else {
-			// convert buffers in place
-			var buffers = detail.frame.buffers;
-
-			// if there are too many cached array buffers, drop the unneeded ones
-			if (this._ab.length > buffers.length) {
-				this._ab = this._ab.slice(0, buffer.length)
+			detail.ab = this._ab;
+			if (this._ab) {
+				this._worker.postMessage(detail, this._ab);
+			} else {
+				this._worker.postMessage(detail);
 			}
-
+		} else {
 			for (var i = 0; i < buffers.length; i++) {
 				// gradually increase the size of the ab[] array to hold the temp buffers, 
 				// and add null so it gets allocated properly
@@ -1046,11 +1051,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 				}
 			}
 
-			var ab = [];
-
 			self.addEventListener('message',  function(event){
 				var frame = event.data.frame
 				var camera = event.data.camera
+
+				var ab = event.data.ab;
 
 				// convert buffers in place
 				var buffers = frame.buffers;
