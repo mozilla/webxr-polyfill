@@ -197,6 +197,8 @@ export default class FlatDisplay extends XRDisplay {
 
 
     _handleComputerVisionData(ev) {
+        // Do whatever is needed with the image buffers here, and then call
+		// this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
 		try {
 			this.dispatchEvent(
 				new CustomEvent(
@@ -212,10 +214,8 @@ export default class FlatDisplay extends XRDisplay {
 		}
 	}
 
-	_requestVideoFrame() {
-        // Do whatever is needed with the image buffers here, and then call
-		// this._arKitWrapper.requestComputerVisionData() to request a new one
-        this._arKitWrapper.requestComputerVisionData()
+	_requestVideoFrame(buffers) {
+        this._arKitWrapper._requestComputerVisionData(buffers)
 	}
 
 	_createSession(parameters=null){

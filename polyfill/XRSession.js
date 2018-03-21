@@ -86,8 +86,8 @@ export default class XRSession extends EventHandlerBase {
 		this._display.addEventListener("videoFrame", callback)
 	}
 
-	requestVideoFrame() {
-		this._display._requestVideoFrame();
+	requestVideoFrame(buffers) {
+		this._display._requestVideoFrame(buffers);
 	}
 
 	_createPresentationFrame(){

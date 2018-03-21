@@ -176,8 +176,10 @@ class XRExampleBase {
 		this.session.setVideoFrameHandler(worker)
 	}
 
-	requestVideoFrame() {
-		this.session.requestVideoFrame();
+	// request the next frame
+	// buffers is an optional parameter, suggesting buffers that could be used
+	requestVideoFrame(buffers) {
+		this.session.requestVideoFrame(buffers);
 	}
 	
 	/*

@@ -98,6 +98,9 @@ export default class ARKitWrapper extends EventHandlerBase {
 			computer_vision_data: false
 		}
 			
+		// temp storage for CV arraybuffers
+		this._ab = []
+
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called
 		let eventCallbacks = [
 			['arkitStartRecording', ARKitWrapper.RECORD_START_EVENT],
@@ -853,7 +856,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				"size": {
 				  "width": 320,
 				  "height": 180,
-				  "bytesPerRow": 384
+				  "bytesPerRow": 320,
+				  "bytesPerPixel": 1
 				},
 				"buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
 			  },
@@ -861,7 +865,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				"size": {
 				  "width": 160,
 				  "height": 90,
-				  "bytesPerRow": 384
+				  "bytesPerRow": 320,
+				  "bytesPerPixel": 2
 				},
 				"buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
 			  }
@@ -896,6 +901,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 	 */
 	_onComputerVisionData(detail) {
 		// convert the arrays
+		if (!detail) {
+			console.error("detail passed to _onComputerVisionData is null")
+			return;
+		}
+		// convert the arrays
 		if (!detail.frame || !detail.frame.buffers || detail.frame.buffers.length <= 0) {
 			console.error("detail passed to _onComputerVisionData is bad, no buffers")
 			return;
@@ -906,10 +916,21 @@ export default class ARKitWrapper extends EventHandlerBase {
 		} else {
 			// convert buffers in place
 			var buffers = detail.frame.buffers;
+
+			// if there are too many cached array buffers, drop the unneeded ones
+			if (this._ab.length > buffers.length) {
+				this._ab = this._ab.slice(0, buffer.length)
+			}
+
 			for (var i = 0; i < buffers.length; i++) {
+				// gradually increase the size of the ab[] array to hold the temp buffers, 
+				// and add null so it gets allocated properly
+				if (this._ab.length <= i) {
+					this._ab.push(null)
+				}
 				var bufflen = buffers[i].buffer.length;
-				buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer);
-				var buffersize = buffers[i].buffer.length;
+				this._ab[i] = buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer, this._ab[i]);
+				var buffersize = buffers[i].buffer.byteLength;
 				var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
 			}
 			switch(detail.frame.pixelFormatType) {
@@ -932,6 +953,27 @@ export default class ARKitWrapper extends EventHandlerBase {
 			)
 		}	
 	}
+	/*
+	Requests ARKit a new set of buffers for computer vision processing
+	 */
+    _requestComputerVisionData(buffers) {
+		if (buffers) {
+			this._ab = [];
+			// if buffers are passed in, check if they are ArrayBuffers, and if so, save
+			// them for possible use on the next frame.
+			//
+			// we do this because passing buffers down into Workers invalidates them, so we need to
+			// return them here when we get them back from the Worker, so they can be reused. 
+			for (var i=0; i< buffers.length; i++) {
+				if (buffers[i] instanceof ArrayBuffer) {
+					this._ab.push(buffers[i])
+				}
+			}
+		}
+        window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
+	}
+
+
 	_buildWorkerBlob() {
 		var blobURL = URL.createObjectURL( new Blob([ '(',
 
@@ -945,12 +987,15 @@ export default class ARKitWrapper extends EventHandlerBase {
 				_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 
 				/* will return a  Uint8Array type */
-				decodeArrayBuffer: function (input) {
+				decodeArrayBuffer: function(input, buffer) {
 					var bytes = (input.length/4) * 3;
-					var ab = new ArrayBuffer(bytes);
-					this.decode(input, ab);
+					if (!buffer || buffer.byteLength != bytes) {
+						// replace the buffer with a new, appropriately sized one
+						buffer = new ArrayBuffer(bytes);
+					}
+					this.decode(input, buffer);
 					
-					return ab;
+					return buffer;
 				},
 
 				removePaddingChars: function(input){
@@ -1001,6 +1046,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				}
 			}
 
+			var ab = [];
+
 			self.addEventListener('message',  function(event){
 				var frame = event.data.frame
 				var camera = event.data.camera
@@ -1008,8 +1055,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 				// convert buffers in place
 				var buffers = frame.buffers;
 				var buffs = []
+				// if there are too many cached array buffers, drop the unneeded ones
+				if (ab.length > buffers.length) {
+					ab = ab.slice(0, buffer.length)
+				}
 				for (var i = 0; i < buffers.length; i++) {
-					buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer);
+					// gradually increase the size of the ab[] array to hold the temp buffers, 
+					// and add null so it gets allocated properly
+					if (ab.length <= i) {
+						ab.push(null)
+					}
+					ab[i] = buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer, ab[i]);
 					buffs.push(buffers[i].buffer)
 				}
 				switch(frame.pixelFormatType) {
@@ -1029,12 +1085,6 @@ export default class ARKitWrapper extends EventHandlerBase {
 		return( blobURL );			
 	}
 	
-	/*
-	Requests ARKit a new set of buffers for computer vision processing
-	 */
-    requestComputerVisionData() {
-        window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
-	}
 }
 
 // ARKitWrapper event names:

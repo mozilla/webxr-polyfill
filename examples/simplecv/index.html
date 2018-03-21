@@ -70,7 +70,8 @@
 						"size": {
 						"width": 320,
 						"height": 180,
-						"bytesPerRow": 384
+						"bytesPerRow": 320,
+						"bytesPerPixel": 1
 						},
 						"buffer": "e3x...d7d"   /// convert to Uint8 ArrayBuffer in code below
 					},
@@ -78,7 +79,8 @@
 						"size": {
 						"width": 160,
 						"height": 90,
-						"bytesPerRow": 384
+						"bytesPerRow": 320,
+						"bytesPerPixel": 2
 						},
 						"buffer": "ZZF.../fIJ7"  /// convert to Uint8 ArrayBuffer in code below
 					}
@@ -161,7 +163,15 @@
 					case "YUV420P":
 					this.averageIntensity(frame.buffers[0])
 					this.colorAtCenter(frame.buffers[1])
-					postMessage ({intensity: intensity, cr: cr, cb: cb});
+
+					// pass the buffers back or they will be garbage collected
+					var buffers = frame.buffers
+					var buffs = []
+					for (var i = 0; i < buffers.length; i++) {
+						buffs.push(buffers[i].buffer)
+					}
+	
+					postMessage ({intensity: intensity, cr: cr, cb: cb, buffers: buffs}, buffs);
 					
 				}
 			});
@@ -251,7 +261,7 @@
 						},0);
 
 						updateCVFPS();
-						self.requestVideoFrame();
+						self.requestVideoFrame(ev.data.buffers);
 					}
 					
 					this.worker.addEventListener('error', (e) => { 
