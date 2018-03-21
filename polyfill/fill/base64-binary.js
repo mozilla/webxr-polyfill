@@ -36,12 +36,15 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 export default class base64 {
 	
 	/* will return a  Uint8Array type */
-	static decodeArrayBuffer(input) {
+	static decodeArrayBuffer(input, buffer) {
 		var bytes = (input.length/4) * 3;
-		var ab = new ArrayBuffer(bytes);
-		this.decode(input, ab);
+		if (!buffer || buffer.byteLength != bytes) {
+			// replace the buffer with a new, appropriately sized one
+			buffer = new ArrayBuffer(bytes);
+		}
+		this.decode(input, buffer);
 		
-		return ab;
+		return buffer;
 	}
 
 	static removePaddingChars(input){
