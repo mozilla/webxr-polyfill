@@ -14,11 +14,12 @@
 
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, alignEUS=true){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
 		this.useComputerVision = useComputerVision
+		this.alignEUS = alignEUS
 
 		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
 
@@ -82,13 +83,14 @@ class XRExampleBase {
 	}
 
 	_startSession(){
-		let sessionInitParamers = {
+		let sessionInitParameters = {
 			exclusive: this.createVirtualReality,
 			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION,
-			computer_vision_data: this.useComputerVision
+			computer_vision_data: this.useComputerVision,
+			alignEUS: this.alignEUS
 		}
 		for(let display of this.displays){
-			if(display.supportsSession(sessionInitParamers)){
+			if(display.supportsSession(sessionInitParameters)){
 				this.display = display
 				break
 			}
@@ -97,7 +99,7 @@ class XRExampleBase {
 			this.showMessage('Could not find a display for this type of session')
 			return
 		}
-		this.display.requestSession(sessionInitParamers).then(session => {
+		this.display.requestSession(sessionInitParameters).then(session => {
 			this.session = session
 			this.session.depthNear = 0.1
 			this.session.depthFar = 1000.0
