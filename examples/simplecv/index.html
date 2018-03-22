@@ -142,18 +142,15 @@
 			}
 			
 			colorAtCenter = function(buffer) {
-				//stats.begin();
-
 				var w = buffer.size.width;
 				var h = buffer.size.height;
 				var pixels = new Uint8Array(buffer.buffer);
 
-				var cx = w   // it's w/2 but then *2 since it's two bytes per!
-				var cy = h / 2;
+				var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
+				var cy = Math.floor(h / 2)
 				var p = cy * buffer.size.bytesPerRow + cx;
 				cb = pixels[p++];
 				cr = pixels[p];
-				//stats.end();
 			}
 
 			self.addEventListener('message',  function(event){
@@ -171,8 +168,7 @@
 						buffs.push(buffers[i].buffer)
 					}
 	
-					postMessage ({intensity: intensity, cr: cr, cb: cb, buffers: buffs}, buffs);
-					
+					postMessage ({intensity: intensity, cr: cr, cb: cb, buffers: buffs, frame: frame}, buffs);
 				}
 			});
 			
@@ -206,6 +202,9 @@
 				beginTime = time;
 			}
 
+			// flag to set true if you want to construct a texture from the UV image 
+			var makeTexUV = false;
+
 			document.body.appendChild( stats.dom );
 
 			class ARAnchorExample extends XRExampleBase {
@@ -228,7 +227,6 @@
 						document.querySelector('#worker1').textContent
 					], { type: "text/javascript" })
 
-					// Note: window.webkitURL.createObjectURL() in Chrome 10+.
 					this.worker = new Worker(window.URL.createObjectURL(blob));
 					
 					var self = this;
@@ -236,44 +234,41 @@
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
 						self.cb = ev.data.cb;
-
-						// doing this in a timeout call because I've been
-						// having issues and trying to decouple things.  Probably
-						// don't need to do this.
-						setTimeout( () => {
-							var txt = "ARKit Light Estimate: " + self.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + self.intensity.toFixed(2)
-							+ "<br>Center R/B: " + self.cr.toFixed(2) + " / " + self.cb.toFixed(2) + "<br><center>";
-							
-							for (var i=0; i<colors.length; i++) {
-								var c = colors[i];
-								c.dist = Math.sqrt((c.cr - self.cr) * (c.cr - self.cr) + (c.cb - self.cb)*(c.cb - self.cb));
-								txt += c.dist.toFixed(1) + " " 
-							}
-							for (i=0; i<colors.length; i++) {
-								c = colors[i];
-								if (c.dist < 30) {
-									txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
-								} 
-							}
-							txt+="</center>"
-
-							self.messageText = txt;
-						},0);
-
-						updateCVFPS();
-						self.requestVideoFrame(ev.data.buffers);
+						self.handleVisionDone(ev.data.frame, ev.data.buffers);
 					}
 					
 					this.worker.addEventListener('error', (e) => { 
 						console.log("worker error:" + e) 
 					})
 
-					this.setVideoWorker(this.worker);
-					// this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
+					//this.setVideoWorker(this.worker);
+					this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
 
 				// Called during construction
 				initializeScene(){
+					// make and display an image of the UV image buffer
+					if (makeTexUV) {
+						var size = 4;
+						var data = new Uint8Array( 12 );
+						for ( var i = 0; i < 12; i ++ ) {
+							data[i] = 255 / (i + 1);
+						}
+						this.texBuff = data;
+						this.texSize = 12;
+						this.uvTexture = new THREE.DataTexture( data, 2, 2, THREE.RGBFormat );
+						this.uvTexture.needsUpdate = true;
+
+						var geometry = new THREE.PlaneGeometry(1, 1);
+						var material = new THREE.MeshBasicMaterial( {color: 0xff00ff88, map: this.uvTexture, side: THREE.DoubleSide } );
+						var plane = new THREE.Mesh( geometry, material );
+						var mat = new THREE.Matrix4();
+						mat = mat.makeScale(0.1,0.1,0.1);
+						mat = mat.setPosition(new THREE.Vector3(-.05,0.0,-.33))
+						plane.applyMatrix(mat)
+						this.camera.add( plane );
+					}
+
 					// Add a box at the scene origin
 					let box = new THREE.Mesh(
 						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
@@ -296,59 +291,105 @@
 					}
 				}
 
+						
+				handleVisionDone(frame, buffers) {
+					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
+					+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2) + "<br><center>";
+					
+					for (var i=0; i<colors.length; i++) {
+						var c = colors[i];
+						c.dist = Math.sqrt((c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb));
+						txt += c.dist.toFixed(1) + " " 
+					}
+					for (i=0; i<colors.length; i++) {
+						c = colors[i];
+						if (c.dist < 30) {
+							txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
+						} 
+					}
+					txt+="</center>"
+
+					this.messageText = txt;
+
+					if (makeTexUV) {
+						var buffer = frame.buffers[1];
+						var buff = buffer.buffer;
+						if (this.texSize != (buff.byteLength /2 *3)) {
+							this.texSize = buff.byteLength /2 * 3
+							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
+						}
+						
+						var j = 0;
+						var pixels = new Uint8Array(buff);
+						for ( var i = 0; i < this.texSize; i ++ ) {
+							this.texBuff[i] = pixels[j++];
+							i++;
+							this.texBuff[i] = 0;
+							i++;
+							this.texBuff[i] = pixels[j++];
+						}
+						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
+						this.uvTexture.needsUpdate = true;
+					}							
+					updateCVFPS();
+					this.requestVideoFrame(buffers);
+				}
+
 				//////
-				////// NO LONGER USED (moved to worker above)
+				////// NOT USED with worker above, but can switch to callback model using these
 				//////
-				// averageIntensity(buffer) {
-				// 	//stats.begin();
+				averageIntensity(buffer) {
+					var w = buffer.size.width;
+					var h = buffer.size.height;
+					var pad = buffer.size.bytesPerRow - w;
+					var pixels = new Uint8Array(buffer.buffer);
 
-				// 	var w = buffer.size.width;
-				// 	var h = buffer.size.height;
-				// 	var pad = buffer.size.bytesPerRow - w;
-				// 	var pixels = new Uint8Array(buffer.buffer);
+					var intensity = 0.0;
+					var p = 0;
+					for (var r = 0; r < h; r++) {
+						var v = 0;
+						for (var i = 0; i < w; i++) {
+							if (p < pixels.length) {
+								v += pixels[p++]
+							} else {
+								console.error("overflow pixel buffer")
+							}
+						}
+						intensity += v / w;
+						p += pad;
+					}
+					this.intensity = (intensity / h) / 255.0;
+				}
 
-				// 	var intensity = 0.0;
-				// 	var p = 0;
-				// 	for (var r = 0; r < h; r++) {
-				// 		var v = 0;
-				// 		for (var i = 0; i < w; i++) {
-				// 			if (p < pixels.length) {
-				// 				v += pixels[p++]
-				// 			} else {
-				// 				console.error("overflow pixel buffer")
-				// 			}
-				// 		}
-				// 		intensity += v / w;
-				// 		p += pad;
-				// 	}
-				// 	this.intensity = (intensity / h) / 255.0;
-				// 	//stats.end();
-				// }
+				colorAtCenter(buffer) {
+					var w = buffer.size.width;
+					var h = buffer.size.height;
+					var pixels = new Uint8Array(buffer.buffer);
 
-				// colorAtCenter(buffer) {
-				// 	//stats.begin();
+					var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
+					var cy = Math.floor(h / 2)
+					var p = cy * buffer.size.bytesPerRow + cx;
+					this.cb = pixels[p++];
+					this.cr = pixels[p];
+				}
 
-				// 	var w = buffer.size.width;
-				// 	var h = buffer.size.height;
-				// 	var pixels = new Uint8Array(buffer.buffer);
+				handleVideoFrame(ev) {
+					var frame = ev.detail.frame
+					var camera = ev.detail.camera
+					switch (frame.pixelFormat) {
+						case "YUV420P":
+						this.averageIntensity(frame.buffers[0])
+						this.colorAtCenter(frame.buffers[1])
+					}
 
-				// 	var cx = w   // it's w/2 but then *2 since it's two bytes per!
-				// 	var cy = h / 2;
-				// 	var p = cy * buffer.size.bytesPerRow + cx;
-				// 	this.cb = pixels[p++];
-				// 	this.cr = pixels[p];
-				// 	//stats.end();
-				// }
-
-				// handleVideoFrame(ev) {
-				// 	var frame = ev.detail.frame
-				// 	var camera = ev.detail.camera
-				// 	switch (frame.pixelFormat) {
-				// 		case "YUV420P":
-				// 		this.averageIntensity(frame.buffers[0])
-				// 		this.colorAtCenter(frame.buffers[1])
-				// 	}
-				// }
+					// pass the buffers back or they will be garbage collected
+					var buffers = frame.buffers
+					var buffs = []
+					for (var i = 0; i < buffers.length; i++) {
+						buffs.push(buffers[i].buffer)
+					}	
+					this.handleVisionDone(frame, buffers);
+				}
 
 			}
 
