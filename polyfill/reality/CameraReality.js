@@ -264,9 +264,7 @@ export default class CameraReality extends Reality {
 	}
 
 	_removeAnchor(uid){
-		// returns void
-		// TODO talk to ARKit to delete an anchor
-		this._anchors.delete(uid)
+		ARKitWrapper.removeAnchor(uid)
 	}
 
 	_pickARKitHit(data){

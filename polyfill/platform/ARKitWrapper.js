@@ -586,6 +586,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 		})
 	}
 
+	static removeAnchor(uid) {
+		window.webkit.messageHandlers.removeAnchors.postMessage([uid])
+	}
+
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
