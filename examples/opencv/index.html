@@ -1,0 +1,504 @@
+<html>
+	<head>
+		<title>OpenCV example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.text-box {
+				position: absolute;
+				top: 5%;
+				left: 50%;
+				color: white;
+				background: rgba(27,55,55,0.75);;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				transform: translate(-50%, 0%);
+				font-size: 0.8em;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 10px;
+			}
+			img.crosshair {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-left: -32px;
+				margin-top: -32px;
+			}
+		</style>
+		<link rel="stylesheet" href="../common.css"/>
+		<script src="../libs/three.js"></script>
+		<script src="../libs/stats.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script>
+	    // var cvStatusTxt = "";
+		// var Module = {
+		//   preRun: [function() {
+		// 	Module.FS_createPreloadedFile('/', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
+		// 	Module.FS_createPreloadedFile('/', 'haarcascade_frontalface_default.xml', 'haarcascade_frontalface_default.xml', true, false);
+		// 	Module.FS_createPreloadedFile('/', 'haarcascade_profileface.xml', 'haarcascade_profileface.xml', true, false);
+		//   }],
+		//   onRuntimeInitialized: function() {
+		// 	  opencvIsReady();
+		// 	},
+		//   setStatus: function(msg) {
+		// 	  cvStatusTxt = msg;
+		//   }
+		// };
+		</script>
+		<!--script  src="opencv.js"></script-->
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<!-- video frame -->
+		<canvas style="transform: translate(-50%, 50%);opacity:0.5;position:absolute;bottom:50%;left:50%;border:1px solid green" id="video_canvas" width="320" height="240"> </canvas>
+		<img src="target-28139_64.png" class="crosshair" />
+		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>Simple Computer Vision</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Compute the average intensity of the video image pixels.</p>
+		</div>
+		<script id="worker1" type="javascript/worker">
+		</script>
+		<script>
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
+			
+			var stats = new Stats();
+			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
+			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
+			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+
+			var updateCVFPS = function () {
+				frames ++;
+				var time = ( performance || Date ).now();
+				if ( time >= prevTime + 1000 ) {
+					cvPanel.update( ( frames * 1000 ) / ( time - prevTime ), 100 );
+					prevTime = time;
+					frames = 0;
+				}
+				beginTime = time;
+			}
+
+			// flag to set true if you want to construct a texture from the UV image 
+			var makeTexUV = false;
+			var makeTexY = false;
+
+			// has openCV loaded?
+			var openCVready = false;
+
+			var showCVImage = false;
+			var cvImageDiv = document.getElementById("video_canvas");
+
+
+			document.body.appendChild( stats.dom );
+
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false, true, true)
+
+					this.textBox = document.createElement('span')
+					this.textBox.setAttribute('class', 'text-box')
+					this.textBox.innerText = '0.0'
+					this.faceRects = [];
+					this.eyeRects = [];
+					this.lightEstimate = 0;
+					this.el.appendChild(this.textBox)
+
+					this.rotation = -1;
+					this.rotatedImage = null;
+					this.face_cascade = null;
+					this.eye_cascade = null;
+				}
+
+				newSession() {
+					// var blob = new Blob([
+					// 	document.querySelector('#worker1').textContent
+					// ], { type: "text/javascript" })
+					//this.worker = new Worker(window.URL.createObjectURL(blob));
+					
+					// var self = this;
+					// this.worker.onmessage = function(ev) {
+					//	 	var videoFrame = XRVideoFrame.createFromMessage(ev)
+					// 		self.faceRects = ev.data.faceRects;
+					// 		for (let i = 0; i < self.faceRects.length; i++) {
+					// 			let rect = self.faceRects[i];
+					// 			cvImageDiv.context.strokeRect(rect.x, rect.y, rect.width , rect.height);
+					// 		}
+					// 		self.handleVisionDone(videoFrame);
+					// }
+
+					// this.worker.addEventListener('error', (e) => { 
+					// 	console.log("worker error:" + e) 
+					// })
+
+					//this.setVideoWorker(this.worker);
+					this.setVideoWorker(ev => { 
+						var videoFrame = ev.detail
+						if (openCVready) {
+							try {
+								this.handleVideoFrame(ev)
+							} catch(e) {
+								console.error('CV worker error', e)
+							}
+							updateCVFPS();
+						}
+						this.handleVisionDone(videoFrame);
+
+						// pass the buffers back or they will be garbage collected
+						videoFrame.release();
+						this.requestVideoFrame();
+					})
+				}
+
+				// Called during construction
+				initializeScene(){
+					// make and display an image of the UV image buffer
+					if (makeTexUV || makeTexY) {
+						var size = 4;
+						var data = new Uint8Array( 12 );
+						for ( var i = 0; i < 12; i ++ ) {
+							data[i] = 255 / (i + 1);
+						}
+						this.texBuff = data;
+						this.texSize = 12;
+						this.uvTexture = new THREE.DataTexture( data, 2, 2, THREE.RGBFormat );
+						this.uvTexture.needsUpdate = true;
+
+						var geometry = new THREE.PlaneGeometry(1, 1);
+						var material = new THREE.MeshBasicMaterial( {color: 0xff00ff88, map: this.uvTexture, side: THREE.DoubleSide } );
+						var plane = new THREE.Mesh( geometry, material );
+						var mat = new THREE.Matrix4();
+						mat = mat.makeScale(0.1,0.1,0.1);
+						mat = mat.setPosition(new THREE.Vector3(-.05,0.0,-.33))
+						plane.applyMatrix(mat)
+						this.camera.add( plane );
+					}
+
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0, 0)
+					this.floorGroup.add(box)
+
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				updateScene(frame){
+					this.lightEstimate = frame.lightEstimate || 0;
+					stats.update()
+
+					var txt = "<center>OpenCV Status: " + cvStatusTxt;
+					txt += "<br>ARKit Light Estimate: " + this.lightEstimate.toFixed(2);
+					txt += "<br>Face: ";
+					if (this.faceRects.length > 0) {
+						txt += "[" + this.faceRects.toString + "]"
+					} else {
+						txt += "NO FACE"
+					}
+					txt += "</center>"
+					this.messageText = txt;
+
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
+				}
+
+						
+				handleVisionDone(videoFrame) {
+					// This code is hardcoded for the way the WebXR Viewer returns video frames (YUV420P)
+					if (makeTexUV && videoFrame.buffer(1).buffer) {
+						var buffer = videoFrame.buffer(1);
+						var buff = buffer.buffer;
+						if (this.texSize != (buff.byteLength /2 *3)) {
+							this.texSize = buff.byteLength /2 * 3
+							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
+						}
+						
+						var j = 0;
+						var pixels = new Uint8Array(buff);
+						for ( var i = 0; i < this.texSize; i ++ ) {
+							this.texBuff[i] = pixels[j++];
+							i++;
+							this.texBuff[i] = 0;
+							i++;
+							this.texBuff[i] = pixels[j++];
+						}
+						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
+						this.uvTexture.needsUpdate = true;
+					} else if (makeTexY && videoFrame.buffer(0).buffer) {
+						var buffer = videoFrame.buffer(0);
+						var buff = buffer.buffer;
+						if (this.texSize != (buff.byteLength * 3)) {
+							this.texSize = buff.byteLength * 3
+							this.texBuff = new Uint8Array( this.texSize );
+						}
+						
+						var j = 0;
+						var pixels = new Uint8Array(buff);
+						for ( var i = 0; i < this.texSize; i ++ ) {
+							this.texBuff[i++] = pixels[j];
+							this.texBuff[i++] = pixels[j];
+							this.texBuff[i] = pixels[j++];
+						}
+						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
+						this.uvTexture.needsUpdate = true;
+					}							
+				}
+
+				//////
+				////// NOT USED with worker above, but can switch to callback model using these
+				//////
+
+				loadFaceDetectTrainingSet() {
+					if (this.face_cascade == undefined) {
+						this.face_cascade = new cv.CascadeClassifier();
+						let load = this.face_cascade.load('haarcascade_frontalface_default.xml');
+						console.log('load face detection training data', load);
+					}
+				}
+
+				loadEyesDetectTrainingSet() {
+					if (this.eye_cascade == undefined) {
+						this.eye_cascade = new cv.CascadeClassifier();
+						let load = this.eye_cascade.load('haarcascade_eye.xml');
+						console.log('load eye detection training data', load);
+					}
+				}
+
+				faceDetect(img_gray) {
+					this.loadFaceDetectTrainingSet();
+					
+					let w = Math.floor(img_gray.cols /2);
+					let h = Math.floor(img_gray.rows /2);
+					let roiRect = new cv.Rect(w/2, h/2, w, h);
+					let roi_gray = img_gray.roi(roiRect);
+
+					let faces = new cv.RectVector();
+					let s1 = new cv.Size(50,50);
+					let s2 = new cv.Size();
+					this.face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
+
+					let rects = [];
+
+					for (let i = 0; i < faces.size(); i += 1) {
+						let faceRect = faces.get(i);
+						rects.push({
+							x: faceRect.x,
+							y: faceRect.y,
+							width: faceRect.width,
+							height: faceRect.height
+						});
+					}
+
+					faces.delete();
+					return rects;
+				}
+
+				eyesDetect(img_gray) {	
+					this.loadFaceDetectTrainingSet();
+					this.loadEyesDetectTrainingSet();
+
+					let faces = new cv.RectVector();
+					let s1 = new cv.Size();
+					let s2 = new cv.Size();
+					this.face_cascade.detectMultiScale(img_gray, faces);//, 1.1, 3, 0);//, s1, s2);
+
+					let rects = [];
+
+					for (let i = 0; i < faces.size(); i += 1) {
+						let faceRect = faces.get(i);
+						let x = faceRect.x;
+						let y = faceRect.y;
+						let w = faceRect.width;
+						let h = faceRect.height;
+
+						rects.push({
+							x: x,
+							y: y,
+							width: w,
+							height: h
+						});
+
+						let roiRect = new cv.Rect(x, y, w, h);
+						let roi_gray = img_gray.roi(roiRect);
+
+						let eyes = new cv.RectVector();
+						this.eye_cascade.detectMultiScale(roi_gray, eyes);//, 1.1, 3, 0, s1, s2);
+
+						for (let j = 0; j < eyes.size(); j += 1) {
+
+							let eyeRect = eyes.get(j);
+
+							rects.push({
+								x: x + eyeRect.x,
+								y: y + eyeRect.y,
+								width: eyeRect.width,
+								height: eyeRect.height
+							});
+						}
+
+						eyes.delete();
+						roi_gray.delete();
+					}
+
+					faces.delete();
+
+					return rects
+				}
+
+				// 0 UIDeviceOrientationUnknown
+				// 1 UIDeviceOrientationPortrait
+				// 2 UIDeviceOrientationPortraitUpsideDown
+				// 3 UIDeviceOrientationLandscapeRight
+				// 4 UIDeviceOrientationLandscapeLeft     --- normal?
+				rotateImage(rotation, buffer) {
+					var width = buffer.size.width
+					var height = buffer.size.height
+					if (!this.rotatedImage || (this.rotation != rotation)) {
+						this.rotation = rotation;
+						var cameraAspect;
+
+						if(rotation ==1 ||  rotation == 2) {
+							this.rotatedImage = new cv.Mat(width, height, cv.CV_8U)
+							cameraAspect = height / width;
+						} else {
+							this.rotatedImage = new cv.Mat(height, width, cv.CV_8U)
+							cameraAspect = width / height;
+						}
+
+						// reposition to DIV
+						var windowWidth = this.session.baseLayer.framebufferWidth;
+						var windowHeight = this.session.baseLayer.framebufferHeight;
+						var windowAspect = windowWidth / windowHeight;
+						
+						if (cameraAspect > windowAspect) {
+							windowWidth = windowHeight * cameraAspect;
+						} else {
+							windowHeight = windowWidth / cameraAspect; 
+						}
+						
+						var cvTxt ="transform: translate(-50%, 50%);opacity:0.5;position:absolute;bottom:50%;left:50%;border:1px solid green; width:"+ windowWidth + "px;height:" + windowHeight + "px";
+						console.log("update CV canvas style to: " + cvTxt)
+						cvImageDiv.style = cvTxt;
+					}
+					var src, dest;
+					src = dest = 0;
+
+					var i, j;
+					var b = new Uint8Array(buffer.buffer);
+					var r = this.rotatedImage.data;
+
+					var rowExtra = buffer.size.bytesPerPixel * buffer.size.bytesPerRow - width;
+					switch(rotation) {
+					case 1:
+						// clockwise
+						dest = height - 1;
+						for (j = 0; j < height; j++) {
+							for (var i = 0; i < width; i++) {
+								r[dest] = b[src++]
+								dest += height; // up the row
+							}
+							dest -= width * height;
+							dest --;
+							src += rowExtra;
+						}								
+						break;
+
+					case 2:							
+						// anticlockwise
+						dest = width * (height - 1);
+						for (j = 0; j < height; j++) {
+							for (var i = 0; i < width; i++) {
+								r[dest] = b[src++]
+								dest -= height; // down the row
+							}
+							dest += width * height;
+							dest ++;
+							src += rowExtra;
+						}								
+						break;
+
+					case 4:
+						// 180
+						dest = width * height - 1;
+						for (j = 0; j < height; j++) {
+							for (var i = 0; i < width; i++) {
+								r[dest--] = b[src++]
+							}
+							src += rowExtra;
+						}								
+						break;
+
+					case 3:
+					default:
+						// copy
+						for (j = 0; j < height; j++) {
+							for (var i = 0; i < width; i++) {
+								r[dest++] = b[src++]
+							}
+							src += rowExtra;
+						}								
+					}		
+					//cv.imshow("video_canvas",this.rotatedImage)			
+				}
+
+				handleVideoFrame(ev) {
+					var videoFrame = ev.detail
+					var camera = videoFrame.camera
+					switch (videoFrame.pixelFormat) {
+					    case XRVideoFrame.IMAGEFORMAT_YUV420P:
+							var rotation = camera.interfaceOrientation;
+							this.rotateImage(rotation, videoFrame.buffer(0))
+							this.faceRects = this.faceDetect(this.rotatedImage);
+					}
+					for (let i = 0; i < this.faceRects.length; i++) {
+						let rect = this.faceRects[i];
+						cvImageDiv.context.strokeRect(rect.x, rect.y, rect.width , rect.height);
+					}
+							
+				}
+
+			}
+
+			function opencvIsReady() {
+				console.log('OpenCV.js is ready');
+				openCVready = true				
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>
