@@ -59,7 +59,7 @@ export default class XRDisplay extends EventHandlerBase {
 		})
 	}
 
-	_requestVideoFrame(buffers) {}
+	_requestVideoFrame() {}
 	
 	_requestAnimationFrame(callback){
 		return window.requestAnimationFrame(callback)

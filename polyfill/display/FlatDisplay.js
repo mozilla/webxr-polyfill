@@ -214,8 +214,8 @@ export default class FlatDisplay extends XRDisplay {
 		}
 	}
 
-	_requestVideoFrame(buffers) {
-        this._arKitWrapper._requestComputerVisionData(buffers)
+	_requestVideoFrame(bufers) {
+        this._arKitWrapper._requestComputerVisionData()
 	}
 
 	_createSession(parameters=null){

@@ -16,6 +16,7 @@ import XRCoordinateSystem from './XRCoordinateSystem.js'
 import XRViewPose from './XRViewPose.js'
 import XRLayer from './XRLayer.js'
 import XRWebGLLayer from './XRWebGLLayer.js'
+import XRVideoFrame from './XRVideoFrame.js'
 
 import EventHandlerBase from './fill/EventHandlerBase.js'
 import FlatDisplay from './display/FlatDisplay.js'
@@ -50,6 +51,7 @@ class XRPolyfill extends EventHandlerBase {
 		window.XRViewPose = XRViewPose
 		window.XRLayer = XRLayer
 		window.XRWebGLLayer = XRWebGLLayer
+		window.XRVideoFrame = XRVideoFrame
 
 		this._getVRDisplaysFinished = false;
 

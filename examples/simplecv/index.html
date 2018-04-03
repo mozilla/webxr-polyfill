@@ -1,6 +1,6 @@
 <html>
 	<head>
-		<title>AR anchor example</title>
+		<title>Simple Custom CV example</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
@@ -60,122 +60,7 @@
 			<p>Compute the average intensity of the video image pixels.</p>
 		</div>
 		<script id="worker1" type="javascript/worker">
-
-			/**
-			 * In the video callback,  ev.detail contains:
-				{
-				"frame": {
-					"buffers": [ // Array of base64 encoded string buffers
-					{
-						"size": {
-						"width": 320,
-						"height": 180,
-						"bytesPerRow": 320,
-						"bytesPerPixel": 1
-						},
-						"buffer": "e3x...d7d"   /// convert to Uint8 ArrayBuffer in code below
-					},
-					{
-						"size": {
-						"width": 160,
-						"height": 90,
-						"bytesPerRow": 320,
-						"bytesPerPixel": 2
-						},
-						"buffer": "ZZF.../fIJ7"  /// convert to Uint8 ArrayBuffer in code below
-					}
-					],
-					"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
-					"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
-					"timestamp": 337791
-				},
-				"camera": {
-					"cameraIntrinsics": [3x3 matrix],
-						fx 0   px
-						0  fy  py
-						0  0   1
-						fx and fy are the focal length in pixels.
-						px and py are the coordinates of the principal point in pixels.
-						The origin is at the center of the upper-left pixel.
-
-					"cameraImageResolution": {
-					"width": 1280,
-					"height": 720
-					},
-					"viewMatrix": [4x4 camera view matrix],
-					"interfaceOrientation": 3,
-						// 0 UIDeviceOrientationUnknown
-						// 1 UIDeviceOrientationPortrait
-						// 2 UIDeviceOrientationPortraitUpsideDown
-						// 3 UIDeviceOrientationLandscapeRight
-						// 4 UIDeviceOrientationLandscapeLeft
-					"projectionMatrix": [4x4 camera projection matrix]
-				}
-				}
-			*/
-
-			var intensity = 0.0;
-			var cr = -1;
-			var cb = -1;
-
-			averageIntensity = function (buffer) {
-				var w = buffer.size.width;
-				var h = buffer.size.height;
-				var pad = buffer.size.bytesPerRow - w;
-				var pixels = new Uint8Array(buffer.buffer);
-			
-				intensity = 0.0;
-				var p = 0;
-				for (var r = 0; r < h; r++) {
-					var v = 0;
-					for (var i = 0; i < w; i++) {
-						if (p < pixels.length) {
-							v += pixels[p++]
-						} else {
-							console.error("overflow pixel buffer")
-						}
-					}
-					intensity += v / w;
-					p += pad;
-				}			
-				intensity = (intensity / h) / 255.0;
-			}
-			
-			colorAtCenter = function(buffer) {
-				var w = buffer.size.width;
-				var h = buffer.size.height;
-				var pixels = new Uint8Array(buffer.buffer);
-
-				var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
-				var cy = Math.floor(h / 2)
-				var p = cy * buffer.size.bytesPerRow + cx;
-				cb = pixels[p++];
-				cr = pixels[p];
-			}
-
-			self.addEventListener('message',  function(event){
-				var frame = event.data.frame
-				var camera = event.data.camera
-				switch (frame.pixelFormat) {
-					case "YUV420P":
-					this.averageIntensity(frame.buffers[0])
-					this.colorAtCenter(frame.buffers[1])
-
-					// pass the buffers back or they will be garbage collected
-					var buffers = frame.buffers
-					var buffs = []
-					for (var i = 0; i < buffers.length; i++) {
-						buffs.push(buffers[i].buffer)
-					}
-	
-					postMessage ({intensity: intensity, cr: cr, cb: cb, buffers: buffs, frame: frame}, buffs);
-				}
-			});
-			
-			// setInterval( function(){
-			//     console.log("Help me!")
-			//     self.postMessage (Math.random() * 255.0);
-			//}, 500);
+			// need to figure out how to make loadScripts() work in BlobURLs
 		</script>
 		<script>
 			// RAINBOW Candy of a Certain Name colors
@@ -223,26 +108,30 @@
 				}
 
 				newSession() {
-					var blob = new Blob([
-						document.querySelector('#worker1').textContent
-					], { type: "text/javascript" })
+					// var blob = new Blob([
+					// 	document.querySelector('#worker1').textContent
+					// ], { type: "text/javascript" })
+					// this.worker = new Worker(window.URL.createObjectURL(blob));
 
-					this.worker = new Worker(window.URL.createObjectURL(blob));
-					
+					this.worker = new Worker("worker.js")
+
 					var self = this;
 					this.worker.onmessage = function(ev) {
+						var videoFrame = XRVideoFrame.createFromMessage(ev)
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
 						self.cb = ev.data.cb;
-						self.handleVisionDone(ev.data.frame, ev.data.buffers);
+						self.handleVisionDone(videoFrame);
 					}
 					
 					this.worker.addEventListener('error', (e) => { 
 						console.log("worker error:" + e) 
 					})
 
-					//this.setVideoWorker(this.worker);
-					this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
+					this.setVideoWorker(this.worker);
+
+					// use this instead to not use worker.
+					//this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
 
 				// Called during construction
@@ -292,7 +181,7 @@
 				}
 
 						
-				handleVisionDone(frame, buffers) {
+				handleVisionDone(videoFrame) {
 					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
 					+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2) + "<br><center>";
 					
@@ -311,8 +200,9 @@
 
 					this.messageText = txt;
 
-					if (makeTexUV) {
-						var buffer = frame.buffers[1];
+					// in the worker case, if we don't access the buffer in the worker, it won't be pulled back
+					if (makeTexUV && videoFrame.buffer(1).buffer) {
+						var buffer = videoFrame.buffer(1);
 						var buff = buffer.buffer;
 						if (this.texSize != (buff.byteLength /2 *3)) {
 							this.texSize = buff.byteLength /2 * 3
@@ -332,7 +222,9 @@
 						this.uvTexture.needsUpdate = true;
 					}							
 					updateCVFPS();
-					this.requestVideoFrame(buffers);
+
+					videoFrame.release();
+					this.requestVideoFrame();
 				}
 
 				//////
@@ -374,21 +266,14 @@
 				}
 
 				handleVideoFrame(ev) {
-					var frame = ev.detail.frame
-					var camera = ev.detail.camera
-					switch (frame.pixelFormat) {
-						case "YUV420P":
-						this.averageIntensity(frame.buffers[0])
-						this.colorAtCenter(frame.buffers[1])
+					var videoFrame = ev.detail
+					switch (videoFrame.pixelFormat) {
+					case XRVideoFrame.IMAGEFORMAT_YUV420P:
+						this.averageIntensity(videoFrame.buffer(0))
+						this.colorAtCenter(videoFrame.buffer(1))
 					}
 
-					// pass the buffers back or they will be garbage collected
-					var buffers = frame.buffers
-					var buffs = []
-					for (var i = 0; i < buffers.length; i++) {
-						buffs.push(buffers[i].buffer)
-					}	
-					this.handleVisionDone(frame, buffers);
+					this.handleVisionDone(videoFrame);
 				}
 
 			}

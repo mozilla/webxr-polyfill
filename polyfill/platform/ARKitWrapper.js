@@ -41,24 +41,24 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._rawARData = null
 
 		// worker to convert buffers
-		var blobURL = this._buildWorkerBlob()
-		this._worker = new Worker(blobURL);
-		URL.revokeObjectURL(blobURL);
+		// var blobURL = this._buildWorkerBlob()
+		// this._worker = new Worker(blobURL);
+		// URL.revokeObjectURL(blobURL);
 
-		var self = this;
-		this._worker.onmessage = function (ev) {
-			setTimeout(function () {
-				self.dispatchEvent(
-					new CustomEvent(
-						ARKitWrapper.COMPUTER_VISION_DATA,
-						{
-							source: self,
-							detail: ev.data
-						}
-					)
-				)	
-			})
-		}
+		// var self = this;
+		// this._worker.onmessage = function (ev) {
+		// 	setTimeout(function () {
+		// 		self.dispatchEvent(
+		// 			new CustomEvent(
+		// 				ARKitWrapper.COMPUTER_VISION_DATA,
+		// 				{
+		// 					source: self,
+		// 					detail: ev.data
+		// 				}
+		// 			)
+		// 		)	
+		// 	})
+		// }
 
 		this.lightIntensity = 1000;
 		/**
@@ -99,7 +99,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 			
 		// temp storage for CV arraybuffers
-		this._ab = []
+		//this._ab = []
 
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called
 		let eventCallbacks = [
@@ -907,41 +907,43 @@ export default class ARKitWrapper extends EventHandlerBase {
 		// convert the arrays
 		if (!detail) {
 			console.error("detail passed to _onComputerVisionData is null")
+			this._requestComputerVisionData() 
 			return;
 		}
 		// convert the arrays
 		if (!detail.frame || !detail.frame.buffers || detail.frame.buffers.length <= 0) {
 			console.error("detail passed to _onComputerVisionData is bad, no buffers")
+			this._requestComputerVisionData() 
 			return;
 		}
 
 		// convert buffers in place
-		var buffers = detail.frame.buffers;
+		//var buffers = detail.frame.buffers;
 
 		// if there are too many cached array buffers, drop the unneeded ones
-		if (this._ab.length > buffers.length) {
-			this._ab = this._ab.slice(0, buffer.length)
-		}
+		// if (this._ab.length > buffers.length) {
+		// 	this._ab = this._ab.slice(0, buffer.length)
+		// }
 		
-		if (this._worker) {
-			detail.ab = this._ab;
-			if (this._ab) {
-				this._worker.postMessage(detail, this._ab);
-			} else {
-				this._worker.postMessage(detail);
-			}
-		} else {
-			for (var i = 0; i < buffers.length; i++) {
-				// gradually increase the size of the ab[] array to hold the temp buffers, 
-				// and add null so it gets allocated properly
-				if (this._ab.length <= i) {
-					this._ab.push(null)
-				}
-				var bufflen = buffers[i].buffer.length;
-				this._ab[i] = buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer, this._ab[i]);
-				var buffersize = buffers[i].buffer.byteLength;
-				var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
-			}
+		// if (this._worker) {
+		// 	detail.ab = this._ab;
+		// 	if (this._ab) {
+		// 		this._worker.postMessage(detail, this._ab);
+		// 	} else {
+		// 		this._worker.postMessage(detail);
+		// 	}
+		// } else {
+			// for (var i = 0; i < buffers.length; i++) {
+			// 	// gradually increase the size of the ab[] array to hold the temp buffers, 
+			// 	// and add null so it gets allocated properly
+			// 	if (this._ab.length <= i) {
+			// 		this._ab.push(null)
+			// 	}
+			// 	var bufflen = buffers[i].buffer.length;
+			// 	this._ab[i] = buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer, this._ab[i]);
+			// 	var buffersize = buffers[i].buffer.byteLength;
+			// 	var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
+			// }
 			switch(detail.frame.pixelFormatType) {
 				case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
 					detail.frame.pixelFormat = "YUV420P";
@@ -951,148 +953,137 @@ export default class ARKitWrapper extends EventHandlerBase {
 					break;
 			}
 
+			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, detail.frame.timestamp, detail.camera )
 			this.dispatchEvent(
 				new CustomEvent(
 					ARKitWrapper.COMPUTER_VISION_DATA,
 					{
 						source: this,
-						detail: detail
+						detail: xrVideoFrame
 					}
 				)
 			)
-		}	
+		//}	
 	}
+
 	/*
 	Requests ARKit a new set of buffers for computer vision processing
 	 */
-    _requestComputerVisionData(buffers) {
-		if (buffers) {
-			this._ab = [];
-			// if buffers are passed in, check if they are ArrayBuffers, and if so, save
-			// them for possible use on the next frame.
-			//
-			// we do this because passing buffers down into Workers invalidates them, so we need to
-			// return them here when we get them back from the Worker, so they can be reused. 
-			for (var i=0; i< buffers.length; i++) {
-				if (buffers[i] instanceof ArrayBuffer) {
-					this._ab.push(buffers[i])
-				}
-			}
-		}
+    _requestComputerVisionData() {
         window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
 	}
 
 
-	_buildWorkerBlob() {
-		var blobURL = URL.createObjectURL( new Blob([ '(',
+	// _buildWorkerBlob() {
+	// 	var blobURL = URL.createObjectURL( new Blob([ '(',
 
-		function(){
-			// could not get workers working, so am not using this.
-			//
-			// Tried to use Transferable ArrayBuffers but kept getting DOM Error 25. 
-			// 
+	// 	function(){
+	// 		// could not get workers working, so am not using this.
+	// 		//
+	// 		// Tried to use Transferable ArrayBuffers but kept getting DOM Error 25. 
+	// 		// 
 
-			var b64 = {
-				_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+	// 		var b64 = {
+	// 			_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 
-				/* will return a  Uint8Array type */
-				decodeArrayBuffer: function(input, buffer) {
-					var bytes = (input.length/4) * 3;
-					if (!buffer || buffer.byteLength != bytes) {
-						// replace the buffer with a new, appropriately sized one
-						buffer = new ArrayBuffer(bytes);
-					}
-					this.decode(input, buffer);
+	// 			/* will return a  Uint8Array type */
+	// 			decodeArrayBuffer: function(input, buffer) {
+	// 				var bytes = (input.length/4) * 3;
+	// 				if (!buffer || buffer.byteLength != bytes) {
+	// 					// replace the buffer with a new, appropriately sized one
+	// 					buffer = new ArrayBuffer(bytes);
+	// 				}
+	// 				this.decode(input, buffer);
 					
-					return buffer;
-				},
+	// 				return buffer;
+	// 			},
 
-				removePaddingChars: function(input){
-					var lkey = this._keyStr.indexOf(input.charAt(input.length - 1));
-					if(lkey == 64){
-						return input.substring(0,input.length - 1);
-					}
-					return input;
-				},
+	// 			removePaddingChars: function(input){
+	// 				var lkey = this._keyStr.indexOf(input.charAt(input.length - 1));
+	// 				if(lkey == 64){
+	// 					return input.substring(0,input.length - 1);
+	// 				}
+	// 				return input;
+	// 			},
 
-				decode: function(input, arrayBuffer) {
-					//get last chars to see if are valid
-					input = this.removePaddingChars(input);
-					input = this.removePaddingChars(input);
+	// 			decode: function(input, arrayBuffer) {
+	// 				//get last chars to see if are valid
+	// 				input = this.removePaddingChars(input);
+	// 				input = this.removePaddingChars(input);
 
-					var bytes = parseInt((input.length / 4) * 3, 10);
+	// 				var bytes = parseInt((input.length / 4) * 3, 10);
 					
-					var uarray;
-					var chr1, chr2, chr3;
-					var enc1, enc2, enc3, enc4;
-					var i = 0;
-					var j = 0;
+	// 				var uarray;
+	// 				var chr1, chr2, chr3;
+	// 				var enc1, enc2, enc3, enc4;
+	// 				var i = 0;
+	// 				var j = 0;
 					
-					if (arrayBuffer)
-						uarray = new Uint8Array(arrayBuffer);
-					else
-						uarray = new Uint8Array(bytes);
+	// 				if (arrayBuffer)
+	// 					uarray = new Uint8Array(arrayBuffer);
+	// 				else
+	// 					uarray = new Uint8Array(bytes);
 					
-					input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+	// 				input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 					
-					for (i=0; i<bytes; i+=3) {	
-						//get the 3 octects in 4 ascii chars
-						enc1 = this._keyStr.indexOf(input.charAt(j++));
-						enc2 = this._keyStr.indexOf(input.charAt(j++));
-						enc3 = this._keyStr.indexOf(input.charAt(j++));
-						enc4 = this._keyStr.indexOf(input.charAt(j++));
+	// 				for (i=0; i<bytes; i+=3) {	
+	// 					//get the 3 octects in 4 ascii chars
+	// 					enc1 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc2 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc3 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc4 = this._keyStr.indexOf(input.charAt(j++));
 
-						chr1 = (enc1 << 2) | (enc2 >> 4);
-						chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-						chr3 = ((enc3 & 3) << 6) | enc4;
+	// 					chr1 = (enc1 << 2) | (enc2 >> 4);
+	// 					chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+	// 					chr3 = ((enc3 & 3) << 6) | enc4;
 
-						uarray[i] = chr1;			
-						if (enc3 != 64) uarray[i+1] = chr2;
-						if (enc4 != 64) uarray[i+2] = chr3;
-					}
+	// 					uarray[i] = chr1;			
+	// 					if (enc3 != 64) uarray[i+1] = chr2;
+	// 					if (enc4 != 64) uarray[i+2] = chr3;
+	// 				}
 
-					return uarray;	
-				}
-			}
+	// 				return uarray;	
+	// 			}
+	// 		}
 
-			self.addEventListener('message',  function(event){
-				var frame = event.data.frame
-				var camera = event.data.camera
+	// 		self.addEventListener('message',  function(event){
+	// 			var frame = event.data.frame
+	// 			var camera = event.data.camera
 
-				var ab = event.data.ab;
+	// 			var ab = event.data.ab;
 
-				// convert buffers in place
-				var buffers = frame.buffers;
-				var buffs = []
-				// if there are too many cached array buffers, drop the unneeded ones
-				if (ab.length > buffers.length) {
-					ab = ab.slice(0, buffer.length)
-				}
-				for (var i = 0; i < buffers.length; i++) {
-					// gradually increase the size of the ab[] array to hold the temp buffers, 
-					// and add null so it gets allocated properly
-					if (ab.length <= i) {
-						ab.push(null)
-					}
-					ab[i] = buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer, ab[i]);
-					buffs.push(buffers[i].buffer)
-				}
-				switch(frame.pixelFormatType) {
-					case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
-						frame.pixelFormat = "YUV420P";
-						break;
-					default:
-						frame.pixelFormat = frame.pixelFormatType; 
-						break;
-				}
+	// 			// convert buffers in place
+	// 			var buffers = frame.buffers;
+	// 			var buffs = []
+	// 			// if there are too many cached array buffers, drop the unneeded ones
+	// 			if (ab.length > buffers.length) {
+	// 				ab = ab.slice(0, buffer.length)
+	// 			}
+	// 			for (var i = 0; i < buffers.length; i++) {
+	// 				// gradually increase the size of the ab[] array to hold the temp buffers, 
+	// 				// and add null so it gets allocated properly
+	// 				if (ab.length <= i) {
+	// 					ab.push(null)
+	// 				}
+	// 				ab[i] = buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer, ab[i]);
+	// 				buffs.push(buffers[i].buffer)
+	// 			}
+	// 			switch(frame.pixelFormatType) {
+	// 				case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+	// 					frame.pixelFormat = "YUV420P";
+	// 					break;
+	// 				default:
+	// 					frame.pixelFormat = frame.pixelFormatType; 
+	// 					break;
+	// 			}
 
-				postMessage(event.data, buffs);
-			});
-		}.toString(),
-		')()' ], { type: 'application/javascript' } ) )
+	// 			postMessage(event.data, buffs);
+	// 		});
+	// 	}.toString(),
+	// 	')()' ], { type: 'application/javascript' } ) )
 		
-		return( blobURL );			
-	}
+	// 	return( blobURL );			
+	// }
 	
 }
 

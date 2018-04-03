@@ -74,20 +74,21 @@ export default class XRSession extends EventHandlerBase {
 		if (callback instanceof Worker) {
 			var worker = callback;
 			callback = 	(ev => { 
-				var cv = ev.detail
-				var buffers = cv.frame.buffers
-				var buffs = []
-				for (var i = 0; i < buffers.length; i++) {
-					buffs.push(buffers[i].buffer)
-				}
-				worker.postMessage(cv, buffs);
+				// var cv = ev.detail
+				// var buffers = cv.frame.buffers
+				// var buffs = []
+				// for (var i = 0; i < buffers.length; i++) {
+				// 	buffs.push(buffers[i].buffer)
+				// }
+				// worker.postMessage(cv, buffs);
+				ev.detail.postMessageToWorker(worker)
 			})	
 		}
 		this._display.addEventListener("videoFrame", callback)
 	}
 
-	requestVideoFrame(buffers) {
-		this._display._requestVideoFrame(buffers);
+	requestVideoFrame() {
+		this._display._requestVideoFrame();
 	}
 
 	_createPresentationFrame(){

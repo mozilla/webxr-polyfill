@@ -180,8 +180,8 @@ class XRExampleBase {
 
 	// request the next frame
 	// buffers is an optional parameter, suggesting buffers that could be used
-	requestVideoFrame(buffers) {
-		this.session.requestVideoFrame(buffers);
+	requestVideoFrame() {
+		this.session.requestVideoFrame();
 	}
 	
 	/*
