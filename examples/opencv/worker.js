@@ -1,4 +1,6 @@
-importScripts('webxr-worker.js')
+importScripts('../../dist/webxr-worker.js')
+
+console.log("loaded webxr-worker.js")
 
 var cvStatusTxt = "";
 var Module = {
@@ -8,16 +10,19 @@ var Module = {
     Module.FS_createPreloadedFile('/', 'haarcascade_profileface.xml', 'haarcascade_profileface.xml', true, false);
   }],
   onRuntimeInitialized: function() {
-      opencvIsReady();
-    },
+        postMessage({type: "cvReady"});
+  },
   setStatus: function(msg) {
-      cvStatusTxt = msg;
+        postMessage({type: "cvStatus", msg: msg});
   }
 };
 
+console.log("set up pre-load")
+
 importScripts('opencv.js')
 
-//importScripts('../../dist/webxr-worker.js')
+console.log("loaded opencv.js:" + cv);
+
 /**
  * In the video callback,  ev.detail contains:
     {
@@ -71,25 +76,27 @@ importScripts('opencv.js')
     }
 */
 
+var face_cascade;
+var eye_cascade;
 
-loadFaceDetectTrainingSet() {
-    if (this.face_cascade == undefined) {
-        this.face_cascade = new cv.CascadeClassifier();
-        let load = this.face_cascade.load('haarcascade_frontalface_default.xml');
+function loadFaceDetectTrainingSet() {
+    if (face_cascade == undefined) {
+        face_cascade = new cv.CascadeClassifier();
+        let load = face_cascade.load('haarcascade_frontalface_default.xml');
         console.log('load face detection training data', load);
     }
 }
 
-loadEyesDetectTrainingSet() {
-    if (this.eye_cascade == undefined) {
-        this.eye_cascade = new cv.CascadeClassifier();
-        let load = this.eye_cascade.load('haarcascade_eye.xml');
+function loadEyesDetectTrainingSet() {
+    if (eye_cascade == undefined) {
+        eye_cascade = new cv.CascadeClassifier();
+        let load = eye_cascade.load('haarcascade_eye.xml');
         console.log('load eye detection training data', load);
     }
 }
 
-faceDetect(img_gray) {
-    this.loadFaceDetectTrainingSet();
+function faceDetect(img_gray) {
+    loadFaceDetectTrainingSet();
     
     let w = Math.floor(img_gray.cols /2);
     let h = Math.floor(img_gray.rows /2);
@@ -99,7 +106,7 @@ faceDetect(img_gray) {
     let faces = new cv.RectVector();
     let s1 = new cv.Size(50,50);
     let s2 = new cv.Size();
-    this.face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
+    face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
 
     let rects = [];
 
@@ -117,14 +124,14 @@ faceDetect(img_gray) {
     return rects;
 }
 
-eyesDetect(img_gray) {	
-    this.loadFaceDetectTrainingSet();
-    this.loadEyesDetectTrainingSet();
+function eyesDetect(img_gray) {	
+    loadFaceDetectTrainingSet();
+    loadEyesDetectTrainingSet();
 
     let faces = new cv.RectVector();
     let s1 = new cv.Size();
     let s2 = new cv.Size();
-    this.face_cascade.detectMultiScale(img_gray, faces);//, 1.1, 3, 0);//, s1, s2);
+    face_cascade.detectMultiScale(img_gray, faces);//, 1.1, 3, 0);//, s1, s2);
 
     let rects = [];
 
@@ -146,7 +153,7 @@ eyesDetect(img_gray) {
         let roi_gray = img_gray.roi(roiRect);
 
         let eyes = new cv.RectVector();
-        this.eye_cascade.detectMultiScale(roi_gray, eyes);//, 1.1, 3, 0, s1, s2);
+        eye_cascade.detectMultiScale(roi_gray, eyes);//, 1.1, 3, 0, s1, s2);
 
         for (let j = 0; j < eyes.size(); j += 1) {
 
@@ -169,47 +176,32 @@ eyesDetect(img_gray) {
     return rects
 }
 
+var rotatedImage = null;
+var lastRotation = -1;
+
 // 0 UIDeviceOrientationUnknown
 // 1 UIDeviceOrientationPortrait
 // 2 UIDeviceOrientationPortraitUpsideDown
 // 3 UIDeviceOrientationLandscapeRight
 // 4 UIDeviceOrientationLandscapeLeft     --- normal?
-rotateImage(rotation, buffer) {
+function rotateImage(rotation, buffer) {
     var width = buffer.size.width
     var height = buffer.size.height
-    if (!this.rotatedImage || (this.rotation != rotation)) {
-        this.rotation = rotation;
-        var cameraAspect;
+    if (!rotatedImage || (lastRotation != rotation)) {
+        lastRotation = rotation;
 
         if(rotation ==1 ||  rotation == 2) {
-            this.rotatedImage = new cv.Mat(width, height, cv.CV_8U)
-            cameraAspect = height / width;
+            rotatedImage = new cv.Mat(width, height, cv.CV_8U)
         } else {
-            this.rotatedImage = new cv.Mat(height, width, cv.CV_8U)
-            cameraAspect = width / height;
+            rotatedImage = new cv.Mat(height, width, cv.CV_8U)
         }
-
-        // reposition to DIV
-        var windowWidth = this.session.baseLayer.framebufferWidth;
-        var windowHeight = this.session.baseLayer.framebufferHeight;
-        var windowAspect = windowWidth / windowHeight;
-        
-        if (cameraAspect > windowAspect) {
-            windowWidth = windowHeight * cameraAspect;
-        } else {
-            windowHeight = windowWidth / cameraAspect; 
-        }
-        
-        var cvTxt ="transform: translate(-50%, 50%);opacity:0.5;position:absolute;bottom:50%;left:50%;border:1px solid green; width:"+ windowWidth + "px;height:" + windowHeight + "px";
-        console.log("update CV canvas style to: " + cvTxt)
-        cvImageDiv.style = cvTxt;
     }
     var src, dest;
     src = dest = 0;
 
     var i, j;
     var b = new Uint8Array(buffer.buffer);
-    var r = this.rotatedImage.data;
+    var r = rotatedImage.data;
 
     var rowExtra = buffer.size.bytesPerPixel * buffer.size.bytesPerRow - width;
     switch(rotation) {
@@ -262,7 +254,6 @@ rotateImage(rotation, buffer) {
             src += rowExtra;
         }								
     }		
-    //cv.imshow("video_canvas",this.rotatedImage)			
 }
 
 
@@ -272,10 +263,10 @@ self.addEventListener('message',  function(event){
     switch (videoFrame.pixelFormat) {
     case XRVideoFrame.IMAGEFORMAT_YUV420P:
         var rotation = camera.interfaceOrientation;
-        this.rotateImage(rotation, videoFrame.buffer(0))
-        this.faceRects = this.faceDetect(this.rotatedImage);
+        rotateImage(rotation, videoFrame.buffer(0))
+        var faceRects = faceDetect(rotatedImage);
 
-        videoFrame.postReplyMessage({rects: this.faceRects})
+        videoFrame.postReplyMessage({type: "cvFrame", rects: faceRects})
     }
     videoFrame.release();
 });

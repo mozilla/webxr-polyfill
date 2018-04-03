@@ -637,7 +637,12 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(options != null) {
 			newO = Object.assign(newO, options)
 		}
-		
+
+		// option to WebXRView is different than the WebXR option
+		if (newO.videoFrames) {
+			newO.computer_vision_data = true;
+		}
+
 		const data = {
 			options: newO,
 			callback: this._globalCallbacksMap.onWatch

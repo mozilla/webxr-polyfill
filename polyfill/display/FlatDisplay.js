@@ -197,8 +197,7 @@ export default class FlatDisplay extends XRDisplay {
 
 
     _handleComputerVisionData(ev) {
-        // Do whatever is needed with the image buffers here, and then call
-		// this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+        // Do whatever is needed with the image buffers here
 		try {
 			this.dispatchEvent(
 				new CustomEvent(
@@ -214,8 +213,18 @@ export default class FlatDisplay extends XRDisplay {
 		}
 	}
 
-	_requestVideoFrame(bufers) {
-        this._arKitWrapper._requestComputerVisionData()
+	_requestVideoFrame() {
+		if(this._reality._vrDisplay){ // Use ARCore
+			// AR Core can do this, just need to write this code I think!
+		} else if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._requestComputerVisionData()
+		} else if (this._reality._mediaStream) {
+			// normal display, might have webrtc video in reality
+			this._reality._requestVideoFrame( (ev) => {
+				this._handleComputerVisionData(ev)
+			})
+		}
 	}
 
 	_createSession(parameters=null){

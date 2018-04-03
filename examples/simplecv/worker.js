@@ -1,5 +1,5 @@
-importScripts('webxr-worker.js')
-//importScripts('../../dist/webxr-worker.js')
+//importScripts('webxr-worker.js')
+importScripts('../../dist/webxr-worker.js')
 /**
  * In the video callback,  ev.detail contains:
     {

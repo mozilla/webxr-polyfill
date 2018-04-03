@@ -16,7 +16,6 @@ export default class XRWorkerPolyfill extends EventHandlerBase {
 		super()
 		self.XRAnchor = XRAnchor
 		self.XRAnchorOffset = XRAnchorOffset
-		self.XRView = XRView
 		self.XRCoordinateSystem = XRCoordinateSystem
 		self.XRViewPose = XRViewPose
 		self.XRVideoFrame = XRVideoFrame
@@ -24,4 +23,4 @@ export default class XRWorkerPolyfill extends EventHandlerBase {
 }
 
 /* Install XRWorkerPolyfill if self.XR does not exist */
-WorkerGlobalScope.XR = new XRWorkerPolyfill()
+self.XR = new XRWorkerPolyfill()

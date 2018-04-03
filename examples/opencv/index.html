@@ -50,7 +50,7 @@
 		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 		<script nomodule src="../../dist/webxr-polyfill.js"></script>
 		<script>
-	    // var cvStatusTxt = "";
+	    	var cvStatusTxt = "";
 		// var Module = {
 		//   preRun: [function() {
 		// 	Module.FS_createPreloadedFile('/', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
@@ -136,38 +136,58 @@
 					// ], { type: "text/javascript" })
 					//this.worker = new Worker(window.URL.createObjectURL(blob));
 					
-					// var self = this;
-					// this.worker.onmessage = function(ev) {
-					//	 	var videoFrame = XRVideoFrame.createFromMessage(ev)
-					// 		self.faceRects = ev.data.faceRects;
-					// 		for (let i = 0; i < self.faceRects.length; i++) {
-					// 			let rect = self.faceRects[i];
-					// 			cvImageDiv.context.strokeRect(rect.x, rect.y, rect.width , rect.height);
-					// 		}
-					// 		self.handleVisionDone(videoFrame);
-					// }
+					this.worker = new Worker ("worker.js")
 
-					// this.worker.addEventListener('error', (e) => { 
-					// 	console.log("worker error:" + e) 
-					// })
+					var self = this;
+					this.worker.onmessage = function(ev) {
+						switch (ev.data.type) {
+							case "cvFrame":
+								var videoFrame = XRVideoFrame.createFromMessage(ev)
+								self.faceRects = ev.data.faceRects;
+								for (let i = 0; i < self.faceRects.length; i++) {
+									let rect = self.faceRects[i];
+									cvImageDiv.context.strokeRect(rect.x, rect.y, rect.width , rect.height);
+								}
+								self.handleVisionDone(videoFrame);
 
-					//this.setVideoWorker(this.worker);
-					this.setVideoWorker(ev => { 
-						var videoFrame = ev.detail
-						if (openCVready) {
-							try {
-								this.handleVideoFrame(ev)
-							} catch(e) {
-								console.error('CV worker error', e)
-							}
-							updateCVFPS();
+								updateCVFPS();
+								// pass the buffers back or they will be garbage collected
+								videoFrame.release();
+								this.requestVideoFrame();
+								break
+								
+							case "cvReady":
+								console.log('OpenCV.js is ready');
+								openCVready = true				
+								break;
+
+							case "cvStatus":
+								cvStatusTxt = ev.data.msg;
+								break;
 						}
-						this.handleVisionDone(videoFrame);
+					}
 
-						// pass the buffers back or they will be garbage collected
-						videoFrame.release();
-						this.requestVideoFrame();
+					this.worker.addEventListener('error', (e) => { 
+						console.log("worker error:" + e) 
 					})
+
+					this.setVideoWorker(this.worker);
+					// this.setVideoWorker(ev => { 
+					// 	var videoFrame = ev.detail
+					// 	if (openCVready) {
+					// 		try {
+					// 			this.handleVideoFrame(ev)
+					// 		} catch(e) {
+					// 			console.error('CV worker error', e)
+					// 		}
+					// 		updateCVFPS();
+					// 	}
+					// 	this.handleVisionDone(videoFrame);
+
+					// 	// pass the buffers back or they will be garbage collected
+					// 	videoFrame.release();
+					// 	this.requestVideoFrame();
+					// })
 				}
 
 				// Called during construction
@@ -464,7 +484,7 @@
 							src += rowExtra;
 						}								
 					}		
-					//cv.imshow("video_canvas",this.rotatedImage)			
+					if (showCVImage) cv.imshow("video_canvas",this.rotatedImage)			
 				}
 
 				handleVideoFrame(ev) {
@@ -476,13 +496,12 @@
 							this.rotateImage(rotation, videoFrame.buffer(0))
 							this.faceRects = this.faceDetect(this.rotatedImage);
 					}
+					if (!showCVImage) cvImageDiv.context.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
 					for (let i = 0; i < this.faceRects.length; i++) {
 						let rect = this.faceRects[i];
 						cvImageDiv.context.strokeRect(rect.x, rect.y, rect.width , rect.height);
 					}
-							
 				}
-
 			}
 
 			function opencvIsReady() {
