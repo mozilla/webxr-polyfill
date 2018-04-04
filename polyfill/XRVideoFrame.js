@@ -74,9 +74,14 @@ pixelFormat should be one of XRVideoFrame.IMAGEFORMAT
 // because the same size and number of buffers will be pushed/popped in the same order
 var _ab = [] 
 
+
 export default class XRVideoFrame {
 	constructor(buffers, pixelFormat, timestamp, camera){
 		this._buffers = buffers
+        for (var i=0; i< buffers.length; i++) {
+            buffers[i]._buffer = buffers[i].buffer
+            buffers[i].buffer = null
+        }
 		this._pixelFormat = pixelFormat
 		this._timestamp = timestamp
 		this._camera = camera
@@ -91,14 +96,19 @@ export default class XRVideoFrame {
     buffer(index) { 
         if (index >= 0 && index < this._buffers.length) {
             var buff = this._buffers[index]
-            if (typeof buff.buffer == "string") {
-				var bufflen = buff.buffer.length;
-				buff.buffer = base64.decodeArrayBuffer(buff.buffer, _ab.length > 0 ? _ab.pop() : null);
-				var buffersize = buff.buffer.byteLength;
-				var imagesize = buff.size.height * buff.size.bytesPerRow;                
-            }       
+            if (!buff.buffer) {
+                if (typeof buff._buffer == "string") {
+                    buff._buffer = base64.decodeArrayBuffer(buff._buffer, _ab.length > 0 ? _ab.pop() : null);
+                    buff.buffer = new Uint8Array(buff._buffer);
+                } else if (buff._buffer instanceof ArrayBuffer) {
+                    buff.buffer = new Uint8Array(buff._buffer);
+                } else if (buff._buffer instanceof ImageData) {
+                    buff.buffer = ImageData.data
+                }
+            }
             return buff;
         }
+        return null
     }
 
 	get pixelFormat(){ return this._pixelFormat }
@@ -113,8 +123,8 @@ export default class XRVideoFrame {
         // return them here when we get them back from the Worker, so they can be reused. 
         var buffers = this._buffers;
         for (var i=0; i< buffers.length; i++) {
-            if (buffers[i].buffer instanceof ArrayBuffer) {
-                _ab.push(buffers[i].buffer)
+            if (buffers[i]._buffer instanceof ArrayBuffer || buffers[i]._buffer instanceof ImageData) {
+                _ab.push(buffers[i]._buffer)
             }
         }      
     }
@@ -128,9 +138,13 @@ export default class XRVideoFrame {
 
         var buffs = []
         for (var i = 0; i < msg.buffers.length; i++) {
-            if (msg.buffers[i].buffer instanceof ArrayBuffer) {
-                buffs.push(msg.buffers[i].buffer)
+            msg.buffers[i].buffer = msg.buffers[i]._buffer;
+            if (msg.buffers[i]._buffer instanceof ArrayBuffer || msg.buffers[i]._buffer instanceof ImageData) {
+                buffs.push(msg.buffers[i]._buffer)
+            } else if (msg.buffers[i]._buffer instanceof ArrayBuffer || msg.buffers[i]._buffer instanceof ImageData) {
+                buffs.push(msg.buffers[i]._buffer)
             }
+            msg.buffers[i]._buffer = null;
         }
         worker.postMessage(msg, buffs);
     }
@@ -144,12 +158,13 @@ export default class XRVideoFrame {
 
         var buffs = []
         for (var i = 0; i < msg.buffers.length; i++) {
-            if (msg.buffers[i].buffer instanceof ArrayBuffer) {
+            msg.buffers[i].buffer = null;
+            if (msg.buffers[i]._buffer instanceof ArrayBuffer || msg.buffers[i]._buffer instanceof ImageData) {
                 // any array buffers should be marked for transfer
-                buffs.push(msg.buffers[i].buffer)
+                buffs.push(msg.buffers[i]._buffer)
             } else {
                 // if we passed in a string, and it didn't get accessed, we shouldn't pass it back out
-                msg.buffers.buffer[i] = null
+                msg.buffers[i]._buffer = null
             }
         }
         postMessage(msg, buffs);

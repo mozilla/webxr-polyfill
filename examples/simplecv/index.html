@@ -65,9 +65,9 @@
 		<script>
 			// RAINBOW Candy of a Certain Name colors
 			var colors = [
-				{ cr:  230, cb: 100, name: "RED" },
-				{ cr:  71, cb: 71, name: "GREEN" },
-				{ cr:  152, cb: 33, name: "YELLOW" }
+				{ cr:  250, cg: 25, cb: 25, name: "RED" },
+				{ cr:  25, cg: 250, cb: 25, name: "GREEN" },
+				{ cr:  250, cg: 250, cb: 50, name: "YELLOW" }
 			] 
 			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 			
@@ -102,6 +102,7 @@
 					this.textBox.innerText = '0.0'
 					this.intensity = 0;
 					this.cr = 0;
+					this.cg = 0;
 					this.cb = 0;
 					this.lightEstimate = 0;
 					this.el.appendChild(this.textBox)
@@ -120,6 +121,7 @@
 						var videoFrame = XRVideoFrame.createFromMessage(ev)
 						self.intensity = ev.data.intensity;
 						self.cr = ev.data.cr;
+						self.cg = ev.data.cg;
 						self.cb = ev.data.cb;
 						self.handleVisionDone(videoFrame);
 					}
@@ -183,11 +185,12 @@
 						
 				handleVisionDone(videoFrame) {
 					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
-					+ "<br>Center R/B: " + this.cr.toFixed(2) + " / " + this.cb.toFixed(2) + "<br><center>";
+					+ "<br>Center RGB: " + this.cr.toFixed(2) + " / " + this.cg.toFixed(2) + " / " + this.cb.toFixed(2) + "<br><center>";
 					
 					for (var i=0; i<colors.length; i++) {
 						var c = colors[i];
-						c.dist = Math.sqrt((c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb));
+						c.dist = (c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb);
+						c.dist = Math.sqrt(c.dist + (c.cg - this.cg) * (c.cg - this.cg))
 						txt += c.dist.toFixed(1) + " " 
 					}
 					for (i=0; i<colors.length; i++) {
@@ -203,14 +206,13 @@
 					// in the worker case, if we don't access the buffer in the worker, it won't be pulled back
 					if (makeTexUV && videoFrame.buffer(1).buffer) {
 						var buffer = videoFrame.buffer(1);
-						var buff = buffer.buffer;
-						if (this.texSize != (buff.byteLength /2 *3)) {
-							this.texSize = buff.byteLength /2 * 3
+						var pixels = buffer.buffer;
+						if (this.texSize != (pixels.length /2 *3)) {
+							this.texSize = pixels.length /2 * 3
 							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
 						}
 						
 						var j = 0;
-						var pixels = new Uint8Array(buff);
 						for ( var i = 0; i < this.texSize; i ++ ) {
 							this.texBuff[i] = pixels[j++];
 							i++;
@@ -234,7 +236,7 @@
 					var w = buffer.size.width;
 					var h = buffer.size.height;
 					var pad = buffer.size.bytesPerRow - w;
-					var pixels = new Uint8Array(buffer.buffer);
+					var pixels = buffer.buffer;
 
 					var intensity = 0.0;
 					var p = 0;
@@ -256,7 +258,7 @@
 				colorAtCenter(buffer) {
 					var w = buffer.size.width;
 					var h = buffer.size.height;
-					var pixels = new Uint8Array(buffer.buffer);
+					var pixels = buffer.buffer;
 
 					var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
 					var cy = Math.floor(h / 2)

@@ -40,6 +40,10 @@ export default class CameraReality extends Reality {
 		this._vrDisplay = null
 		this._vrFrameData = null
 
+		// dealing with video frames from webrtc
+		this._sendingVideo = false;
+		this._sendVideoFrame = false;
+
 		this._lightEstimate = new XRLightEstimate();
 
 		// Try to find a WebVR 1.1 display that supports Google's ARCore extensions
@@ -85,6 +89,60 @@ export default class CameraReality extends Reality {
 			this._vrDisplay.getFrameData(this._vrFrameData)
 		}
 
+		// WebRTC video
+		if (this._videoEl && this._sendVideoFrame) {
+			this._sendVideoFrame = false;
+			
+			var canvasWidth  = this._videoRenderWidth;
+			var canvasHeight = this._videoRenderHeight;
+			this._videoCtx.drawImage(this._videoEl, 0, 0, canvasWidth, canvasHeight);
+			var imageData = this._videoCtx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+			var data = imageData.data
+			var len = imageData.data.length
+			var buff = new ArrayBuffer(len)
+			var buffData = new Uint8Array(buff);
+			for (var i = 0; i < len; i++) buffData[i] = data[i] 
+
+			var buffers = [
+				{
+					size: {
+					  width: canvasWidth,
+					  height: canvasHeight,
+					  bytesPerRow: canvasWidth * 4,
+					  bytesPerPixel: 4
+					},
+					buffer: buff
+				}];
+
+			var pixelFormat = XRVideoFrame.IMAGEFORMAT_RGBA32;
+
+			var timestamp = frame.timestamp; 
+			
+			// FIX.  
+			var camera = {
+				cameraIntrinsics: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+				cameraImageResolution: {
+						width: this._videoEl.videoWidth,
+						height: this._videoEl.videoHeight
+					},				  
+				viewMatrix: [1,0, 0, 0,   0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1],
+				interfaceOrientation: 0,
+				projectionMatrix: [1,0, 0, 0,   0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1]
+			}
+
+			var xrVideoFrame = new XRVideoFrame(buffers, pixelFormat, timestamp, camera )
+
+			this.dispatchEvent(
+				new CustomEvent(
+					Reality.COMPUTER_VISION_DATA,
+					{
+						source: this,
+						detail: xrVideoFrame
+					}
+				)
+			)
+		}
 		// TODO update the anchor positions using ARCore or ARKit
 	}
 
@@ -125,16 +183,50 @@ export default class CameraReality extends Reality {
 					this._videoEl.style.height = '100%'
 					this._videoEl.srcObject = stream
 					this._videoEl.play()
+					this._setupWebRTC(parameters)
 				}).catch(err => {
 					console.error('Could not set up video stream', err)
 					this._initialized = false
 					this._running = false
 				})
 			} else {
-				this._xr._realityEls.appendChild(this._videoEl)
-				this._videoEl.play()
+				if (this._videoEl) {
+						this._xr._realityEls.appendChild(this._videoEl)
+						this._videoEl.play()
+						this._setupWebRTC(parameters)
+					}
 			}
 		}
+	}
+
+	_setupWebRTC(parameters) {
+		if (parameters.videoFrames) {
+			this._sendingVideo = true;
+
+			this._videoEl.addEventListener('loadedmetadata', () => {
+				var width = this._videoEl.videoWidth;
+				var height = this._videoEl.videoHeight;
+
+				// let's pick a size such that the video is below 512 in size in both dimensions
+				while (width > 512 || height > 512) {
+					width = width / 2
+					height = height / 2
+				}
+
+				this._videoRenderWidth = width;
+				this._videoRenderHeight = height;				
+				this._videoFrameCanvas =  document.createElement('canvas');
+				this._videoFrameCanvas.width = width;
+				this._videoFrameCanvas.height = height;
+				this._videoCtx = this._videoFrameCanvas.getContext('2d');
+
+				this._sendVideoFrame = true;
+			});
+		}
+	}
+
+	_requestVideoFrame() {
+		this._sendVideoFrame = true;
 	}
 
 	_stop(){
@@ -349,6 +441,14 @@ export default class CameraReality extends Reality {
 		}
 	}
 
+	_getTimeStamp() {
+		if(this._arKitWrapper !== null){
+			return this._arKitWrapper.timestamp;
+		}else{
+			// use performance.now()
+			return 	( performance || Date ).now();
+		}
+	}
 	/*
 	No floor in AR
 	*/

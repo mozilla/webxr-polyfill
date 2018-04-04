@@ -4,6 +4,8 @@ import * as mat4 from "../fill/gl-matrix/mat4.js";
 import * as quat from "../fill/gl-matrix/quat.js";
 import * as vec3 from "../fill/gl-matrix/vec3.js";
 import base64 from "../fill/base64-binary.js";
+import Quaternion from '../fill/Quaternion.js';
+import MatrixMath from '../fill/MatrixMath.js';
 
 /*	
 ARKitWrapper talks	 to Apple ARKit, as exposed by Mozilla's test ARDemo app.
@@ -73,14 +75,17 @@ export default class ARKitWrapper extends EventHandlerBase {
 		 * @private
 		 */
 		this.viewMatrix_ = new Float32Array(16);
-			/**
+		/**
 		 * The list of planes coming from ARKit.
 		 * @type {Map<number, ARPlane}
 		 * @private
 		 */
 		this.planes_ = new Map();
-
 		this.anchors_ = new Map();
+
+		this._timeOffset = 0;
+		this.timestamp = 0;
+
 
 		this._globalCallbacksMap = {} // Used to map a window.arkitCallback method name to an ARKitWrapper.on* method name
 		// Set up the window.arkitCallback methods that the ARKit bridge depends on
@@ -97,7 +102,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 			light_intensity: true,
 			computer_vision_data: false
 		}
-			
+		this._m90 = mat4.fromZRotation(mat4.create(), 90*MatrixMath.PI_OVER_180);
+		this._m90neg = mat4.fromZRotation(mat4.create(), -90*MatrixMath.PI_OVER_180);
+		this._m180 = mat4.fromZRotation(mat4.create(), 180*MatrixMath.PI_OVER_180);
+		this._mTemp = mat4.create();
+
 		// temp storage for CV arraybuffers
 		//this._ab = []
 
@@ -718,6 +727,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 	_onWatch is called from native ARKit on each frame:
 		data:
 		{
+			"timestamp": time value
 			"light_intensity": value
 			"camera_view":[4x4 column major affine transform matrix],
 			"projection_camera":[4x4 projection matrix],
@@ -743,13 +753,20 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 
 	*/
+	_adjustARKitTime(time) {
+		if (this._timeOffset < 0) {
+			this._timeOffset = ( performance || Date ).now() - time;
+		}
+		return time + this._timeOffset; 
+	}
+
 	_onWatch(data){
 		this._rawARData = data
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
 			source: this,
 			detail: this._rawARData
 		}))
-
+		this.timestamp = this._adjustARKitTime(data.timestamp)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
@@ -922,6 +939,30 @@ export default class ARKitWrapper extends EventHandlerBase {
 			return;
 		}
 
+		// the orientation matrix we get is relative to the current view orientation.  
+		// We need to add an orientation around z, so that we have the orientation that goes from 
+		// camera frame to the current view orientation, since the camera is fixed and the view
+		// changes as we rotate the device. 
+		var orientation = detail.camera.interfaceOrientation;
+		mat4.copy(this._mTemp, detail.camera.viewMatrix)
+        switch (orientation) {
+			case 1: 
+				// rotate by -90;
+				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90neg)
+				break;
+
+			case 2: 
+				// rotate by 90;
+				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90)
+				break;
+			case 3: 
+				// rotate by nothing
+				break;
+			case 4: 
+				// rotate by 180;
+				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m180)
+				break;
+		}
 		// convert buffers in place
 		//var buffers = detail.frame.buffers;
 
@@ -958,7 +999,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					break;
 			}
 
-			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, detail.frame.timestamp, detail.camera )
+			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
 			this.dispatchEvent(
 				new CustomEvent(
 					ARKitWrapper.COMPUTER_VISION_DATA,

@@ -77,6 +77,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._deviceWorldMatrix = new Float32Array(16)
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
 				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, this._updateFromDeviceOrientationTracker.bind(this))
+				this._reality.addEventListener(Reality.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
 			}
 		}
 		this.running = true
@@ -214,16 +215,12 @@ export default class FlatDisplay extends XRDisplay {
 	}
 
 	_requestVideoFrame() {
-		if(this._reality._vrDisplay){ // Use ARCore
-			// AR Core can do this, just need to write this code I think!
-		} else if(this._arKitWrapper){ // Use ARKit
+		if(this._arKitWrapper){ // Use ARKit
 			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
 			this._arKitWrapper._requestComputerVisionData()
-		} else if (this._reality._mediaStream) {
-			// normal display, might have webrtc video in reality
-			this._reality._requestVideoFrame( (ev) => {
-				this._handleComputerVisionData(ev)
-			})
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._requestVideoFrame()
 		}
 	}
 
