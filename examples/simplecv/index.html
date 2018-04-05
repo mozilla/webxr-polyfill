@@ -185,13 +185,13 @@
 						
 				handleVisionDone(videoFrame) {
 					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
-					+ "<br>Center RGB: " + this.cr.toFixed(2) + " / " + this.cg.toFixed(2) + " / " + this.cb.toFixed(2) + "<br><center>";
+					+ "<br>Center RGB: " + this.cr.toFixed(0) + " / " + this.cg.toFixed(0) + " / " + this.cb.toFixed(0) + "<br><center>";
 					
 					for (var i=0; i<colors.length; i++) {
 						var c = colors[i];
 						c.dist = (c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb);
 						c.dist = Math.sqrt(c.dist + (c.cg - this.cg) * (c.cg - this.cg))
-						txt += c.dist.toFixed(1) + " " 
+						txt += c.dist.toFixed(0) + " " 
 					}
 					for (i=0; i<colors.length; i++) {
 						c = colors[i];

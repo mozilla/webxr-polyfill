@@ -649,6 +649,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 		// option to WebXRView is different than the WebXR option
 		if (newO.videoFrames) {
+			delete newO.videoFrames
 			newO.computer_vision_data = true;
 		}
 
@@ -915,6 +916,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 			  "height": 720
 			},
 			"viewMatrix": [4x4 camera view matrix],
+			"arCamera": true;
+		    "cameraOrientation": 0,  // orientation in degrees of image relative to display
+                            // normally 0, but on video mixed displays that keep the camera in a fixed 
+                            // orientation, but rotate the UI, like on some phones, this will change
+                            // as the display orientation changes
 			"interfaceOrientation": 3,
 				// 0 UIDeviceOrientationUnknown
 				// 1 UIDeviceOrientationPortrait
@@ -943,23 +949,33 @@ export default class ARKitWrapper extends EventHandlerBase {
 		// We need to add an orientation around z, so that we have the orientation that goes from 
 		// camera frame to the current view orientation, since the camera is fixed and the view
 		// changes as we rotate the device. 
+		//
+		// We also set a cameraOrientation value for the orientation of the camera relative to the
+		// display.  This will be particular to video-mixed-AR where the camera is the video on the
+		// screen, since any other setup would need to use the full orientation (and probably 
+		// wouldn't be rotating the content / UI)
+		detail.camera.arCamera = true;
 		var orientation = detail.camera.interfaceOrientation;
 		mat4.copy(this._mTemp, detail.camera.viewMatrix)
         switch (orientation) {
 			case 1: 
 				// rotate by -90;
+				detail.camera.cameraOrientation = -90;
 				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90neg)
 				break;
 
 			case 2: 
 				// rotate by 90;
+				detail.camera.cameraOrientation = 90;
 				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90)
 				break;
 			case 3: 
-				// rotate by nothing
+				detail.camera.cameraOrientation = 0;
+			// rotate by nothing
 				break;
 			case 4: 
 				// rotate by 180;
+				detail.camera.cameraOrientation = 180;
 				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m180)
 				break;
 		}

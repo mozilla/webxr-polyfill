@@ -4,7 +4,7 @@ Quaternion wraps a vector of length 4 used as an orientation value.
 Taken from https://github.com/googlevr/webvr-polyfill/blob/master/src/math-util.js which took it from Three.js
 */
 export default class Quaternion{
-	varructor(x=0, y=0, z=0, w=1){
+	constructor(x=0, y=0, z=0, w=1){
 		this.x = x
 		this.y = y
 		this.z = z

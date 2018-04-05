@@ -2,14 +2,17 @@ importScripts('../../dist/webxr-worker.js')
 
 console.log("loaded webxr-worker.js")
 
-var cvStatusTxt = "";
+var openCVready = false;
+
 var Module = {
   preRun: [function() {
-    Module.FS_createPreloadedFile('/', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
-    Module.FS_createPreloadedFile('/', 'haarcascade_frontalface_default.xml', 'haarcascade_frontalface_default.xml', true, false);
-    Module.FS_createPreloadedFile('/', 'haarcascade_profileface.xml', 'haarcascade_profileface.xml', true, false);
+    console.log("CV preRun")
+    Module.FS_createPreloadedFile('./', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
+    Module.FS_createPreloadedFile('./', 'haarcascade_frontalface_default.xml', 'haarcascade_frontalface_default.xml', true, false);
+    Module.FS_createPreloadedFile('./', 'haarcascade_profileface.xml', 'haarcascade_profileface.xml', true, false);
   }],
   onRuntimeInitialized: function() {
+        openCVready = true;
         postMessage({type: "cvReady"});
   },
   setStatus: function(msg) {
@@ -25,55 +28,54 @@ console.log("loaded opencv.js:" + cv);
 
 /**
  * In the video callback,  ev.detail contains:
-    {
-    "frame": {
-        "buffers": [ // Array of base64 encoded string buffers
-        {
-            "size": {
-            "width": 320,
-            "height": 180,
-            "bytesPerRow": 320,
-            "bytesPerPixel": 1
-            },
-            "buffer": "e3x...d7d"   /// convert to Uint8 ArrayBuffer in code below
+{
+  "frame": {
+    "buffers": [ // Array of base64 encoded string buffers
+      {
+        "size": {
+          "width": 320,
+          "height": 180,
+          "bytesPerRow": 320,
+          "bytesPerPixel": 1
         },
-        {
-            "size": {
-            "width": 160,
-            "height": 90,
-            "bytesPerRow": 320,
-            "bytesPerPixel": 2
-            },
-            "buffer": "ZZF.../fIJ7"  /// convert to Uint8 ArrayBuffer in code below
-        }
-        ],
-        "pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
-        "pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
-        "timestamp": 337791
-    },
-    "camera": {
-        "cameraIntrinsics": [3x3 matrix],
-            fx 0   px
-            0  fy  py
-            0  0   1
-            fx and fy are the focal length in pixels.
-            px and py are the coordinates of the principal point in pixels.
-            The origin is at the center of the upper-left pixel.
+        "buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
+      },
+      {
+        "size": {
+          "width": 160,
+          "height": 90,
+          "bytesPerRow": 320,
+          "bytesPerPixel": 2
+        },
+        "buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
+      }
+    ],
+    "pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
+    "timestamp": 337791
+  },
+  "camera": {
+    "cameraIntrinsics": [3x3 matrix],
+        fx 0   px
+        0  fy  py
+        0  0   1
+        fx and fy are the focal length in pixels.
+        px and py are the coordinates of the principal point in pixels.
+        The origin is at the center of the upper-left pixel.
 
-        "cameraImageResolution": {
-        "width": 1280,
-        "height": 720
-        },
-        "viewMatrix": [4x4 camera view matrix],
-        "interfaceOrientation": 3,
-            // 0 UIDeviceOrientationUnknown
-            // 1 UIDeviceOrientationPortrait
-            // 2 UIDeviceOrientationPortraitUpsideDown
-            // 3 UIDeviceOrientationLandscapeRight
-            // 4 UIDeviceOrientationLandscapeLeft
-        "projectionMatrix": [4x4 camera projection matrix]
-    }
-    }
+    "cameraImageResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "viewMatrix": [4x4 camera view matrix],
+    "arCamera": true;
+    "cameraOrientation": 0,  // orientation in degrees of image relative to display
+                            // normally 0, but on video mixed displays that keep the camera in a fixed 
+                            // orientation, but rotate the UI, like on some phones, this will change
+                            // as the display orientation changes
+    "projectionMatrix": [4x4 camera projection matrix]
+  }
+}
+
 */
 
 var face_cascade;
@@ -95,16 +97,18 @@ function loadEyesDetectTrainingSet() {
     }
 }
 
-function faceDetect(img_gray) {
+function faceDetect(img_gray, roiRect) {
     loadFaceDetectTrainingSet();
     
-    let w = Math.floor(img_gray.cols /2);
-    let h = Math.floor(img_gray.rows /2);
-    let roiRect = new cv.Rect(w/2, h/2, w, h);
-    let roi_gray = img_gray.roi(roiRect);
+    var roi_gray = img_gray
+    if (roiRect) {
+        roi_gray = img_gray.roi(roiRect);
+    } else {
+        roiRect = new cv.Rect(0, 0, img_gray.cols, img_gray.rows);
+    }
 
     let faces = new cv.RectVector();
-    let s1 = new cv.Size(50,50);
+    let s1 = new cv.Size();
     let s2 = new cv.Size();
     face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
 
@@ -113,13 +117,14 @@ function faceDetect(img_gray) {
     for (let i = 0; i < faces.size(); i += 1) {
         let faceRect = faces.get(i);
         rects.push({
-            x: faceRect.x,
-            y: faceRect.y,
+            x: faceRect.x + roiRect.x,
+            y: faceRect.y + roiRect.y,
             width: faceRect.width,
             height: faceRect.height
         });
     }
 
+    if (roi_gray != img_gray) roi_gray.delete()
     faces.delete();
     return rects;
 }
@@ -176,21 +181,24 @@ function eyesDetect(img_gray) {
     return rects
 }
 
+// createCVMat
+//
+// this routine does two things (if needed) as part of copying the input buffer to a cv.Mat:
+// - rotates the image so it is upright 
+// - converts to greyscale 
+
 var rotatedImage = null;
 var lastRotation = -1;
 
-// 0 UIDeviceOrientationUnknown
-// 1 UIDeviceOrientationPortrait
-// 2 UIDeviceOrientationPortraitUpsideDown
-// 3 UIDeviceOrientationLandscapeRight
-// 4 UIDeviceOrientationLandscapeLeft     --- normal?
-function rotateImage(rotation, buffer) {
+function createCVMat(rotation, buffer, pixelFormat) {
     var width = buffer.size.width
     var height = buffer.size.height
+
     if (!rotatedImage || (lastRotation != rotation)) {
         lastRotation = rotation;
+        if (rotatedImage) rotatedImage.delete()
 
-        if(rotation ==1 ||  rotation == 2) {
+        if(rotation == 90 ||  rotation == -90) {
             rotatedImage = new cv.Mat(width, height, cv.CV_8U)
         } else {
             rotatedImage = new cv.Mat(height, width, cv.CV_8U)
@@ -203,15 +211,26 @@ function rotateImage(rotation, buffer) {
     var b = new Uint8Array(buffer.buffer);
     var r = rotatedImage.data;
 
-    var rowExtra = buffer.size.bytesPerPixel * buffer.size.bytesPerRow - width;
+    var rowExtra = buffer.size.bytesPerRow - buffer.size.bytesPerPixel * width;
     switch(rotation) {
-    case 1:
+    case -90:
         // clockwise
         dest = height - 1;
         for (j = 0; j < height; j++) {
-            for (var i = 0; i < width; i++) {
-                r[dest] = b[src++]
-                dest += height; // up the row
+            switch(pixelFormat) {
+                case XRVideoFrame.IMAGEFORMAT_YUV420P:
+                    for (var i = 0; i < width; i++) {
+                        r[dest] = b[src++]
+                        dest += height; // up the row
+                    }
+                    break;
+                case XRVideoFrame.IMAGEFORMAT_RGBA32:
+                    for (var i = 0; i < width; i++) {
+                        r[dest] = (b[src++] + b[src++] + b[src++]) / 3 
+                        src++
+                        dest += height; // up the row
+                    }
+                    break;
             }
             dest -= width * height;
             dest --;
@@ -219,13 +238,24 @@ function rotateImage(rotation, buffer) {
         }								
         break;
 
-    case 2:							
+    case 90:
         // anticlockwise
         dest = width * (height - 1);
         for (j = 0; j < height; j++) {
-            for (var i = 0; i < width; i++) {
-                r[dest] = b[src++]
-                dest -= height; // down the row
+            switch(pixelFormat) {
+                case XRVideoFrame.IMAGEFORMAT_YUV420P:
+                    for (var i = 0; i < width; i++) {
+                        r[dest] = b[src++]
+                        dest -= height; // down the row
+                    }
+                    break;
+                case XRVideoFrame.IMAGEFORMAT_RGBA32:
+                    for (var i = 0; i < width; i++) {
+                        r[dest] = (b[src++] + b[src++] + b[src++]) / 3 
+                        src++
+                        dest -= height; // down the row
+                    }
+                    break;
             }
             dest += width * height;
             dest ++;
@@ -233,40 +263,109 @@ function rotateImage(rotation, buffer) {
         }								
         break;
 
-    case 4:
+    case 180:
         // 180
         dest = width * height - 1;
         for (j = 0; j < height; j++) {
-            for (var i = 0; i < width; i++) {
-                r[dest--] = b[src++]
+            switch(pixelFormat) {
+                case XRVideoFrame.IMAGEFORMAT_YUV420P:        
+                    for (var i = 0; i < width; i++) {
+                        r[dest--] = b[src++]
+                    }
+                    break;
+                case XRVideoFrame.IMAGEFORMAT_RGBA32:
+                    for (var i = 0; i < width; i++) {
+                        r[dest--] = (b[src++] + b[src++] + b[src++]) / 3 
+                        src++
+                    }
+                break;
             }
             src += rowExtra;
         }								
         break;
 
-    case 3:
+    case 0:
     default:
         // copy
         for (j = 0; j < height; j++) {
-            for (var i = 0; i < width; i++) {
-                r[dest++] = b[src++]
+            switch(pixelFormat) {
+                case XRVideoFrame.IMAGEFORMAT_YUV420P:        
+                    for (var i = 0; i < width; i++) {
+                        r[dest++] = b[src++]
+                    }
+                    break;
+                case XRVideoFrame.IMAGEFORMAT_RGBA32:
+                    for (var i = 0; i < width; i++) {
+                        r[dest++] = (b[src++] + b[src++] + b[src++]) / 3 
+                        src++
+                    }
+                break;
             }
-            src += rowExtra;
+        src += rowExtra;
         }								
-    }		
+    }	
+    return rotatedImage;	
 }
 
+var endTime = 0;
 
 self.addEventListener('message',  function(event){
+    postMessage({type: "cvStart", time: ( performance || Date ).now()});
+
     var videoFrame = XRVideoFrame.createFromMessage(event);
+    var faceRects = []
 
-    switch (videoFrame.pixelFormat) {
-    case XRVideoFrame.IMAGEFORMAT_YUV420P:
-        var rotation = camera.interfaceOrientation;
-        rotateImage(rotation, videoFrame.buffer(0))
-        var faceRects = faceDetect(rotatedImage);
+    if (openCVready) {   
+        switch (videoFrame.pixelFormat) {
+        case XRVideoFrame.IMAGEFORMAT_YUV420P:
+        case XRVideoFrame.IMAGEFORMAT_RGBA32:
+            var scale = 1;
+            var buffer = videoFrame.buffer(0);
+            var width = buffer.size.width;
+            var height = buffer.size.height;
 
-        videoFrame.postReplyMessage({type: "cvFrame", rects: faceRects})
+            // let's pick a size such that the video is below 256 in size in both dimensions
+            while (width > 256 || height > 256) {
+                width = width / 2
+                height = height / 2
+                scale = scale / 2;
+            }
+        
+            // first, rotate the image such that it is oriented correctly relative to the display
+            var rotation = videoFrame.camera.cameraOrientation;
+            var image = createCVMat(rotation, videoFrame.buffer(0), videoFrame.pixelFormat)
+            postMessage({type: "cvAfterMat", time: ( performance || Date ).now()});
+
+            if (scale != 1) {
+                var m = new cv.Mat()
+                cv.resize(image, m, new cv.Size(), scale, scale);
+
+//             let w = Math.floor(image.cols /2);
+//             let h = Math.floor(image.rows /2);
+//             let roiRect = new cv.Rect(w/2, h/2, w, h);
+                postMessage({type: "cvAfterResize", time: ( performance || Date ).now()});
+        
+                // now find faces
+                faceRects = faceDetect(m);
+
+                for (let i = 0; i < faceRects.length; i++) {
+                    let rect = faceRects[i];
+                    rect.x = rect.x / scale
+                    rect.y = rect.y / scale
+                    rect.width = rect.width / scale
+                    rect.height = rect.height / scale
+                }
+
+                m.delete();
+            } else {
+                postMessage({type: "cvAfterResize", time: ( performance || Date ).now()});
+                faceRects = faceDetect(image);
+            }
+
+        }
     }
+    endTime = ( performance || Date ).now()
+    videoFrame.postReplyMessage({type: "cvFrame", faceRects: faceRects, time: endTime})
+    
     videoFrame.release();
 });

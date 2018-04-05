@@ -4,7 +4,7 @@ Vector3 wraps a vector of length 3, often used as a position in 3D space.
 Taken from https://github.com/googlevr/webvr-polyfill/blob/master/src/math-util.js which took it from Three.js
 */
 export default class Vector3 {
-	varructor(x=0, y=0, z=0){
+	constructor(x=0, y=0, z=0){
 		this.x = x
 		this.y = y
 		this.z = z

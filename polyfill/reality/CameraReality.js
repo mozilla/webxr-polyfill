@@ -43,6 +43,8 @@ export default class CameraReality extends Reality {
 		// dealing with video frames from webrtc
 		this._sendingVideo = false;
 		this._sendVideoFrame = false;
+		this._videoProjectionMatrix = MatrixMath.mat4_generateIdentity();
+		this._videoViewMatrix = MatrixMath.mat4_generateIdentity();
 
 		this._lightEstimate = new XRLightEstimate();
 
@@ -75,9 +77,36 @@ export default class CameraReality extends Reality {
 				this._arCoreCanvas.width = window.innerWidth
 				this._arCoreCanvas.height = window.innerHeight
 			}
+			if (this._videoEl) {
+				this._adjustVideoSize();
+			}
 		}, false)
 	}
 
+	_adjustVideoSize () {
+		var windowWidth = this._xr._realityEls.clientWidth;
+		var windowHeight = this._xr._realityEls.clientHeight;
+		var windowAspect = windowWidth / windowHeight;
+
+		var canvasWidth  = this._videoRenderWidth;
+		var canvasHeight = this._videoRenderHeight;
+		var cameraAspect = canvasWidth / canvasHeight;
+
+		var translateX = 0;
+		var translateY = 0;
+		if (cameraAspect > windowAspect) {
+			windowWidth = windowHeight * cameraAspect;
+			translateX = -(windowWidth - this._xr._realityEls.clientWidth)/2;
+		} else {
+			windowHeight = windowWidth / cameraAspect; 
+			translateY = -(windowHeight - this._xr._realityEls.clientHeight)/2;
+		}
+
+		this._videoEl.style.width = windowWidth.toFixed(2) + 'px'
+		this._videoEl.style.height = windowHeight.toFixed(2) + 'px'		
+		this._videoEl.style.transform = "translate(" + translateX.toFixed(2) + "px, "+ translateY.toFixed(2) + "px)"
+	}
+	
 	/*
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
@@ -100,10 +129,10 @@ export default class CameraReality extends Reality {
 
 			var data = imageData.data
 			var len = imageData.data.length
-			var buff = new ArrayBuffer(len)
-			var buffData = new Uint8Array(buff);
-			for (var i = 0; i < len; i++) buffData[i] = data[i] 
-
+			// imageData = new ArrayBuffer(len)
+			// var buffData = new Uint8Array(imageData);
+			// for (var i = 0; i < len; i++) buffData[i] = data[i] 
+			
 			var buffers = [
 				{
 					size: {
@@ -112,23 +141,31 @@ export default class CameraReality extends Reality {
 					  bytesPerRow: canvasWidth * 4,
 					  bytesPerPixel: 4
 					},
-					buffer: buff
+					buffer: imageData
 				}];
 
 			var pixelFormat = XRVideoFrame.IMAGEFORMAT_RGBA32;
 
 			var timestamp = frame.timestamp; 
 			
-			// FIX.  
+			// set from frame
+			var view = frame.views[0];
+
+			this._videoViewMatrix.set(view.viewMatrix);
+			this._videoProjectionMatrix.set(view.projectionMatrix)
+			
 			var camera = {
-				cameraIntrinsics: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+				arCamera: false,
+				cameraOrientation: 0,
+				cameraIntrinsics: [(this._videoEl.videoWidth/2) / Math.tan(view._fov.leftDegrees * Math.PI/180), 0, (this._videoEl.videoWidth/2), 
+									0, (this._videoEl.videoHeight/2) / Math.tan(view._fov.upDegrees * Math.PI/180), (this._videoEl.videoHeight/2), 
+									0, 0, 1],
 				cameraImageResolution: {
 						width: this._videoEl.videoWidth,
 						height: this._videoEl.videoHeight
 					},				  
-				viewMatrix: [1,0, 0, 0,   0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1],
-				interfaceOrientation: 0,
-				projectionMatrix: [1,0, 0, 0,   0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1]
+				viewMatrix: this._videoViewMatrix,
+				projectionMatrix: this._videoProjectionMatrix
 			}
 
 			var xrVideoFrame = new XRVideoFrame(buffers, pixelFormat, timestamp, camera )
@@ -208,7 +245,7 @@ export default class CameraReality extends Reality {
 				var height = this._videoEl.videoHeight;
 
 				// let's pick a size such that the video is below 512 in size in both dimensions
-				while (width > 512 || height > 512) {
+				while (width > 256 || height > 256) {
 					width = width / 2
 					height = height / 2
 				}
@@ -220,6 +257,8 @@ export default class CameraReality extends Reality {
 				this._videoFrameCanvas.height = height;
 				this._videoCtx = this._videoFrameCanvas.getContext('2d');
 
+				this._adjustVideoSize();
+				
 				this._sendVideoFrame = true;
 			});
 		}

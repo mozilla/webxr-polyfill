@@ -34,7 +34,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 export default class base64 {
-	
+	static decodeLength(input)  {
+		return (input.length/4) * 3;
+	}
+
 	/* will return a  Uint8Array type */
 	static decodeArrayBuffer(input, buffer) {
 		var bytes = (input.length/4) * 3;
