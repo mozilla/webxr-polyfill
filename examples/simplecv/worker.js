@@ -1,5 +1,5 @@
-importScripts('webxr-worker.js')
-//importScripts('../../dist/webxr-worker.js')
+//importScripts('webxr-worker.js')
+importScripts('../../dist/webxr-worker.js')
 /**
  * In the video callback,  ev.detail contains:
     {
@@ -56,13 +56,34 @@ importScripts('webxr-worker.js')
 
 var intensity = 0.0;
 var cr = -1;
+var cg = -1;
 var cb = -1;
 
-averageIntensity = function (buffer) {
+averageIntensityRGBA = function (buffer) {
     var w = buffer.size.width;
     var h = buffer.size.height;
-    var pad = buffer.size.bytesPerRow - w;
-    var pixels = new Uint8Array(buffer.buffer);
+    var pad = buffer.size.bytesPerRow - w * buffer.size.bytesPerPixel;
+    var pixels = buffer.buffer;
+
+    intensity = 0.0;
+    var p = 0;
+    for (var r = 0; r < h; r++) {
+        var v = 0;
+        for (var i = 0; i < w; i++) {
+            v += (pixels[p++] + pixels[p++] + pixels[p++]) / 3
+            p++
+        }
+        intensity += v / w;
+        p += pad;
+    }			
+    intensity = (intensity / h) / 255.0;
+}
+
+averageIntensityLum = function (buffer) {
+    var w = buffer.size.width;
+    var h = buffer.size.height;
+    var pad = buffer.size.bytesPerRow - w * buffer.size.bytesPerPixel;
+    var pixels = buffer.buffer;
 
     intensity = 0.0;
     var p = 0;
@@ -81,36 +102,92 @@ averageIntensity = function (buffer) {
     intensity = (intensity / h) / 255.0;
 }
 
-colorAtCenter = function(buffer) {
-    var w = buffer.size.width;
-    var h = buffer.size.height;
-    var pixels = new Uint8Array(buffer.buffer);
+colorAtCenterRGB = function(buffer0) {
+    var w = buffer0.size.width;
+    var h = buffer0.size.height;
+    var pixels = buffer0.buffer;
 
-    var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
+    var cx = Math.floor(w / 2) * buffer0.size.bytesPerPixel
     var cy = Math.floor(h / 2)
-    var p = cy * buffer.size.bytesPerRow + cx;
+    var p = cy * buffer0.size.bytesPerRow + cx;
+    cr = pixels[p++];
+    cg = pixels[p++];
+    cb = pixels[p];
+}
+
+// LUV == LuCbCr
+// 
+// Y = 0.299R + 0.587G + 0.114B
+// U'= (B-Y)*0.565
+// V'= (R-Y)*0.713
+
+clamp = function (x, min, max) {
+	if (x < min) {
+		return min;
+	}
+	if (x > max) {
+		return max;
+	}
+	return x;
+}
+
+colorAtCenterLUV = function(buffer0, buffer1) {
+    var w = buffer0.size.width;
+    var h = buffer0.size.height;
+    var pixels = buffer0.buffer;
+
+    var cx = Math.floor(w / 2) * buffer0.size.bytesPerPixel
+    var cy = Math.floor(h / 2)
+    var p = cy * buffer0.size.bytesPerRow + cx;
+    var lum = pixels[p];
+
+    w = buffer1.size.width;
+    h = buffer1.size.height;
+    pixels = buffer1.buffer;
+
+    cx = Math.floor(w / 2) * buffer1.size.bytesPerPixel
+    cy = Math.floor(h / 2)
+    p = cy * buffer1.size.bytesPerRow + cx;
     cb = pixels[p++];
     cr = pixels[p];
+
+    // luv -> rgb.  see https://www.fourcc.org/fccyvrgb.php
+    var y=1.1643*(lum-16)
+    var u=cb-128;
+    var v=cr-128;
+    cr=clamp(y+1.5958*v,            0, 255);
+    cg=clamp(y-0.39173*u-0.81290*v, 0, 255);
+    cb=clamp(y+2.017*u,             0, 255); 
+
+    // Alternatives:
+    //
+    // var y=lum
+    // var u=cb-128;
+    // var v=cr-128;
+    // cr=y+1.402*v;
+    // cg=y-0.34414*u-0.71414*v;
+    // cb=y+1.772*u;  
 }
 
 self.addEventListener('message',  function(event){
-    var videoFrame = XRVideoFrame.createFromMessage(event);
+    try {
+        var videoFrame = XRVideoFrame.createFromMessage(event);
 
-    switch (videoFrame.pixelFormat) {
-    case XRVideoFrame.IMAGEFORMAT_YUV420P:
-        this.averageIntensity(videoFrame.buffer(0))
-        this.colorAtCenter(videoFrame.buffer(1))
-
-//					// pass the buffers back or they will be garbage collected
-//					var buffers = frame.buffers
-//					var buffs = []
-//					for (var i = 0; i < buffers.length; i++) {
-//						buffs.push(buffers[i].buffer)
-//					}	
-//					postMessage ({intensity: intensity, cr: cr, cb: cb, buffers: buffs, frame: frame}, buffs);
-        videoFrame.postReplyMessage({intensity: intensity, cr: cr, cb: cb})
+        switch (videoFrame.pixelFormat) {
+        case XRVideoFrame.IMAGEFORMAT_YUV420P:
+            this.averageIntensityLum(videoFrame.buffer(0))
+            this.colorAtCenterLUV(videoFrame.buffer(0),videoFrame.buffer(1))
+            break;
+        case XRVideoFrame.IMAGEFORMAT_RGBA32:
+            this.averageIntensityRGBA(videoFrame.buffer(0))
+            this.colorAtCenterRGB(videoFrame.buffer(0))
+            break;
+        }
+        videoFrame.postReplyMessage({intensity: intensity, cr: cr, cg: cg, cb: cb})
+        videoFrame.release();
+    } catch(e) {
+        console.error('page error', e)
     }
-    videoFrame.release();
 });
 
 // setInterval( function(){

@@ -40,28 +40,28 @@ export default class Quaternion{
 			m21 = array16[1], m22 = array16[5], m23 = array16[9],
 			m31 = array16[2], m32 = array16[6], m33 = array16[10]
 
-		const trace = m11 + m22 + m33
+		var trace = m11 + m22 + m33
 
 		if(trace > 0){
-			const s = 0.5 / Math.sqrt(trace + 1.0)
+			var s = 0.5 / Math.sqrt(trace + 1.0)
 			this.w = 0.25 / s
 			this.x = (m32 - m23) * s
 			this.y = (m13 - m31) * s
 			this.z = (m21 - m12) * s
 		} else if (m11 > m22 && m11 > m33){
-			const s = 2.0 * Math.sqrt(1.0 + m11 - m22 - m33)
+			var s = 2.0 * Math.sqrt(1.0 + m11 - m22 - m33)
 			this.w = (m32 - m23) / s
 			this.x = 0.25 * s
 			this.y = (m12 + m21) / s
 			this.z = (m13 + m31) / s
 		} else if (m22 > m33){
-			const s = 2.0 * Math.sqrt(1.0 + m22 - m11 - m33)
+			var s = 2.0 * Math.sqrt(1.0 + m22 - m11 - m33)
 			this.w = (m13 - m31) / s
 			this.x = (m12 + m21) / s
 			this.y = 0.25 * s
 			this.z = (m23 + m32) / s
 		} else{
-			const s = 2.0 * Math.sqrt(1.0 + m33 - m11 - m22)
+			var s = 2.0 * Math.sqrt(1.0 + m33 - m11 - m22)
 			this.w = (m21 - m12) / s
 			this.x = (m13 + m31) / s
 			this.y = (m23 + m32) / s
@@ -75,14 +75,14 @@ export default class Quaternion{
 		// 	20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors/
 		//	content/SpinCalc.m
 
-		const cos = Math.cos
-		const sin = Math.sin
-		const c1 = cos(x / 2)
-		const c2 = cos(y / 2)
-		const c3 = cos(z / 2)
-		const s1 = sin(x / 2)
-		const s2 = sin(y / 2)
-		const s3 = sin(z / 2)
+		var cos = Math.cos
+		var sin = Math.sin
+		var c1 = cos(x / 2)
+		var c2 = cos(y / 2)
+		var c3 = cos(z / 2)
+		var s1 = sin(x / 2)
+		var s2 = sin(y / 2)
+		var s3 = sin(z / 2)
 
 		if (order === 'XYZ'){
 			this.x = s1 * c2 * c3 + c1 * s2 * s3
@@ -120,8 +120,8 @@ export default class Quaternion{
 	setFromAxisAngle(axis, angle){
 		// http://www.euclideanspace.com/maths/geometry/rotations/conversions/angleToQuaternion/index.htm
 		// assumes axis is normalized
-		const halfAngle = angle / 2
-		const s = Math.sin(halfAngle)
+		var halfAngle = angle / 2
+		var s = Math.sin(halfAngle)
 		this.x = axis.x * s
 		this.y = axis.y * s
 		this.z = axis.z * s
@@ -135,8 +135,8 @@ export default class Quaternion{
 
 	multiplyQuaternions(a, b){
 		// from http://www.euclideanspace.com/maths/algebra/realNormedAlgebra/quaternions/code/index.htm
-		const qax = a.x, qay = a.y, qaz = a.z, qaw = a.w
-		const qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w
+		var qax = a.x, qay = a.y, qaz = a.z, qaw = a.w
+		var qbx = b.x, qby = b.y, qbz = b.z, qbw = b.w
 		this.x = qax * qbw + qaw * qbx + qay * qbz - qaz * qby
 		this.y = qay * qbw + qaw * qby + qaz * qbx - qax * qbz
 		this.z = qaz * qbw + qaw * qbz + qax * qby - qay * qbx
@@ -174,7 +174,7 @@ export default class Quaternion{
 		if(t === 0) return this
 		if(t === 1) return this.copy(qb)
 
-		const x = this.x, y = this.y, z = this.z, w = this.w
+		var x = this.x, y = this.y, z = this.z, w = this.w
 		let cosHalfTheta = w * qb.w + x * qb.x + y * qb.y + z * qb.z
 		if (cosHalfTheta < 0){
 			this.w = - qb.w
@@ -193,8 +193,8 @@ export default class Quaternion{
 			return this
 		}
 
-		const halfTheta = Math.acos(cosHalfTheta)
-		const sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta)
+		var halfTheta = Math.acos(cosHalfTheta)
+		var sinHalfTheta = Math.sqrt(1.0 - cosHalfTheta * cosHalfTheta)
 		if (Math.abs(sinHalfTheta) < 0.001){
 			this.w = 0.5 * (w + this.w)
 			this.x = 0.5 * (x + this.x)
@@ -204,8 +204,8 @@ export default class Quaternion{
 			return this
 		}
 
-		const ratioA = Math.sin((1 - t) * halfTheta) / sinHalfTheta
-		const ratioB = Math.sin(t * halfTheta) / sinHalfTheta
+		var ratioA = Math.sin((1 - t) * halfTheta) / sinHalfTheta
+		var ratioB = Math.sin(t * halfTheta) / sinHalfTheta
 		this.w = (w * ratioA + this.w * ratioB)
 		this.x = (x * ratioA + this.x * ratioB)
 		this.y = (y * ratioA + this.y * ratioB)

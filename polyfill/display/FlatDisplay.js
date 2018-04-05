@@ -77,6 +77,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._deviceWorldMatrix = new Float32Array(16)
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
 				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, this._updateFromDeviceOrientationTracker.bind(this))
+				this._reality.addEventListener(Reality.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
 			}
 		}
 		this.running = true
@@ -197,8 +198,7 @@ export default class FlatDisplay extends XRDisplay {
 
 
     _handleComputerVisionData(ev) {
-        // Do whatever is needed with the image buffers here, and then call
-		// this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+        // Do whatever is needed with the image buffers here
 		try {
 			this.dispatchEvent(
 				new CustomEvent(
@@ -214,8 +214,14 @@ export default class FlatDisplay extends XRDisplay {
 		}
 	}
 
-	_requestVideoFrame(bufers) {
-        this._arKitWrapper._requestComputerVisionData()
+	_requestVideoFrame() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._requestComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._requestVideoFrame()
+		}
 	}
 
 	_createSession(parameters=null){

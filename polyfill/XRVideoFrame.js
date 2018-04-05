@@ -6,10 +6,7 @@ import base64 from "./fill/base64-binary.js";
 
 /*
 XRVideoFrame represents the a video frame from a camera.
-*/
 
-/* 
-ARKit WebXR Viewer current injects this structure:
 {
   "frame": {
     "buffers": [ // Array of base64 encoded string buffers
@@ -32,7 +29,6 @@ ARKit WebXR Viewer current injects this structure:
         "buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
       }
     ],
-    "pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
     "pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
     "timestamp": 337791
   },
@@ -50,20 +46,16 @@ ARKit WebXR Viewer current injects this structure:
       "height": 720
     },
     "viewMatrix": [4x4 camera view matrix],
-    "interfaceOrientation": 3,
-        // 0 UIDeviceOrientationUnknown
-        // 1 UIDeviceOrientationPortrait
-        // 2 UIDeviceOrientationPortraitUpsideDown
-        // 3 UIDeviceOrientationLandscapeRight
-        // 4 UIDeviceOrientationLandscapeLeft
+    "arCamera": true;
+    "cameraOrientation": 0,  // orientation in degrees of image relative to display
+                            // normally 0, but on video mixed displays that keep the camera in a fixed 
+                            // orientation, but rotate the UI, like on some phones, this will change
+                            // as the display orientation changes
     "projectionMatrix": [4x4 camera projection matrix]
   }
 }
 
-We'll just pass in frame and buffer.
-
 frame.buffers.buffer[*] can be String (which will be lazily converted to ArrayBuffer) or ArrayBuffer.
-frame.pixelFormatType will be ignored
 pixelFormat should be one of XRVideoFrame.IMAGEFORMAT
 
 */
@@ -74,9 +66,45 @@ pixelFormat should be one of XRVideoFrame.IMAGEFORMAT
 // because the same size and number of buffers will be pushed/popped in the same order
 var _ab = [] 
 
+
 export default class XRVideoFrame {
 	constructor(buffers, pixelFormat, timestamp, camera){
 		this._buffers = buffers
+        for (var i=0; i< buffers.length; i++) {
+            buffers[i]._buffer = buffers[i].buffer
+            buffers[i].buffer = null
+
+            // if we didn't pass in an abCache, as might happen when we pass this
+            // to/from a worker, see if there is a saved ArrayBuffer of the right size
+            if (!buffers[i]._abCache && typeof buffers[i]._buffer == "string") {
+                var bytes = base64.decodeLength(buffers[i]._buffer);
+                for (var j=0; j < _ab.length; j++) {
+                    if (_ab[j].byteLength == bytes) {
+                        buffers[i]._abCache = _ab[j]
+                        _ab.splice(j, 1);
+                        break;
+                    }
+                }
+            } else if (!buffers[i]._abCache && buffers[i]._buffer instanceof ImageData) {
+                var data = buffers[i]._buffer.data
+                var bytes = data.length
+                for (var j=0; j < _ab.length; j++) {
+                    if (_ab[j].byteLength == bytes) {
+                        buffers[i]._abCache = _ab[j]
+                        _ab.splice(j, 1);
+                        break;
+                    }
+                }
+
+                var ab = buffers[i]._abCache ? buffers[i]._abCache : new ArrayBuffer(bytes)
+                buffers[i]._abCache = null;
+
+                var buffData = new Uint8Array(ab);
+                for (var k = 0; k < bytes; k++) buffData[k] = data[k] 
+                buffers[i]._buffer = ab
+            }
+
+        }
 		this._pixelFormat = pixelFormat
 		this._timestamp = timestamp
 		this._camera = camera
@@ -91,14 +119,21 @@ export default class XRVideoFrame {
     buffer(index) { 
         if (index >= 0 && index < this._buffers.length) {
             var buff = this._buffers[index]
-            if (typeof buff.buffer == "string") {
-				var bufflen = buff.buffer.length;
-				buff.buffer = base64.decodeArrayBuffer(buff.buffer, _ab.length > 0 ? _ab.pop() : null);
-				var buffersize = buff.buffer.byteLength;
-				var imagesize = buff.size.height * buff.size.bytesPerRow;                
-            }       
+            if (!buff.buffer) {
+                if (typeof buff._buffer == "string") {
+                    // use the ArrayBuffer cache if there
+                    buff._buffer = base64.decodeArrayBuffer(buff._buffer, buff._abCache);
+                    buff._abCache = null;
+                    buff.buffer = new Uint8Array(buff._buffer);
+                } else if (buff._buffer instanceof ArrayBuffer) {
+                    buff.buffer = new Uint8Array(buff._buffer);
+                } else if (buff._buffer instanceof ImageData) {
+                    buff.buffer = ImageData.data
+                }
+            }
             return buff;
         }
+        return null
     }
 
 	get pixelFormat(){ return this._pixelFormat }
@@ -113,10 +148,13 @@ export default class XRVideoFrame {
         // return them here when we get them back from the Worker, so they can be reused. 
         var buffers = this._buffers;
         for (var i=0; i< buffers.length; i++) {
-            if (buffers[i].buffer instanceof ArrayBuffer) {
-                _ab.push(buffers[i].buffer)
+            if (buffers[i]._buffer instanceof ArrayBuffer && buffers[i]._buffer.byteLength > 0) {
+                _ab.push(buffers[i]._buffer)
             }
-        }      
+            if (buffers[i]._abCache instanceof ArrayBuffer && buffers[i]._abCache.byteLength > 0) {
+                _ab.push(buffers[i]._abCache)
+            }
+        }
     }
 
     postMessageToWorker (worker, options) {
@@ -128,8 +166,15 @@ export default class XRVideoFrame {
 
         var buffs = []
         for (var i = 0; i < msg.buffers.length; i++) {
-            if (msg.buffers[i].buffer instanceof ArrayBuffer) {
-                buffs.push(msg.buffers[i].buffer)
+            msg.buffers[i].buffer = msg.buffers[i]._buffer;
+
+            if (msg.buffers[i]._buffer instanceof ArrayBuffer || msg.buffers[i]._buffer instanceof ImageData) {
+                buffs.push(msg.buffers[i]._buffer)
+            }
+            msg.buffers[i]._buffer = null;
+
+            if (msg.buffers[i]._abCache instanceof ArrayBuffer) {
+                buffs.push(msg.buffers[i]._abCache)
             }
         }
         worker.postMessage(msg, buffs);
@@ -144,14 +189,18 @@ export default class XRVideoFrame {
 
         var buffs = []
         for (var i = 0; i < msg.buffers.length; i++) {
-            if (msg.buffers[i].buffer instanceof ArrayBuffer) {
+            msg.buffers[i].buffer = null;
+            if (msg.buffers[i]._buffer instanceof ArrayBuffer || msg.buffers[i]._buffer instanceof ImageData) {
                 // any array buffers should be marked for transfer
-                buffs.push(msg.buffers[i].buffer)
-            } else {
-                // if we passed in a string, and it didn't get accessed, we shouldn't pass it back out
-                msg.buffers.buffer[i] = null
+                buffs.push(msg.buffers[i]._buffer)
+                msg.buffers[i].buffer = msg.buffers[i]._buffer
             }
-        }
+            msg.buffers[i]._buffer = null
+
+            if (msg.buffers[i]._abCache instanceof ArrayBuffer) {
+                buffs.push(msg.buffers[i]._abCache)
+            }
+         }
         postMessage(msg, buffs);
     }
 }

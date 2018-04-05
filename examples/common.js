@@ -86,7 +86,7 @@ class XRExampleBase {
 		let sessionInitParameters = {
 			exclusive: this.createVirtualReality,
 			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION,
-			computer_vision_data: this.useComputerVision,
+			videoFrames: this.useComputerVision,    //computer_vision_data
 			alignEUS: this.alignEUS
 		}
 		for(let display of this.displays){

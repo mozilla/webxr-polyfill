@@ -41,13 +41,13 @@ export default class MatrixMath {
 	}
 
 	static mat4_perspectiveFromFieldOfView(out, fov, near, far) {
-		const upTan =    Math.tan(fov.upDegrees *    MatrixMath.PI_OVER_180)
-		const downTan =  Math.tan(fov.downDegrees *  MatrixMath.PI_OVER_180)
-		const leftTan =  Math.tan(fov.leftDegrees *  MatrixMath.PI_OVER_180)
-		const rightTan = Math.tan(fov.rightDegrees * MatrixMath.PI_OVER_180)
+		var upTan =    Math.tan(fov.upDegrees *    MatrixMath.PI_OVER_180)
+		var downTan =  Math.tan(fov.downDegrees *  MatrixMath.PI_OVER_180)
+		var leftTan =  Math.tan(fov.leftDegrees *  MatrixMath.PI_OVER_180)
+		var rightTan = Math.tan(fov.rightDegrees * MatrixMath.PI_OVER_180)
 
-		const xScale = 2.0 / (leftTan + rightTan)
-		const yScale = 2.0 / (upTan + downTan)
+		var xScale = 2.0 / (leftTan + rightTan)
+		var yScale = 2.0 / (upTan + downTan)
 
 		out[0] = xScale
 		out[1] = 0.0
@@ -70,23 +70,23 @@ export default class MatrixMath {
 
 	static mat4_fromRotationTranslation(out, q=[0,0,0,1], v=[0,0,0]) {
 		// Quaternion math
-		const x = q[0]
-		const y = q[1]
-		const z = q[2]
-		const w = q[3]
-		const x2 = x + x
-		const y2 = y + y
-		const z2 = z + z
+		var x = q[0]
+		var y = q[1]
+		var z = q[2]
+		var w = q[3]
+		var x2 = x + x
+		var y2 = y + y
+		var z2 = z + z
 
-		const xx = x * x2
-		const xy = x * y2
-		const xz = x * z2
-		const yy = y * y2
-		const yz = y * z2
-		const zz = z * z2
-		const wx = w * x2
-		const wy = w * y2
-		const wz = w * z2
+		var xx = x * x2
+		var xy = x * y2
+		var xz = x * z2
+		var yy = y * y2
+		var yz = y * z2
+		var zz = z * z2
+		var wx = w * x2
+		var wy = w * y2
+		var wz = w * z2
 
 		out[0] = 1 - (yy + zz)
 		out[1] = xy + wz
@@ -109,9 +109,9 @@ export default class MatrixMath {
 	}
 
 	static mat4_translate(out, a, v) {
-		const x = v[0]
-		const y = v[1]
-		const z = v[2]
+		var x = v[0]
+		var y = v[1]
+		var z = v[2]
 		let a00
 		let a01
 		let a02
@@ -143,23 +143,23 @@ export default class MatrixMath {
 	}
 
 	static mat4_invert(out, a) {
-		const a00 = a[0],  a01 = a[1],  a02 = a[2],  a03 = a[3],
+		var a00 = a[0],  a01 = a[1],  a02 = a[2],  a03 = a[3],
 		      a10 = a[4],  a11 = a[5],  a12 = a[6],  a13 = a[7],
 		      a20 = a[8],  a21 = a[9],  a22 = a[10], a23 = a[11],
 		      a30 = a[12], a31 = a[13], a32 = a[14], a33 = a[15]
 
-		const b00 = a00 * a11 - a01 * a10
-		const b01 = a00 * a12 - a02 * a10
-		const b02 = a00 * a13 - a03 * a10
-		const b03 = a01 * a12 - a02 * a11
-		const b04 = a01 * a13 - a03 * a11
-		const b05 = a02 * a13 - a03 * a12
-		const b06 = a20 * a31 - a21 * a30
-		const b07 = a20 * a32 - a22 * a30
-		const b08 = a20 * a33 - a23 * a30
-		const b09 = a21 * a32 - a22 * a31
-		const b10 = a21 * a33 - a23 * a31
-		const b11 = a22 * a33 - a23 * a32
+		var b00 = a00 * a11 - a01 * a10
+		var b01 = a00 * a12 - a02 * a10
+		var b02 = a00 * a13 - a03 * a10
+		var b03 = a01 * a12 - a02 * a11
+		var b04 = a01 * a13 - a03 * a11
+		var b05 = a02 * a13 - a03 * a12
+		var b06 = a20 * a31 - a21 * a30
+		var b07 = a20 * a32 - a22 * a30
+		var b08 = a20 * a33 - a23 * a30
+		var b09 = a21 * a32 - a22 * a31
+		var b10 = a21 * a33 - a23 * a31
+		var b11 = a22 * a33 - a23 * a32
 
 		// Calculate the determinant
 		let det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06
@@ -190,15 +190,15 @@ export default class MatrixMath {
 	}
 
 	static mat4_multiply(out, ae, be){
-		const a11 = ae[0], a12 = ae[4], a13 = ae[8],  a14 = ae[12]
-		const a21 = ae[1], a22 = ae[5], a23 = ae[9],  a24 = ae[13]
-		const a31 = ae[2], a32 = ae[6], a33 = ae[10], a34 = ae[14]
-		const a41 = ae[3], a42 = ae[7], a43 = ae[11], a44 = ae[15]
+		var a11 = ae[0], a12 = ae[4], a13 = ae[8],  a14 = ae[12]
+		var a21 = ae[1], a22 = ae[5], a23 = ae[9],  a24 = ae[13]
+		var a31 = ae[2], a32 = ae[6], a33 = ae[10], a34 = ae[14]
+		var a41 = ae[3], a42 = ae[7], a43 = ae[11], a44 = ae[15]
 
-		const b11 = be[0], b12 = be[4], b13 = be[8],  b14 = be[12]
-		const b21 = be[1], b22 = be[5], b23 = be[9],  b24 = be[13]
-		const b31 = be[2], b32 = be[6], b33 = be[10], b34 = be[14]
-		const b41 = be[3], b42 = be[7], b43 = be[11], b44 = be[15]
+		var b11 = be[0], b12 = be[4], b13 = be[8],  b14 = be[12]
+		var b21 = be[1], b22 = be[5], b23 = be[9],  b24 = be[13]
+		var b31 = be[2], b32 = be[6], b33 = be[10], b34 = be[14]
+		var b41 = be[3], b42 = be[7], b43 = be[11], b44 = be[15]
 
 		out[0] =  a11 * b11 + a12 * b21 + a13 * b31 + a14 * b41
 		out[4] =  a11 * b12 + a12 * b22 + a13 * b32 + a14 * b42

@@ -39,6 +39,12 @@ export default class Reality extends EventHandlerBase {
 	}
 
 	/*
+	Request another video frame be generated, typically from video-mixed Realities.
+	*/
+	_requestVideoFrame() {
+	}
+
+	/*
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
 	_handleNewFrame(){}
@@ -84,5 +90,8 @@ export default class Reality extends EventHandlerBase {
 	_getLightAmbientIntensity(){
 		throw new Error('Exending classes should implement _getLightAmbientIntensity')
 	}
+
 	// attribute EventHandler onchange;
 }
+
+Reality.COMPUTER_VISION_DATA = 'cv_data'

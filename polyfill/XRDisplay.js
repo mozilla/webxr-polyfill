@@ -59,6 +59,7 @@ export default class XRDisplay extends EventHandlerBase {
 		})
 	}
 
+	// no-op unless display supports it
 	_requestVideoFrame() {}
 	
 	_requestAnimationFrame(callback){

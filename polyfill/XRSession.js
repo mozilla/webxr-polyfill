@@ -48,7 +48,12 @@ export default class XRSession extends EventHandlerBase {
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
 		}
+		var skip = false;
 		return this._display._requestAnimationFrame(() => {
+			if (skip) {
+				skip = false;
+				return;
+			}
 			const frame = this._createPresentationFrame()
 			this._display._reality._handleNewFrame(frame)
 			this._display._handleNewFrame(frame)
@@ -82,6 +87,7 @@ export default class XRSession extends EventHandlerBase {
 				// }
 				// worker.postMessage(cv, buffs);
 				ev.detail.postMessageToWorker(worker)
+				ev.detail.release()
 			})	
 		}
 		this._display.addEventListener("videoFrame", callback)
