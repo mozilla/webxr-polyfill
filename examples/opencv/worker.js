@@ -108,9 +108,9 @@ function faceDetect(img_gray, roiRect) {
     }
 
     let faces = new cv.RectVector();
-    let s1 = new cv.Size();
-    let s2 = new cv.Size();
-    face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
+    let s1 = new cv.Size(15,15);
+    let s2 = new cv.Size(120,120);
+    face_cascade.detectMultiScale(roi_gray, faces, 1.3, 3, 0, s1, s2);
 
     let rects = [];
 
@@ -181,6 +181,7 @@ function eyesDetect(img_gray) {
     return rects
 }
 
+
 // createCVMat
 //
 // this routine does two things (if needed) as part of copying the input buffer to a cv.Mat:
@@ -188,125 +189,51 @@ function eyesDetect(img_gray) {
 // - converts to greyscale 
 
 var rotatedImage = null;
-var lastRotation = -1;
 
-function createCVMat(rotation, buffer, pixelFormat) {
+var img_gray = null;
+var img_rgba = null;
+
+function createCVMat2(rotation, buffer, pixelFormat) {
     var width = buffer.size.width
     var height = buffer.size.height
 
-    if (!rotatedImage || (lastRotation != rotation)) {
-        lastRotation = rotation;
-        if (rotatedImage) rotatedImage.delete()
+    if (!img_gray) img_gray = new cv.Mat();
+    if (!img_rgba) img_rgba = new cv.Mat();
+    if (!rotatedImage) rotatedImage = new cv.Mat();
 
-        if(rotation == 90 ||  rotation == -90) {
-            rotatedImage = new cv.Mat(width, height, cv.CV_8U)
-        } else {
-            rotatedImage = new cv.Mat(height, width, cv.CV_8U)
-        }
+    switch(pixelFormat) {
+        case XRVideoFrame.IMAGEFORMAT_YUV420P:
+            var b = new Uint8Array(buffer.buffer);
+            img_gray.create(height,width,cv.CV_8U)
+            img_gray.data.set(b);        
+            break;
+        case XRVideoFrame.IMAGEFORMAT_RGBA32:
+            var b = new Uint8Array(buffer.buffer);
+            img_rgba.create(height,width,cv.CV_8UC4)
+            img_rgba.data.set(b);
+            cv.cvtColor(img_rgba, img_gray, cv.COLOR_RGBA2GRAY, 0);
+            break;
     }
-    var src, dest;
-    src = dest = 0;
 
-    var i, j;
-    var b = new Uint8Array(buffer.buffer);
-    var r = rotatedImage.data;
-
-    var rowExtra = buffer.size.bytesPerRow - buffer.size.bytesPerPixel * width;
     switch(rotation) {
-    case -90:
-        // clockwise
-        dest = height - 1;
-        for (j = 0; j < height; j++) {
-            switch(pixelFormat) {
-                case XRVideoFrame.IMAGEFORMAT_YUV420P:
-                    for (var i = 0; i < width; i++) {
-                        r[dest] = b[src++]
-                        dest += height; // up the row
-                    }
-                    break;
-                case XRVideoFrame.IMAGEFORMAT_RGBA32:
-                    for (var i = 0; i < width; i++) {
-                        r[dest] = (b[src++] + b[src++] + b[src++]) / 3 
-                        src++
-                        dest += height; // up the row
-                    }
-                    break;
-            }
-            dest -= width * height;
-            dest --;
-            src += rowExtra;
-        }								
-        break;
-
-    case 90:
-        // anticlockwise
-        dest = width * (height - 1);
-        for (j = 0; j < height; j++) {
-            switch(pixelFormat) {
-                case XRVideoFrame.IMAGEFORMAT_YUV420P:
-                    for (var i = 0; i < width; i++) {
-                        r[dest] = b[src++]
-                        dest -= height; // down the row
-                    }
-                    break;
-                case XRVideoFrame.IMAGEFORMAT_RGBA32:
-                    for (var i = 0; i < width; i++) {
-                        r[dest] = (b[src++] + b[src++] + b[src++]) / 3 
-                        src++
-                        dest -= height; // down the row
-                    }
-                    break;
-            }
-            dest += width * height;
-            dest ++;
-            src += rowExtra;
-        }								
-        break;
-
-    case 180:
-        // 180
-        dest = width * height - 1;
-        for (j = 0; j < height; j++) {
-            switch(pixelFormat) {
-                case XRVideoFrame.IMAGEFORMAT_YUV420P:        
-                    for (var i = 0; i < width; i++) {
-                        r[dest--] = b[src++]
-                    }
-                    break;
-                case XRVideoFrame.IMAGEFORMAT_RGBA32:
-                    for (var i = 0; i < width; i++) {
-                        r[dest--] = (b[src++] + b[src++] + b[src++]) / 3 
-                        src++
-                    }
-                break;
-            }
-            src += rowExtra;
-        }								
-        break;
-
-    case 0:
-    default:
-        // copy
-        for (j = 0; j < height; j++) {
-            switch(pixelFormat) {
-                case XRVideoFrame.IMAGEFORMAT_YUV420P:        
-                    for (var i = 0; i < width; i++) {
-                        r[dest++] = b[src++]
-                    }
-                    break;
-                case XRVideoFrame.IMAGEFORMAT_RGBA32:
-                    for (var i = 0; i < width; i++) {
-                        r[dest++] = (b[src++] + b[src++] + b[src++]) / 3 
-                        src++
-                    }
-                break;
-            }
-        src += rowExtra;
-        }								
-    }	
-    return rotatedImage;	
+        case -90:
+            cv.rotate(img_gray, rotatedImage, cv.ROTATE_90_CLOCKWISE);
+            return rotatedImage;
+            break;
+        case 90:
+            cv.rotate(img_gray, rotatedImage, cv.ROTATE_90_COUNTERCLOCKWISE);
+            return rotatedImage;
+            break;
+        case 180:
+            cv.rotate(img_gray, rotatedImage, cv.ROTATE_180);
+            return rotatedImage;
+            break;
+        default:
+            return img_gray;            
+    }
 }
 
+///////////
 var endTime = 0;
 
 self.addEventListener('message',  function(event){
@@ -333,7 +260,7 @@ self.addEventListener('message',  function(event){
         
             // first, rotate the image such that it is oriented correctly relative to the display
             var rotation = videoFrame.camera.cameraOrientation;
-            var image = createCVMat(rotation, videoFrame.buffer(0), videoFrame.pixelFormat)
+            var image = createCVMat2(rotation, videoFrame.buffer(0), videoFrame.pixelFormat)
             postMessage({type: "cvAfterMat", time: ( performance || Date ).now()});
 
             if (scale != 1) {

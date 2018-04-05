@@ -102,6 +102,9 @@
 				beginTime = time;
 			}
 
+			var viewWidth = 0;
+			var viewHeight = 0;
+
 			var cvStartTime = 0;
 			var cvAfterMatTime = 0;
 			var cvAfterResizeTime = 0;
@@ -242,7 +245,6 @@
 				}
 
 				adjustRenderCanvasSize (rotation, width, height) {
-
 					var cameraAspect;
 
 					if(rotation == 90 ||  rotation == -90) {
@@ -347,6 +349,14 @@
 
 					if (this.messageText != this.textBox.innerHTML) {
 						this.textBox.innerHTML = this.messageText;
+					}
+
+					var viewport = frame.views[0].getViewport(this.session.baseLayer);
+					if (viewport.width != viewWidth || viewport.height != viewHeight) {
+						viewHeight = viewport.height;
+						viewWidth = viewport.width;
+
+						this.triggerResize = true;
 					}
 				}
 
