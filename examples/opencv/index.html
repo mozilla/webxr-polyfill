@@ -9,6 +9,8 @@
 				margin: 0;
 				width: 100%;
 				height: 100%;
+				overflow: hidden;
+				-webkit-overflow-scrolling: touch;			
 				-webkit-user-select: none;
 				user-select: none;
 			}
@@ -16,6 +18,14 @@
 				width: 100%;
 				height: 100%;
 				position: absolute;
+			}
+			#video_canvas {
+				transform: translate(-50%, 0);
+				opacity:0.5;
+				position:absolute;
+				top: 0;
+				left: 0;
+				border:1px solid green
 			}
 			.text-box {
 				position: absolute;
@@ -53,7 +63,7 @@
 			var cvStatusTxt = "";
 			
 			// Needed if you want to run the OpenCV code inside the web page.  Doesn't hurt to have it here
-			// otherwise.
+			// otherwise.  We have it up here so it gets executed before opencv.js is loaded
 			var Module = {
 			preRun: [function() {
 				Module.FS_createPreloadedFile('/', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
@@ -69,11 +79,12 @@
 			};
 		</script>
 		<!--script  src="opencv.js"></script-->
+
 		<script src="../common.js"></script>
 	</head>
 	<body>
-		<!-- place to render over the video frame -->
-		<canvas style="transform: translate(-50%, 0);opacity:0.5;position:absolute;border:1px solid green" id="video_canvas" width="100%" height="100%"> </canvas>
+		<!-- place to render detected face rectanges over the video frame -->
+		<canvas id="video_canvas" width="100%" height="100%"> </canvas>
 
 		<div id="target" />
 		<div onclick="hideMe(this)" id="description">
@@ -81,16 +92,16 @@
 			<h5>(click to dismiss)</h5>
 			<p>Use OpenCV to find faces and draw a box around them in 2D.</p>
 		</div>
-		<script id="worker1" type="javascript/worker">
-		</script>
+
 		<script>
-			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
-			
+			// set up for collecting different stats
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;			
 			var stats = new Stats();
 			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
 			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
 			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 
+			// a method to update a new panel for displaying CV FPS
 			var updateCVFPS = function () {
 				frames ++;
 				var time = ( performance || Date ).now();
@@ -102,9 +113,12 @@
 				beginTime = time;
 			}
 
+			// keep track of what we think the view size is so we can adjust the 
+			// overlay used to render the 2D detection results
 			var viewWidth = 0;
 			var viewHeight = 0;
 
+			// various variables to hold values for statistics collected from the worker 
 			var cvStartTime = 0;
 			var cvAfterMatTime = 0;
 			var cvAfterResizeTime = 0;
@@ -115,14 +129,16 @@
 			var cvResizeTime = 0;
 			var cvIdleTime = 0;
 			
-			// flag to set true if you want to construct a texture from the UV image 
-			var makeTexUV = false;
-			var makeTexY = false;
-
 			// has openCV loaded?
 			var openCVready = false;
 			
+			// for debugging, show the image we did the CV on 
 			var showCVImage = false;
+			var cvImageBuff = null
+			var tempVideoCanvas = document.createElement('canvas');
+			var tempVideoCanvasCtx = tempVideoCanvas.getContext('2d');
+
+			// a 2D buffer to show the 2D boxes in, and the video in
 			var cvImageDiv = document.getElementById("video_canvas");
 			var cvImageCtx = cvImageDiv.getContext('2d');
 
@@ -148,16 +164,12 @@
 					this.triggerResize = true;
 
 					window.addEventListener('resize', () => {
+						console.log("resize, trigger adjust canvas size")
 						this.triggerResize = true;
 					})
 				}
 
-				newSession() {
-					// var blob = new Blob([
-					// 	document.querySelector('#worker1').textContent
-					// ], { type: "text/javascript" })
-					//this.worker = new Worker(window.URL.createObjectURL(blob));
-					
+				newSession() {					
 					this.worker = new Worker ("worker.js")
 
 					this.worker.onmessage = (ev) => {
@@ -178,13 +190,16 @@
 									this.rotation = rotation;
 									this.adjustRenderCanvasSize(rotation, width, height)
 								}
-								cvImageCtx.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
+
+								if (showCVImage) {
+									this.showVideoFrame(videoFrame)
+								} else {
+									cvImageCtx.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
+								}
 								for (let i = 0; i < this.faceRects.length; i++) {
 									let rect = this.faceRects[i];
 									cvImageCtx.strokeRect(rect.x, rect.y, rect.width , rect.height);
 								}
-								this.handleVisionDone(videoFrame);
-
 								updateCVFPS();
 								videoFrame.release();
 
@@ -236,8 +251,6 @@
 					// 		}
 					// 		updateCVFPS();
 					// 	}
-					// 	this.handleVisionDone(videoFrame);
-
 					// 	// pass the buffers back or they will be garbage collected
 					// 	videoFrame.release();
 					// 	this.requestVideoFrame();
@@ -246,6 +259,9 @@
 
 				adjustRenderCanvasSize (rotation, width, height) {
 					var cameraAspect;
+					console.log("adjustRenderCanvasSize: " + rotation + " degrees, " + width + " by " + height)
+					tempVideoCanvas.width = width;
+					tempVideoCanvas.height = height;
 
 					if(rotation == 90 ||  rotation == -90) {
 						cameraAspect = height / width;
@@ -279,28 +295,6 @@
 
 				// Called during construction
 				initializeScene(){
-					// make and display an image of the UV image buffer
-					if (makeTexUV || makeTexY) {
-						var size = 4;
-						var data = new Uint8Array( 12 );
-						for ( var i = 0; i < 12; i ++ ) {
-							data[i] = 255 / (i + 1);
-						}
-						this.texBuff = data;
-						this.texSize = 12;
-						this.uvTexture = new THREE.DataTexture( data, 2, 2, THREE.RGBFormat );
-						this.uvTexture.needsUpdate = true;
-
-						var geometry = new THREE.PlaneGeometry(1, 1);
-						var material = new THREE.MeshBasicMaterial( {color: 0xff00ff88, map: this.uvTexture, side: THREE.DoubleSide } );
-						var plane = new THREE.Mesh( geometry, material );
-						var mat = new THREE.Matrix4();
-						mat = mat.makeScale(0.1,0.1,0.1);
-						mat = mat.setPosition(new THREE.Vector3(-.05,0.0,-.33))
-						plane.applyMatrix(mat)
-						this.camera.add( plane );
-					}
-
 					// Add a box at the scene origin
 					let box = new THREE.Mesh(
 						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
@@ -356,250 +350,114 @@
 						viewHeight = viewport.height;
 						viewWidth = viewport.width;
 
+						console.log("noticed view size is different than saved view size, trigger adjust canvas size")
 						this.triggerResize = true;
 					}
 				}
 
-						
-				handleVisionDone(videoFrame) {
-					// This code is hardcoded for the way the WebXR Viewer returns video frames (YUV420P)
-					if (makeTexUV && videoFrame.buffer(1).buffer) {
-						var buffer = videoFrame.buffer(1);
-						var buff = buffer.buffer;
-						if (this.texSize != (buff.byteLength /2 *3)) {
-							this.texSize = buff.byteLength /2 * 3
-							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
-						}
-						
-						var j = 0;
-						var pixels = new Uint8Array(buff);
-						for ( var i = 0; i < this.texSize; i ++ ) {
-							this.texBuff[i] = pixels[j++];
-							i++;
-							this.texBuff[i] = 0;
-							i++;
-							this.texBuff[i] = pixels[j++];
-						}
-						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
-						this.uvTexture.needsUpdate = true;
-					} else if (makeTexY && videoFrame.buffer(0).buffer) {
-						var buffer = videoFrame.buffer(0);
-						var buff = buffer.buffer;
-						if (this.texSize != (buff.byteLength * 3)) {
-							this.texSize = buff.byteLength * 3
-							this.texBuff = new Uint8Array( this.texSize );
-						}
-						
-						var j = 0;
-						var pixels = new Uint8Array(buff);
-						for ( var i = 0; i < this.texSize; i ++ ) {
-							this.texBuff[i++] = pixels[j];
-							this.texBuff[i++] = pixels[j];
-							this.texBuff[i] = pixels[j++];
-						}
-						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
-						this.uvTexture.needsUpdate = true;
-					}							
-				}
+				showVideoFrame(videoFrame) {
+					var camera = videoFrame.camera
+					var buffer = videoFrame.buffer(0)
 
-				//////
-				////// NOT USED with worker above, but can switch to callback model using these
-				//////
-
-				loadFaceDetectTrainingSet() {
-					if (this.face_cascade == undefined) {
-						this.face_cascade = new cv.CascadeClassifier();
-						let load = this.face_cascade.load('haarcascade_frontalface_default.xml');
-						console.log('load face detection training data', load);
+					// this buffer is created in the worker, and if the worker
+					// doesn't access the frame, it won't be created.  So don't
+					// display the buffer if there is nothing to display yet!
+					if (!(buffer._buffer instanceof ArrayBuffer)) {
+						return;
 					}
-				}
 
-				loadEyesDetectTrainingSet() {
-					if (this.eye_cascade == undefined) {
-						this.eye_cascade = new cv.CascadeClassifier();
-						let load = this.eye_cascade.load('haarcascade_eye.xml');
-						console.log('load eye detection training data', load);
+					if (!cvImageBuff || cvImageBuff.length != buffer._buffer.length) {
+						cvImageBuff = new Uint8ClampedArray(buffer._buffer);
 					}
-				}
+					var data = cvImageBuff
 
-				faceDetect(img_gray) {
-					this.loadFaceDetectTrainingSet();
+					switch (videoFrame.pixelFormat) {
+						case XRVideoFrame.IMAGEFORMAT_YUV420P:
+							var len  = buffer.buffer.length
+							var rowExtra = buffer.size.bytesPerRow - buffer.size.bytesPerPixel * buffer.size.width;
+
+							var newData = new Uint8ClampedArray(len*4)
+							var j=0;
+							var i=0;
+							for (var r = 0; r < buffer.size.height; r++ ) {
+								for (var c = 0; c < buffer.size.width; c++) {
+									newData[j++] = data[i];
+									newData[j++] = data[i];
+									newData[j++] = data[i];
+									newData[j++] = 255;
+									i++;
+								}
+								i += rowExtra;
+							}
+							data = newData;
+							break;
+					}
+
+					var imgData = new ImageData(data, buffer.size.width, buffer.size.height);
+					tempVideoCanvasCtx.putImageData(imgData,0,0);
 					
-					let w = Math.floor(img_gray.cols /2);
-					let h = Math.floor(img_gray.rows /2);
-					let roiRect = new cv.Rect(w/2, h/2, w, h);
-					let roi_gray = img_gray.roi(roiRect);
-
-					let faces = new cv.RectVector();
-					let s1 = new cv.Size(50,50);
-					let s2 = new cv.Size();
-					this.face_cascade.detectMultiScale(roi_gray, faces, 1.1, 30, 0, s1, s2);
-
-					let rects = [];
-
-					for (let i = 0; i < faces.size(); i += 1) {
-						let faceRect = faces.get(i);
-						rects.push({
-							x: faceRect.x,
-							y: faceRect.y,
-							width: faceRect.width,
-							height: faceRect.height
-						});
-					}
-
-					faces.delete();
-					return rects;
-				}
-
-				eyesDetect(img_gray) {	
-					this.loadFaceDetectTrainingSet();
-					this.loadEyesDetectTrainingSet();
-
-					let faces = new cv.RectVector();
-					let s1 = new cv.Size();
-					let s2 = new cv.Size();
-					this.face_cascade.detectMultiScale(img_gray, faces);//, 1.1, 3, 0);//, s1, s2);
-
-					let rects = [];
-
-					for (let i = 0; i < faces.size(); i += 1) {
-						let faceRect = faces.get(i);
-						let x = faceRect.x;
-						let y = faceRect.y;
-						let w = faceRect.width;
-						let h = faceRect.height;
-
-						rects.push({
-							x: x,
-							y: y,
-							width: w,
-							height: h
-						});
-
-						let roiRect = new cv.Rect(x, y, w, h);
-						let roi_gray = img_gray.roi(roiRect);
-
-						let eyes = new cv.RectVector();
-						this.eye_cascade.detectMultiScale(roi_gray, eyes);//, 1.1, 3, 0, s1, s2);
-
-						for (let j = 0; j < eyes.size(); j += 1) {
-
-							let eyeRect = eyes.get(j);
-
-							rects.push({
-								x: x + eyeRect.x,
-								y: y + eyeRect.y,
-								width: eyeRect.width,
-								height: eyeRect.height
-							});
-						}
-
-						eyes.delete();
-						roi_gray.delete();
-					}
-
-					faces.delete();
-
-					return rects
-				}
-
-				//
-				rotateImage(rotation, buffer) {
 					var width = buffer.size.width
 					var height = buffer.size.height
-					if (this.triggerResize || !this.rotatedImage || (this.rotation != rotation)) {
-						this.triggerResize = false;
-						if (!this.rotatedImage || (this.rotation != rotation)) {
-							this.rotation = rotation;
-							
-							if(rotation == 90 ||  rotation == -90) {
-								this.rotatedImage = new cv.Mat(width, height, cv.CV_8U)
-							} else {
-								this.rotatedImage = new cv.Mat(height, width, cv.CV_8U)
-							}
-						}
-						this.adjustRenderCanvasSize(rotation, width, height)
+
+					cvImageCtx.clearRect(0, 0, width, height);
+
+					if (camera.cameraOrientation == 90 || camera.cameraOrientation == -90) {
+						cvImageCtx.translate(height/2, width/2); 
+					} else {
+						cvImageCtx.translate(width/2, height/2); 
 					}
-					var src, dest;
-					src = dest = 0;
 
-					var i, j;
-					var b = new Uint8Array(buffer.buffer);
-					var r = this.rotatedImage.data;
+					// rotate by negative, since the cameraOrientation is the orientation of the
+					// camera relative to view and we want to undo that
+					cvImageCtx.rotate(-camera.cameraOrientation * Math.PI/180); 
 
-					var rowExtra = buffer.size.bytesPerPixel * buffer.size.bytesPerRow - width;
-					switch(rotation) {
-					case -90:
-						// clockwise
-						dest = height - 1;
-						for (j = 0; j < height; j++) {
-							for (var i = 0; i < width; i++) {
-								r[dest] = b[src++]
-								dest += height; // up the row
-							}
-							dest -= width * height;
-							dest --;
-							src += rowExtra;
-						}								
-						break;
-
-					case 90:							
-						// anticlockwise
-						dest = width * (height - 1);
-						for (j = 0; j < height; j++) {
-							for (var i = 0; i < width; i++) {
-								r[dest] = b[src++]
-								dest -= height; // down the row
-							}
-							dest += width * height;
-							dest ++;
-							src += rowExtra;
-						}								
-						break;
-
-					case 180:
-						// 180
-						dest = width * height - 1;
-						for (j = 0; j < height; j++) {
-							for (var i = 0; i < width; i++) {
-								r[dest--] = b[src++]
-							}
-							src += rowExtra;
-						}								
-						break;
-
-					case 3:
-					default:   // if it's not one of the 4 cardinal rotations, do nothing, sorry!
-						// copy
-						for (j = 0; j < height; j++) {
-							for (var i = 0; i < width; i++) {
-								r[dest++] = b[src++]
-							}
-							src += rowExtra;
-						}								
-					}		
-					if (showCVImage) cv.imshow("video_canvas",this.rotatedImage)			
+					cvImageCtx.drawImage(tempVideoCanvas, -width/2, -height/2);
+					cvImageCtx.resetTransform()
 				}
+			
+			// function imshow(canvasSource, mat) {
+				// var canvas=null;
+				// if(typeof canvasSource==="string") {
+				// 	canvas=document.getElementById(canvasSource)
+				// } else {
+				// 	canvas=canvasSource
+				// }
+				// if(!(canvas instanceof HTMLCanvasElement)) {
+				// 	throw new Error("Please input the valid canvas element or id.");
+				// 	return
+				// }
+				// if(!(mat instanceof cv.Mat)) {
+				// 	throw new Error("Please input the valid cv.Mat instance.");
+				// 	return
+				// }
+				// var img=new cv.Mat;
+				// var depth=mat.type()%8;
+				// var scale=depth<=cv.CV_8S?1:depth<=cv.CV_32S?1/256:255;
+				// var shift=depth===cv.CV_8S||depth===cv.CV_16S?128:0;
+				// mat.convertTo(img,cv.CV_8U,scale,shift);
+				// switch(img.type()) {
+				// 	case cv.CV_8UC1:
+				// 		cv.cvtColor(img,img,cv.COLOR_GRAY2RGBA);
+				// 		break;
+				// 	case cv.CV_8UC3:
+				// 		cv.cvtColor(img,img,cv.COLOR_RGB2RGBA);
+				// 		break;
+				// 	case cv.CV_8UC4:
+				// 		break;
+				// 	default:
+				// 		throw new Error("Bad number of channels (Source image must have 1, 3 or 4 channels)");
+				// 		return
+				// }
+				// var imgData=new ImageData(new Uint8ClampedArray(img.data),img.cols,img.rows);
+				// var ctx=canvas.getContext("2d");
+				// ctx.clearRect(0,0,canvas.width,canvas.height);
+				// canvas.width=imgData.width;
+				// canvas.height=imgData.height;
+				// ctx.putImageData(imgData,0,0);
+				// img.delete()
+			// }
 
-				handleVideoFrame(ev) {
-					var videoFrame = ev.detail
-					var camera = videoFrame.camera
-					switch (videoFrame.pixelFormat) {
-					    case XRVideoFrame.IMAGEFORMAT_YUV420P:
-							// first, rotate the image such that it is oriented correctly relative to the display
-							var rotation = camera.cameraOrientation;
-							this.rotateImage(rotation, videoFrame.buffer(0))
-
-							this.faceRects = this.faceDetect(this.rotatedImage);
-					}
-					if (!showCVImage) cvImageCtx.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
-					for (let i = 0; i < this.faceRects.length; i++) {
-						let rect = this.faceRects[i];
-						cvImageCtx.strokeRect(rect.x, rect.y, rect.width , rect.height);
-					}
-				}
 			}
-
 			function opencvIsReady() {
 				console.log('OpenCV.js is ready');
 				openCVready = true				

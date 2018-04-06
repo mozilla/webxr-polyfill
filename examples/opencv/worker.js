@@ -1,9 +1,9 @@
 importScripts('../../dist/webxr-worker.js')
-
 console.log("loaded webxr-worker.js")
 
 var openCVready = false;
 
+// need to load up the files for tracking the face and eyes
 var Module = {
   preRun: [function() {
     console.log("CV preRun")
@@ -19,11 +19,9 @@ var Module = {
         postMessage({type: "cvStatus", msg: msg});
   }
 };
-
 console.log("set up pre-load")
 
 importScripts('opencv.js')
-
 console.log("loaded opencv.js:" + cv);
 
 /**
@@ -189,7 +187,6 @@ function eyesDetect(img_gray) {
 // - converts to greyscale 
 
 var rotatedImage = null;
-
 var img_gray = null;
 var img_rgba = null;
 
@@ -237,12 +234,21 @@ function createCVMat2(rotation, buffer, pixelFormat) {
 var endTime = 0;
 
 self.addEventListener('message',  function(event){
+    // send back some timing messages, letting the main thread know the message is 
+    // received and CV processing has started
     postMessage({type: "cvStart", time: ( performance || Date ).now()});
 
+    // create a videoFrame object frome the message.  Eventually, this may
+    // be passed in by the browser, if we create something like a "vision worker"
     var videoFrame = XRVideoFrame.createFromMessage(event);
+
+    // did we find any?
     var faceRects = []
 
+    // don't do anything until opencv.js and WASM and support files are loaded
     if (openCVready) {   
+
+        // deal with the video formats we know about
         switch (videoFrame.pixelFormat) {
         case XRVideoFrame.IMAGEFORMAT_YUV420P:
         case XRVideoFrame.IMAGEFORMAT_RGBA32:
@@ -252,6 +258,7 @@ self.addEventListener('message',  function(event){
             var height = buffer.size.height;
 
             // let's pick a size such that the video is below 256 in size in both dimensions
+            // since face detection is really expensive on large images
             while (width > 256 || height > 256) {
                 width = width / 2
                 height = height / 2
@@ -259,17 +266,16 @@ self.addEventListener('message',  function(event){
             }
         
             // first, rotate the image such that it is oriented correctly relative to the display
+            // since the face detector assumes the face is upright.  Also, this routine 
+            // converts to 8bit grey scale
             var rotation = videoFrame.camera.cameraOrientation;
             var image = createCVMat2(rotation, videoFrame.buffer(0), videoFrame.pixelFormat)
             postMessage({type: "cvAfterMat", time: ( performance || Date ).now()});
 
+            // did we decide to scale?
             if (scale != 1) {
                 var m = new cv.Mat()
                 cv.resize(image, m, new cv.Size(), scale, scale);
-
-//             let w = Math.floor(image.cols /2);
-//             let h = Math.floor(image.rows /2);
-//             let roiRect = new cv.Rect(w/2, h/2, w, h);
                 postMessage({type: "cvAfterResize", time: ( performance || Date ).now()});
         
                 // now find faces
@@ -285,10 +291,10 @@ self.addEventListener('message',  function(event){
 
                 m.delete();
             } else {
+                // no resize?  Just use the original image
                 postMessage({type: "cvAfterResize", time: ( performance || Date ).now()});
                 faceRects = faceDetect(image);
             }
-
         }
     }
     endTime = ( performance || Date ).now()
