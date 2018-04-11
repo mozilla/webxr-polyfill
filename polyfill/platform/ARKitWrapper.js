@@ -84,6 +84,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this.anchors_ = new Map();
 
 		this._timeOffset = 0;
+		this._timeOffsetComputed = false;
 		this.timestamp = 0;
 
 
@@ -754,11 +755,16 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 
 	*/
-	_adjustARKitTime(time) {
-		if (this._timeOffset < 0) {
+	_adjustARKitTime(time, adjust) {
+		if (!this._timeOffsetComputed && adjust) {
+			this._timeOffsetComputed = true;
 			this._timeOffset = ( performance || Date ).now() - time;
 		}
-		return time + this._timeOffset; 
+		if (this._timeOffsetComputed) {
+			return time + this._timeOffset; 
+		} else {
+			return ( performance || Date ).now()
+		}
 	}
 
 	_onWatch(data){
@@ -767,7 +773,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			source: this,
 			detail: this._rawARData
 		}))
-		this.timestamp = this._adjustARKitTime(data.timestamp)
+		this.timestamp = this._adjustARKitTime(data.timestamp, true)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
@@ -1015,7 +1021,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					break;
 			}
 
-			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
+			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp, false), detail.camera )
 			this.dispatchEvent(
 				new CustomEvent(
 					ARKitWrapper.COMPUTER_VISION_DATA,
@@ -1035,6 +1041,19 @@ export default class ARKitWrapper extends EventHandlerBase {
         window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
 	}
 
+	/*
+	Requests ARKit to start sending CV data (data is send automatically when requested and approved)
+	 */
+    _startSendingComputerVisionData() {
+        window.webkit.messageHandlers.startSendingComputerVisionData.postMessage({})
+	}
+
+	/*
+	Requests ARKit to stop sending CV data
+	 */
+    _stopSendingComputerVisionData() {
+        window.webkit.messageHandlers.stopSendingComputerVisionData.postMessage({})
+	}
 
 	// _buildWorkerBlob() {
 	// 	var blobURL = URL.createObjectURL( new Blob([ '(',

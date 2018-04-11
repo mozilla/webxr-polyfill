@@ -42,6 +42,7 @@ export default class CameraReality extends Reality {
 
 		// dealing with video frames from webrtc
 		this._sendingVideo = false;
+		this._videoFramesPaused = false;
 		this._sendVideoFrame = false;
 		this._videoProjectionMatrix = MatrixMath.mat4_generateIdentity();
 		this._videoViewMatrix = MatrixMath.mat4_generateIdentity();
@@ -119,7 +120,7 @@ export default class CameraReality extends Reality {
 		}
 
 		// WebRTC video
-		if (this._videoEl && this._sendVideoFrame) {
+		if (this._videoEl && this._sendVideoFrame && !this._videoFramesPaused) {
 			this._sendVideoFrame = false;
 			
 			var canvasWidth  = this._videoRenderWidth;
@@ -266,6 +267,14 @@ export default class CameraReality extends Reality {
 
 	_requestVideoFrame() {
 		this._sendVideoFrame = true;
+	}
+
+	_stopVideoFrames() {
+		this._videoFramesPaused = true;
+	}
+
+	_startVideoFrames() {
+		this._videoFramesPaused = false;
 	}
 
 	_stop(){

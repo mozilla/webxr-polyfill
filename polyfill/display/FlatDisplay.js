@@ -224,6 +224,26 @@ export default class FlatDisplay extends XRDisplay {
 		}
 	}
 
+	_stopVideoFrames() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._stopSendingComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._stopVideoFrames()
+		}
+	}
+
+	_startVideoFrames() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._startSendingComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._startVideoFrames()
+		}
+	}
+	
 	_createSession(parameters=null){
 		this._start(parameters)
 		return super._createSession(parameters)

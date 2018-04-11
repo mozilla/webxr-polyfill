@@ -121,7 +121,10 @@
 				}
 
 				newSession() {					
-					this.worker = new Worker ("worker30.js")
+					this.worker = new Worker ("worker.js")
+
+					// start with video frames paused till opencv loaded
+					this.session.stopVideoFrames();
 
 					this.worker.onmessage = (ev) => {
 						switch (ev.data.type) {
@@ -168,6 +171,7 @@
 
 							case "cvReady":
 								console.log('OpenCV.js is ready');
+								this.session.startVideoFrames();
 								openCVready = true				
 								break;
 
@@ -215,10 +219,10 @@
 				updateScene(frame){
 					this.lightEstimate = frame.lightEstimate || 0;
 					stats.update()
-
+					var now = ( performance || Date ).now()
 					var txt = "<center>"
 					txt += "ARKit Light Estimate: " + this.lightEstimate.toFixed(2);
-					txt += "<br>Rotation = " + this.rotation + "<br>" ;
+					txt += "<br>TimeOffset = " + (now - frame.timestamp).toFixed(1) + ", Rotation = " + this.rotation + "<br>" ;
 					if (cvStatusTxt.length > 0) {
 						txt += "OpenCV: " + cvStatusTxt + "<br>"
 					} else {

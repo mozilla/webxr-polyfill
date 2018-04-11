@@ -45,6 +45,15 @@ export default class Reality extends EventHandlerBase {
 	}
 
 	/*
+	Start or stop video frames
+	*/
+	_stopVideoFrames() {
+	}
+
+	_startVideoFrames() {
+	}
+	
+	/*
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
 	_handleNewFrame(){}

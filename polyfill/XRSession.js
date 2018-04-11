@@ -97,6 +97,14 @@ export default class XRSession extends EventHandlerBase {
 		this._display._requestVideoFrame();
 	}
 
+	stopVideoFrames() {
+		this._display._stopVideoFrames();
+	}
+	
+	startVideoFrames() {
+		this._display._startVideoFrames();
+	}
+
 	_createPresentationFrame(){
 		return new XRPresentationFrame(this)
 	}
