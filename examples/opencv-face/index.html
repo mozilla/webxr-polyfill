@@ -1,0 +1,477 @@
+<html>
+	<head>
+		<title>OpenCV Face Detection example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				-webkit-overflow-scrolling: touch;			
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			#video_canvas {
+				transform: translate(-50%, 0);
+				opacity:0.5;
+				position:absolute;
+				top: 0;
+				left: 0;
+				border:1px solid green
+			}
+			.text-box {
+				position: absolute;
+				top: 5%;
+				left: 50%;
+				color: white;
+				background: rgba(27,55,55,0.75);;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				transform: translate(-50%, 0%);
+				font-size: 0.8em;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 10px;
+			}
+			img.crosshair {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-left: -32px;
+				margin-top: -32px;
+			}
+		</style>
+		<link rel="stylesheet" href="../common.css"/>
+		<script src="../libs/three.js"></script>
+		<script src="../libs/stats.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script>
+			var cvStatusTxt = "";
+			
+			// Needed if you want to run the OpenCV code inside the web page.  Doesn't hurt to have it here
+			// otherwise.  We have it up here so it gets executed before opencv.js is loaded
+			var Module = {
+			preRun: [function() {
+				Module.FS_createPreloadedFile('/', 'haarcascade_eye.xml', 'haarcascade_eye.xml', true, false);
+				Module.FS_createPreloadedFile('/', 'haarcascade_frontalface_default.xml', 'haarcascade_frontalface_default.xml', true, false);
+				Module.FS_createPreloadedFile('/', 'haarcascade_profileface.xml', 'haarcascade_profileface.xml', true, false);
+			}],
+			onRuntimeInitialized: function() {
+				opencvIsReady();
+				},
+			setStatus: function(msg) {
+				cvStatusTxt = msg;
+			}
+			};
+		</script>
+		<!--script  src="opencv.js"></script-->
+
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<!-- place to render detected face rectanges over the video frame -->
+		<canvas id="video_canvas" width="100%" height="100%"> </canvas>
+
+		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>OpenCV Face Detection Demo</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Use OpenCV to find faces and draw boxes around them in 2D.</p>
+		</div>
+
+		<script>
+			// set up for collecting different stats
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;			
+			var stats = new Stats();
+			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
+			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
+			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+
+			// a method to update a new panel for displaying CV FPS
+			var updateCVFPS = function () {
+				frames ++;
+				var time = ( performance || Date ).now();
+				if ( time >= prevTime + 1000 ) {
+					cvPanel.update( ( frames * 1000 ) / ( time - prevTime ), 100 );
+					prevTime = time;
+					frames = 0;
+				}
+				beginTime = time;
+			}
+
+			// keep track of what we think the view size is so we can adjust the 
+			// overlay used to render the 2D detection results
+			var viewWidth = 0;
+			var viewHeight = 0;
+
+			// various variables to hold values for statistics collected from the worker 
+			var cvStartTime = 0;
+			var cvAfterMatTime = 0;
+			var cvAfterResizeTime = 0;
+			var cvEndTime = 0;
+
+			var cvMatTime = 0;
+			var cvFaceTime = 0
+			var cvResizeTime = 0;
+			var cvIdleTime = 0;
+			
+			// has openCV loaded?
+			var openCVready = false;
+			
+			// for debugging, show the image we did the CV on 
+			var showCVImage = false;
+			var cvImageBuff = null
+			var tempVideoCanvas = document.createElement('canvas');
+			var tempVideoCanvasCtx = tempVideoCanvas.getContext('2d');
+
+			// a 2D buffer to show the 2D boxes in, and the video in
+			var cvImageDiv = document.getElementById("video_canvas");
+			var cvImageCtx = cvImageDiv.getContext('2d');
+
+			document.body.appendChild( stats.dom );
+
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false, true, true)
+
+					this.textBox = document.createElement('span')
+					this.textBox.setAttribute('class', 'text-box')
+					this.textBox.innerText = '0.0'
+					this.faceRects = [];
+					this.eyeRects = [];
+					this.lightEstimate = 0;
+					this.el.appendChild(this.textBox)
+
+					this.rotation = -1;
+					this.rotatedImage = null;
+					this.face_cascade = null;
+					this.eye_cascade = null;
+					
+					this.triggerResize = true;
+
+					window.addEventListener('resize', () => {
+						console.log("resize, trigger adjust canvas size")
+						this.triggerResize = true;
+					})
+				}
+
+				newSession() {					
+					this.worker = new Worker ("worker.js")
+
+					this.worker.onmessage = (ev) => {
+						switch (ev.data.type) {
+							case "cvFrame":
+								var videoFrame = XRVideoFrame.createFromMessage(ev)
+								this.faceRects = ev.data.faceRects;
+								cvEndTime = ev.data.time;
+								cvFaceTime = cvEndTime - cvAfterResizeTime;
+
+								var rotation = videoFrame.camera.cameraOrientation;
+								var buffer = videoFrame.buffer(0)
+
+								var width = buffer.size.width
+								var height = buffer.size.height
+								if (this.triggerResize || this.rotation != rotation) {
+									this.triggerResize = false;
+									this.rotation = rotation;
+									this.adjustRenderCanvasSize(rotation, width, height)
+								}
+
+								if (showCVImage) {
+									this.showVideoFrame(videoFrame)
+								} else {
+									cvImageCtx.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
+								}
+								for (let i = 0; i < this.faceRects.length; i++) {
+									let rect = this.faceRects[i];
+									cvImageCtx.strokeRect(rect.x, rect.y, rect.width , rect.height);
+								}
+								updateCVFPS();
+								videoFrame.release();
+
+
+								break;
+
+							case "cvStart":
+								// request the next one when the old one finishes
+								this.requestVideoFrame();
+								cvStartTime = ev.data.time;
+								if (cvEndTime > 0) {
+									cvIdleTime = cvStartTime - cvEndTime;
+								}
+								break
+								
+							case "cvAfterMat":
+								cvAfterMatTime = ev.data.time;
+								cvMatTime = cvAfterMatTime - cvStartTime
+								break;
+
+							case "cvAfterResize":
+								cvAfterResizeTime = ev.data.time;
+								cvResizeTime = cvAfterResizeTime - cvAfterMatTime
+								break;
+
+							case "cvReady":
+								console.log('OpenCV.js is ready');
+								openCVready = true				
+								break;
+
+							case "cvStatus":
+								cvStatusTxt = ev.data.msg;
+								break;
+						}
+					}
+
+					this.worker.addEventListener('error', (e) => { 
+						console.log("worker error:" + e) 
+					})
+
+					this.setVideoWorker(this.worker);
+					// this.setVideoWorker(ev => { 
+					// 	var videoFrame = ev.detail
+					// 	if (openCVready) {
+					// 		try {
+					// 			this.handleVideoFrame(ev)
+					// 		} catch(e) {
+					// 			console.error('CV worker error', e)
+					// 		}
+					// 		updateCVFPS();
+					// 	}
+					// 	// pass the buffers back or they will be garbage collected
+					// 	videoFrame.release();
+					// 	this.requestVideoFrame();
+					// })
+				}
+
+				adjustRenderCanvasSize (rotation, width, height) {
+					var cameraAspect;
+					console.log("adjustRenderCanvasSize: " + rotation + " degrees, " + width + " by " + height)
+					tempVideoCanvas.width = width;
+					tempVideoCanvas.height = height;
+
+					if(rotation == 90 ||  rotation == -90) {
+						cameraAspect = height / width;
+						cvImageDiv.width = height
+						cvImageDiv.height = width		
+					} else {
+						cameraAspect = width / height;
+						cvImageDiv.width = width
+						cvImageDiv.height = height		
+					}
+
+					// reposition to DIV
+					var windowWidth = this.session.baseLayer.framebufferWidth;
+					var windowHeight = this.session.baseLayer.framebufferHeight;
+					var windowAspect = windowWidth / windowHeight;
+
+					var translateX = 0;
+					var translateY = 0;
+					if (cameraAspect > windowAspect) {
+						windowWidth = windowHeight * cameraAspect;
+						translateX = -(windowWidth - this.session.baseLayer.framebufferWidth)/2;
+					} else {
+						windowHeight = windowWidth / cameraAspect; 
+						translateY = -(windowHeight - this.session.baseLayer.framebufferHeight)/2;
+					}
+
+					cvImageDiv.style.width = windowWidth.toFixed(2) + 'px'
+					cvImageDiv.style.height = windowHeight.toFixed(2) + 'px'		
+					cvImageDiv.style.transform = "translate(" + translateX.toFixed(2) + "px, "+ translateY.toFixed(2) + "px)"
+				}
+
+				// Called during construction
+				initializeScene(){
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0, 0)
+					this.floorGroup.add(box)
+
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				updateScene(frame){
+					this.lightEstimate = frame.lightEstimate || 0;
+					stats.update()
+
+					var txt = "<center>"
+					txt += "ARKit Light Estimate: " + this.lightEstimate.toFixed(2);
+					txt += "<br>" ;
+					if (cvStatusTxt.length > 0) {
+						txt += "OpenCV: " + cvStatusTxt + "<br>"
+					} else {
+						txt += "<br>"
+					}
+					if (openCVready) {
+						txt += "Looking for faces: "
+						if (this.faceRects.length > 0) {
+							txt +=  "found " + this.faceRects.length.toString() + " faces and/or eyes"
+						} else {
+							txt += "NO FACE"
+						}
+
+						txt += "<br>timing (idle / createMat / resize / detect:<br> " 
+						txt += cvIdleTime.toFixed(2) 
+						txt += " " + (cvMatTime).toFixed(2)
+						txt += " " + (cvResizeTime).toFixed(2)
+						txt += " " + (cvFaceTime).toFixed(2) 
+					} else {
+						txt += "(Initializing OpenCV)"
+					}
+
+					txt += "</center>"
+					this.messageText = txt;
+
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
+
+					var viewport = frame.views[0].getViewport(this.session.baseLayer);
+					if (viewport.width != viewWidth || viewport.height != viewHeight) {
+						viewHeight = viewport.height;
+						viewWidth = viewport.width;
+
+						console.log("noticed view size is different than saved view size, trigger adjust canvas size")
+						this.triggerResize = true;
+					}
+				}
+
+				showVideoFrame(videoFrame) {
+					var camera = videoFrame.camera
+					var buffer = videoFrame.buffer(0)
+
+					// this buffer is created in the worker, and if the worker
+					// doesn't access the frame, it won't be created.  So don't
+					// display the buffer if there is nothing to display yet!
+					if (!(buffer._buffer instanceof ArrayBuffer)) {
+						return;
+					}
+
+					if (!cvImageBuff || cvImageBuff.length != buffer._buffer.length) {
+						cvImageBuff = new Uint8ClampedArray(buffer._buffer);
+					}
+					var data = cvImageBuff
+
+					switch (videoFrame.pixelFormat) {
+						case XRVideoFrame.IMAGEFORMAT_YUV420P:
+							var len  = buffer.buffer.length
+							var rowExtra = buffer.size.bytesPerRow - buffer.size.bytesPerPixel * buffer.size.width;
+
+							var newData = new Uint8ClampedArray(len*4)
+							var j=0;
+							var i=0;
+							for (var r = 0; r < buffer.size.height; r++ ) {
+								for (var c = 0; c < buffer.size.width; c++) {
+									newData[j++] = data[i];
+									newData[j++] = data[i];
+									newData[j++] = data[i];
+									newData[j++] = 255;
+									i++;
+								}
+								i += rowExtra;
+							}
+							data = newData;
+							break;
+					}
+
+					var imgData = new ImageData(data, buffer.size.width, buffer.size.height);
+					tempVideoCanvasCtx.putImageData(imgData,0,0);
+					
+					var width = buffer.size.width
+					var height = buffer.size.height
+
+					cvImageCtx.clearRect(0, 0, width, height);
+
+					if (camera.cameraOrientation == 90 || camera.cameraOrientation == -90) {
+						cvImageCtx.translate(height/2, width/2); 
+					} else {
+						cvImageCtx.translate(width/2, height/2); 
+					}
+
+					// rotate by negative, since the cameraOrientation is the orientation of the
+					// camera relative to view and we want to undo that
+					cvImageCtx.rotate(-camera.cameraOrientation * Math.PI/180); 
+
+					cvImageCtx.drawImage(tempVideoCanvas, -width/2, -height/2);
+					cvImageCtx.resetTransform()
+				}
+			
+			// function imshow(canvasSource, mat) {
+				// var canvas=null;
+				// if(typeof canvasSource==="string") {
+				// 	canvas=document.getElementById(canvasSource)
+				// } else {
+				// 	canvas=canvasSource
+				// }
+				// if(!(canvas instanceof HTMLCanvasElement)) {
+				// 	throw new Error("Please input the valid canvas element or id.");
+				// 	return
+				// }
+				// if(!(mat instanceof cv.Mat)) {
+				// 	throw new Error("Please input the valid cv.Mat instance.");
+				// 	return
+				// }
+				// var img=new cv.Mat;
+				// var depth=mat.type()%8;
+				// var scale=depth<=cv.CV_8S?1:depth<=cv.CV_32S?1/256:255;
+				// var shift=depth===cv.CV_8S||depth===cv.CV_16S?128:0;
+				// mat.convertTo(img,cv.CV_8U,scale,shift);
+				// switch(img.type()) {
+				// 	case cv.CV_8UC1:
+				// 		cv.cvtColor(img,img,cv.COLOR_GRAY2RGBA);
+				// 		break;
+				// 	case cv.CV_8UC3:
+				// 		cv.cvtColor(img,img,cv.COLOR_RGB2RGBA);
+				// 		break;
+				// 	case cv.CV_8UC4:
+				// 		break;
+				// 	default:
+				// 		throw new Error("Bad number of channels (Source image must have 1, 3 or 4 channels)");
+				// 		return
+				// }
+				// var imgData=new ImageData(new Uint8ClampedArray(img.data),img.cols,img.rows);
+				// var ctx=canvas.getContext("2d");
+				// ctx.clearRect(0,0,canvas.width,canvas.height);
+				// canvas.width=imgData.width;
+				// canvas.height=imgData.height;
+				// ctx.putImageData(imgData,0,0);
+				// img.delete()
+			// }
+
+			}
+			function opencvIsReady() {
+				console.log('OpenCV.js is ready');
+				openCVready = true				
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>
