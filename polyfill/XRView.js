@@ -17,6 +17,11 @@ export default class XRView {
 		MatrixMath.mat4_perspectiveFromFieldOfView(this._projectionMatrix, this._fov, this._depthNear, this._depthFar)
 	}
 
+	set fov ( value ) {
+		this._fov = value
+		MatrixMath.mat4_perspectiveFromFieldOfView(this._projectionMatrix, this._fov, this._depthNear, this._depthFar)
+	}
+
 	get eye(){ return this._eye }
 
 	get projectionMatrix(){ return this._projectionMatrix }

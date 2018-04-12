@@ -27,7 +27,8 @@ export default class XRDisplay extends EventHandlerBase {
 		this._eyeLevelPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
 		this._trackerPoseModelMatrix = MatrixMath.mat4_generateIdentity()
 
-		var fov = 50/2;
+		this._fovy = 70;
+		var fov = this._fovy/2;
 		this._fov = new XRFieldOfView(fov, fov, fov, fov)
 		this._depthNear = 0.1
 		this._depthFar = 1000

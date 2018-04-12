@@ -1,6 +1,7 @@
 import XRDisplay from '../XRDisplay.js'
 import XRView from '../XRView.js'
 import XRSession from '../XRSession.js'
+import XRFieldOfView from '../XRFieldOfView.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
 import Quaternion from '../fill/Quaternion.js'
@@ -78,6 +79,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
 				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, this._updateFromDeviceOrientationTracker.bind(this))
 				this._reality.addEventListener(Reality.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
+				this._reality.addEventListener(Reality.WINDOW_RESIZE_EVENT, this._handleWindowResize.bind(this))
 			}
 		}
 		this.running = true
@@ -89,6 +91,29 @@ export default class FlatDisplay extends XRDisplay {
 		if(this.running === false) return
 		this.running = false
 		this._reality._stop()
+	}
+
+	_fixFov (width, height, focalLength) {
+		if (!this.baseLayer) {
+			return;
+		}
+		var ratio = width / this.baseLayer._context.canvas.clientWidth
+		focalLength = focalLength / ratio
+
+		var x = 0.5 * this.baseLayer._context.canvas.clientWidth / focalLength
+		var fovx = (180/Math.PI) * 2 * Math.atan(x)
+		var y = 0.5 * this.baseLayer._context.canvas.clientHeight / focalLength
+		var fovy = (180/Math.PI) * 2 * Math.atan(y)
+
+		// var x = (Math.tan(0.5 * fov) / this.baseLayer.framebufferHeight) * this.baseLayer.framebufferWidth
+		// var fovx = (Math.atan(x) * 2) / (Math.PI/180);
+		this._fov = new XRFieldOfView(fovy/2, fovy/2, fovx/2, fovx/2)
+
+		this._views[0].fov = this._fov
+	}
+
+	_handleWindowResize(ev){
+		this._fixFov(ev.detail.width, ev.detail.height, ev.detail.focalLength)
 	}
 
 	/*
@@ -109,6 +134,7 @@ export default class FlatDisplay extends XRDisplay {
 				baseLayer.framebufferHeight = baseLayer._context.canvas.clientHeight;
 			}, false)	
 		}
+		//this._fixFov(baseLayer.framebufferWidth, baseLayer.framebufferHeight, this._reality._focalLength)
 
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
 	}

@@ -26,6 +26,13 @@ export default class CameraReality extends Reality {
 		this._initialized = false
 		this._running = false
 
+		// camera fovy: start with 70 degrees on the long axis of at 320x240
+		this._cameraFov = 70 * Math.PI/180
+		this._focalLength = 160 / Math.tan(this._cameraFov / 2)
+		this._cameraIntrinsics = [this._focalLength, 0 , 0,
+								  0, this._focalLength,  0,
+								  160, 120, 1 ]
+
 		// These are used if we have access to ARKit
 		this._arKitWrapper = null
 
@@ -57,7 +64,7 @@ export default class CameraReality extends Reality {
 					if(display.capabilities.hasPassThroughCamera){ // This is the ARCore extension to WebVR 1.1
 						this._vrDisplay = display
 						this._vrFrameData = new VRFrameData()
-						if (!window.WebARonARKitSetData) {							
+						if (!window.WebARonARKitSetData) {
 							this._arCoreCanvas = document.createElement('canvas')
 							this._xr._realityEls.appendChild(this._arCoreCanvas)
 							this._arCoreCanvas.width = window.innerWidth
@@ -79,26 +86,68 @@ export default class CameraReality extends Reality {
 				this._arCoreCanvas.height = window.innerHeight
 			}
 			if (this._videoEl) {
-				this._adjustVideoSize();
+				setTimeout(() => {
+					this._adjustVideoSize();
+				}, 10)
 			}
 		}, false)
 	}
 
-	_adjustVideoSize () {
-		var windowWidth = this._xr._realityEls.clientWidth;
-		var windowHeight = this._xr._realityEls.clientHeight;
-		var windowAspect = windowWidth / windowHeight;
+	_setFovy (fovy) {
+		this._cameraFov = fovy * Math.PI/180
+		if (!this._videoEl) {
+			this._focalLength = 0
+			return 
+		}
 
+		if (this._videoRenderWidth > this._videoRenderHeight) {
+			this._focalLength = (this._videoRenderWidth/2) / Math.tan(this._cameraFov / 2)
+		} else {
+			this._focalLength = (this._videoRenderHeight/2) / Math.tan(this._cameraFov / 2)
+		}			
+		this._cameraIntrinsics = [this._focalLength, 0 , 0,
+								  0, this._focalLength,  0,
+								  (this._videoRenderWidth/2), (this._videoRenderHeight/2), 1 ]
+	}
+
+	_adjustVideoSize () {
+		
 		var canvasWidth  = this._videoRenderWidth;
 		var canvasHeight = this._videoRenderHeight;
 		var cameraAspect = canvasWidth / canvasHeight;
 
+		var width = this._videoEl.videoWidth;
+		var height = this._videoEl.videoHeight;
+		var videoSourceAspect = width / height;
+		if (videoSourceAspect != cameraAspect) {
+			// let's pick a size such that the video is below 512 in size in both dimensions
+			while (width > 512 || height > 512) {
+				width = width / 2
+				height = height / 2
+			}
+
+			canvasWidth = this._videoRenderWidth = width;
+			canvasHeight = this._videoRenderHeight = height;				
+			var cameraAspect = canvasWidth / canvasHeight;
+
+			this._videoFrameCanvas.width = width;
+			this._videoFrameCanvas.height = height;
+		}
+
+		this._setFovy(this._cameraFov / (Math.PI/180))
+
+		var windowWidth = this._xr._realityEls.clientWidth;
+		var windowHeight = this._xr._realityEls.clientHeight;
+		var windowAspect = windowWidth / windowHeight;
+
 		var translateX = 0;
 		var translateY = 0;
 		if (cameraAspect > windowAspect) {
+			canvasWidth = canvasHeight  * windowAspect;
 			windowWidth = windowHeight * cameraAspect;
 			translateX = -(windowWidth - this._xr._realityEls.clientWidth)/2;
 		} else {
+			canvasHeight = canvasWidth / windowAspect;
 			windowHeight = windowWidth / cameraAspect; 
 			translateY = -(windowHeight - this._xr._realityEls.clientHeight)/2;
 		}
@@ -106,6 +155,20 @@ export default class CameraReality extends Reality {
 		this._videoEl.style.width = windowWidth.toFixed(2) + 'px'
 		this._videoEl.style.height = windowHeight.toFixed(2) + 'px'		
 		this._videoEl.style.transform = "translate(" + translateX.toFixed(2) + "px, "+ translateY.toFixed(2) + "px)"
+
+		this.dispatchEvent(
+			new CustomEvent(
+				Reality.WINDOW_RESIZE_EVENT,
+				{
+					source: this,
+					detail: {
+						width: canvasWidth,
+						height: canvasHeight,
+						focalLength: this._focalLength
+					}
+				}
+			)
+		)
 	}
 	
 	/*
@@ -158,9 +221,10 @@ export default class CameraReality extends Reality {
 			var camera = {
 				arCamera: false,
 				cameraOrientation: 0,
-				cameraIntrinsics: [(this._videoEl.videoWidth/2) / Math.tan(view._fov.leftDegrees * Math.PI/180), 0, (this._videoEl.videoWidth/2), 
-									0, (this._videoEl.videoHeight/2) / Math.tan(view._fov.upDegrees * Math.PI/180), (this._videoEl.videoHeight/2), 
-									0, 0, 1],
+				cameraIntrinsics: this._cameraIntrinsics.slice(0),
+				// cameraIntrinsics: [(this._videoEl.videoWidth/2) / Math.tan(view._fov.leftDegrees * Math.PI/180), 0, (this._videoEl.videoWidth/2), 
+				// 					0, (this._videoEl.videoHeight/2) / Math.tan(view._fov.upDegrees * Math.PI/180), (this._videoEl.videoHeight/2), 
+				// 					0, 0, 1],
 				cameraImageResolution: {
 						width: this._videoEl.videoWidth,
 						height: this._videoEl.videoHeight
