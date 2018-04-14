@@ -204,7 +204,7 @@ class XRExampleBase {
 			frame.findFloorAnchor('first-floor-anchor').then(anchorOffset => {
 				if(anchorOffset === null){
 					console.log('could not find the floor anchor')
-					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL)
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
 					const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0])
 					anchorOffset = new XRAnchorOffset(anchorUID)
 				}
@@ -228,12 +228,13 @@ class XRExampleBase {
 		this.renderer.clear()
 
 		this.camera.matrixAutoUpdate = false
-		this.camera.matrix.fromArray(headPose.poseModelMatrix)
-		this.camera.updateMatrixWorld()
+		// this.camera.matrix.fromArray(headPose.poseModelMatrix)
+		// this.camera.updateMatrixWorld()
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
 			// Each XRView has its own projection matrix, so set the camera to use that
-			this.camera.matrixWorldInverse.fromArray(view.viewMatrix)
+			this.camera.matrix.fromArray(view.viewMatrix)
+			this.camera.updateMatrixWorld()
 			this.camera.projectionMatrix.fromArray(view.projectionMatrix)
 
 			// Set up the renderer to the XRView's viewport and then render

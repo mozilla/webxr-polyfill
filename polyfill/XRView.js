@@ -13,7 +13,7 @@ export default class XRView {
 		this._eye = eye
 		this._viewport = new XRViewport(0, 0, 1, 1)
 		this._projectionMatrix = new Float32Array(16)
-		this._viewMatrix = new Float32Array(16)
+		this._viewMatrix = new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1])
 		MatrixMath.mat4_perspectiveFromFieldOfView(this._projectionMatrix, this._fov, this._depthNear, this._depthFar)
 	}
 

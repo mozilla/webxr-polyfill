@@ -155,6 +155,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._devicePosition.set(...this._vrFrameData.pose.position)
 		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+		this._views[0].setViewMatrix(this._deviceWorldMatrix)
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose._position = this._devicePosition.toArray()
 	}
@@ -166,6 +167,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
+		this._views[0].setViewMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose._position = this._devicePosition.toArray()
 	}
 
@@ -173,6 +175,7 @@ export default class FlatDisplay extends XRDisplay {
 		const cameraTransformMatrix = this._arKitWrapper.getData('camera_transform')
 		if (cameraTransformMatrix) {
 			this._headPose._setPoseModelMatrix(cameraTransformMatrix)
+			this._views[0].setViewMatrix(cameraTransformMatrix)
 			this._headPose._poseModelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 			this._eyeLevelPose._position = this._headPose._position
 		} else {
