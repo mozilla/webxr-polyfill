@@ -107,8 +107,14 @@
 					this.textBox.innerText = '0.0'
 
 					this.markers = [];
-
+					this.camPose = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+					this.markerAnchors = []
+					this.markerBoxes = []
 					this.rotation = -1;
+					this.tempMat = new THREE.Matrix4();
+					this.tempMat2 = new THREE.Matrix4();
+					this.tempQuat = new THREE.Quaternion();
+					this.tempVec = new THREE.Vector3();
 
 					this.lightEstimate = 0;
 					this.el.appendChild(this.textBox)
@@ -132,6 +138,8 @@
 								var videoFrame = XRVideoFrame.createFromMessage(ev)
 
 								this.markers = ev.data.markers;
+								this.session.getVideoFramePose(videoFrame, this.camPose);
+
 								cvEndTime = ev.data.time;
 								cvMarkerTime = cvEndTime - cvAfterDetectTime;
 
@@ -198,17 +206,22 @@
 					box.position.set(0, 0, 0)
 					this.floorGroup.add(box)
 
-					// Add a box at the scene origin
-					this.markerbox = new THREE.Object3D();
-					this.markerboxGeom = new THREE.Mesh(
-						new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
-						new THREE.MeshPhongMaterial({ color: '#2D5FFD' })
-					)
-					this.markerboxGeom.position.set(0, 0, 0.053/2);
-					this.markerbox.add(this.markerboxGeom)
-					this.markerbox.position.set(0, 0, -1)
-					this.camera.add(this.markerbox)
-					this.markerbox.matrixAutoUpdate = false;
+					// // Add a box at the scene origin
+					// this.markerbox = new THREE.Object3D();
+					// this.markerboxGeom = new THREE.Mesh(
+					// 	new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
+					// 	new THREE.MeshPhongMaterial({ color: '#2D5FFD' })
+					// )
+					// this.markerboxGeom.position.set(0, 0, 0.053/2);
+					// this.markerbox.add(this.markerboxGeom)
+					// this.markerbox.position.set(0, 0, -1)
+					// this.markerbox.matrixAutoUpdate = false;
+
+					// this.camerabox = new THREE.Object3D();
+					// this.camerabox.matrixAutoUpdate = false;
+
+					// this.scene.add(this.camerabox)
+					// this.camerabox.add(this.markerbox)
 					
 					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
 					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
@@ -217,6 +230,9 @@
 				}
 
 				updateScene(frame){
+					const headPose = frame.getDisplayPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+					const h = headPose.poseModelMatrix
+
 					this.lightEstimate = frame.lightEstimate || 0;
 					stats.update()
 					var now = ( performance || Date ).now()
@@ -233,12 +249,66 @@
 						if (this.markers.length > 0) {
 							txt +=  "found " + this.markers.length.toString() + " markers"
 							var m = this.markers[0].pose;
-							txt += "<br>z = " + m[2].toFixed(2) + " " + m[6].toFixed(2) + " " + m[10].toFixed(2)
+							var c = this.camPose
+							txt += "<br>c = " + c[12].toFixed(2) + " " + c[13].toFixed(2) + " " + c[14].toFixed(2)
+							txt += "<br>h = " + h[12].toFixed(2) + " " + h[13].toFixed(2) + " " + h[14].toFixed(2)
 							txt += "<br>p = " + m[12].toFixed(2) + " " + m[13].toFixed(2) + " " + m[14].toFixed(2)
-							 
-							//this.markerbox.position.set(m[12], m[13], m[14])
-							this.markerbox.matrix.fromArray(m)
-							this.markerbox.matrixWorldNeedsUpdate = true;
+
+							if (!(this.markers[0].id in this.markerAnchors)) {
+								var markerId = this.markers[0].id
+
+								// Add a box 
+								var markerbox = new THREE.Object3D();
+								var markerboxGeom = new THREE.Mesh(
+									new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
+									new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+								)
+								markerboxGeom.position.set(0, 0, 0.053/2);
+								markerbox.add(markerboxGeom)
+								this.markerBoxes[markerId] = markerbox
+
+								const coordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+
+								markerbox.matrix.fromArray(c)
+								this.tempMat.fromArray(m)
+								markerbox.matrix.multiply(this.tempMat)
+								markerbox.matrixWorldNeedsUpdate = true
+
+								this.tempQuat.setFromRotationMatrix(markerbox.matrix)
+
+								const anchorUID = frame.addAnchor(coordinates, 
+											[markerbox.matrix.elements[12], markerbox.matrix.elements[13], markerbox.matrix.elements[14]],
+											[this.tempQuat.x, this.tempQuat.y, this.tempQuat.z, this.tempQuat.w])
+								var anchorOffset = new XRAnchorOffset(anchorUID)
+								this.markerAnchors[markerId] = anchorOffset;
+
+								this.addAnchoredNode(anchorOffset, markerbox)
+							} else {
+								this.tempMat2.fromArray(c)
+								this.tempMat.fromArray(m)
+								this.tempMat2.multiply(this.tempMat)
+
+								var markerId = this.markers[0].id
+								var markerBox = this.markerBoxes[markerId]
+								var anchorOffset = this.markerAnchors[markerId]  
+
+								anchorOffset.setIdentityOffset()			
+								var anchor = frame.getAnchor(anchorOffset.anchorUID)					
+								this.tempMat.fromArray(anchorOffset.getOffsetTransform(anchor.coordinateSystem))
+								this.tempMat.getInverse(this.tempMat)
+								this.tempMat.premultiply(this.tempMat2)
+
+								anchorOffset.poseMatrix = this.tempMat.elements
+							}
+							// this.markerbox.matrix.fromArray(c)
+							// this.tempMat.fromArray(m)
+							// this.markerbox.matrix.multiply(this.tempMat)
+							// this.markerbox.matrixWorldNeedsUpdate = true;
+
+							// this.markerbox.matrix.fromArray(m)
+							// this.markerbox.matrixWorldNeedsUpdate = true;
+							// this.camerabox.matrix.fromArray(c)
+							// this.camerabox.matrixWorldNeedsUpdate = true;
 						} else {
 							txt += "NO MARKERS"
 						}
