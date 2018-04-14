@@ -157,11 +157,6 @@ export default class XRVideoFrame {
         }
     }
 
-    getVideoPoseRelativeToCamera(rotation, translation)
-    {
-
-    }
-    
     postMessageToWorker (worker, options) {
         var msg = Object.assign({}, options || {})
         msg.buffers = this._buffers
