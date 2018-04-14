@@ -596,7 +596,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		})
 	}
 
-	static removeAnchor(uid) {
+	removeAnchor(uid) {
 		window.webkit.messageHandlers.removeAnchors.postMessage([uid])
 	}
 
@@ -962,18 +962,18 @@ export default class ARKitWrapper extends EventHandlerBase {
 		// wouldn't be rotating the content / UI)
 		detail.camera.arCamera = true;
 		var orientation = detail.camera.interfaceOrientation;
-		mat4.copy(this._mTemp, detail.camera.viewMatrix)
+		// mat4.copy(this._mTemp, detail.camera.viewMatrix)
         switch (orientation) {
 			case 1: 
 				// rotate by -90;
 				detail.camera.cameraOrientation = -90;
-				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90neg)
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90neg)
 				break;
 
 			case 2: 
 				// rotate by 90;
 				detail.camera.cameraOrientation = 90;
-				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90)
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90)
 				break;
 			case 3: 
 				detail.camera.cameraOrientation = 0;
@@ -982,7 +982,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			case 4: 
 				// rotate by 180;
 				detail.camera.cameraOrientation = 180;
-				mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m180)
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m180)
 				break;
 		}
 		// convert buffers in place
