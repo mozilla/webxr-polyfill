@@ -273,7 +273,7 @@ self.addEventListener('message',  function(event){
                 rvec.data64F.set([rvecs.doublePtr(0, i)[0], rvecs.doublePtr(0, i)[1], rvecs.doublePtr(0, i)[2]]);
 
                 // Convert rotation vector into matrix
-                cv.Rodrigues(rvecs, rotMat);
+                cv.Rodrigues(rvec, rotMat);
                 var tm;
                 if (rotMat.depth() == 4) {
                   tm = Array.from(rotMat.data32F)

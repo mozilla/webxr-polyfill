@@ -254,51 +254,53 @@
 							txt += "<br>h = " + h[12].toFixed(2) + " " + h[13].toFixed(2) + " " + h[14].toFixed(2)
 							txt += "<br>p = " + m[12].toFixed(2) + " " + m[13].toFixed(2) + " " + m[14].toFixed(2)
 
-							if (!(this.markers[0].id in this.markerAnchors)) {
-								var markerId = this.markers[0].id
+							for (var i = 0; i < this.markers.length; i++ ) {
+								var markerId = this.markers[i].id
+								var pose = this.markers[i].pose;
 
-								// Add a box 
-								var markerbox = new THREE.Object3D();
-								var markerboxGeom = new THREE.Mesh(
-									new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
-									new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
-								)
-								markerboxGeom.position.set(0, 0, 0.053/2);
-								markerbox.add(markerboxGeom)
-								this.markerBoxes[markerId] = markerbox
+								if (!(markerId in this.markerAnchors)) {
+									// Add a box 
+									var markerbox = new THREE.Object3D();
+									var markerboxGeom = new THREE.Mesh(
+										new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
+										new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+									)
+									markerboxGeom.position.set(0, 0, 0.053/2);
+									markerbox.add(markerboxGeom)
+									this.markerBoxes[markerId] = markerbox
+									
+									const coordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
-								const coordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+									markerbox.matrix.fromArray(this.camPose)
+									this.tempMat.fromArray(pose)
+									markerbox.matrix.multiply(this.tempMat)
+									markerbox.matrixWorldNeedsUpdate = true
 
-								markerbox.matrix.fromArray(c)
-								this.tempMat.fromArray(m)
-								markerbox.matrix.multiply(this.tempMat)
-								markerbox.matrixWorldNeedsUpdate = true
+									this.tempQuat.setFromRotationMatrix(markerbox.matrix)
 
-								this.tempQuat.setFromRotationMatrix(markerbox.matrix)
+									const anchorUID = frame.addAnchor(coordinates, 
+												[markerbox.matrix.elements[12], markerbox.matrix.elements[13], markerbox.matrix.elements[14]],
+												[this.tempQuat.x, this.tempQuat.y, this.tempQuat.z, this.tempQuat.w])
+									var anchorOffset = new XRAnchorOffset(anchorUID)
+									this.markerAnchors[markerId] = anchorOffset;
 
-								const anchorUID = frame.addAnchor(coordinates, 
-											[markerbox.matrix.elements[12], markerbox.matrix.elements[13], markerbox.matrix.elements[14]],
-											[this.tempQuat.x, this.tempQuat.y, this.tempQuat.z, this.tempQuat.w])
-								var anchorOffset = new XRAnchorOffset(anchorUID)
-								this.markerAnchors[markerId] = anchorOffset;
+									this.addAnchoredNode(anchorOffset, markerbox)
+								} else {
+									this.tempMat2.fromArray(this.camPose)
+									this.tempMat.fromArray(pose)
+									this.tempMat2.multiply(this.tempMat)
 
-								this.addAnchoredNode(anchorOffset, markerbox)
-							} else {
-								this.tempMat2.fromArray(c)
-								this.tempMat.fromArray(m)
-								this.tempMat2.multiply(this.tempMat)
+									var markerBox = this.markerBoxes[markerId]
+									var anchorOffset = this.markerAnchors[markerId]  
 
-								var markerId = this.markers[0].id
-								var markerBox = this.markerBoxes[markerId]
-								var anchorOffset = this.markerAnchors[markerId]  
+									anchorOffset.setIdentityOffset()			
+									var anchor = frame.getAnchor(anchorOffset.anchorUID)					
+									this.tempMat.fromArray(anchorOffset.getOffsetTransform(anchor.coordinateSystem))
+									this.tempMat.getInverse(this.tempMat)
+									this.tempMat.premultiply(this.tempMat2)
 
-								anchorOffset.setIdentityOffset()			
-								var anchor = frame.getAnchor(anchorOffset.anchorUID)					
-								this.tempMat.fromArray(anchorOffset.getOffsetTransform(anchor.coordinateSystem))
-								this.tempMat.getInverse(this.tempMat)
-								this.tempMat.premultiply(this.tempMat2)
-
-								anchorOffset.poseMatrix = this.tempMat.elements
+									anchorOffset.poseMatrix = this.tempMat.elements
+								}
 							}
 							// this.markerbox.matrix.fromArray(c)
 							// this.tempMat.fromArray(m)
