@@ -397,6 +397,7 @@ export default class CameraReality extends Reality {
 			)
 		}
 		// ARCore as implemented in the browser does not offer anchors except on a surface, so we just use untracked anchors
+		// We also use untracked anchors for in-browser display, with WebRTC
 		this._anchors.set(anchor.uid, anchor)
 		return anchor.uid
 	}
@@ -468,7 +469,11 @@ export default class CameraReality extends Reality {
 	}
 
 	_removeAnchor(uid){
-		ARKitWrapper.removeAnchor(uid)
+		if(this._arKitWrapper) {
+			this._arKitWrapper.removeAnchor(uid)
+		} else if (this._getAnchor(uid)) {
+			this._anchors.delete(uid)
+		}
 	}
 
 	_pickARKitHit(data){
