@@ -146,6 +146,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 		window['onComputerVisionData'] = (detail) => {
 			this._onComputerVisionData(detail);
 		}
+
+		window['setNativeTime'] = (detail) => {
+			console.log(detail.nativeTime)
+		}
 			
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
