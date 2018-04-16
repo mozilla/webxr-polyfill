@@ -962,6 +962,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		// wouldn't be rotating the content / UI)
 		detail.camera.arCamera = true;
 		var orientation = detail.camera.interfaceOrientation;
+		detail.camera.viewMatrix = detail.camera.inverse_viewMatrix;
 		// mat4.copy(this._mTemp, detail.camera.viewMatrix)
         switch (orientation) {
 			case 1: 

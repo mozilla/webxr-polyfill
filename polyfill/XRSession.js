@@ -16,6 +16,8 @@ export default class XRSession extends EventHandlerBase {
 		this._baseLayer = null
 		this._stageBounds = null
 
+		this._skip = false;
+
 		this._frameAnchors = []
 		this._tempMatrix = MatrixMath.mat4_generateIdentity()		
 		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()		
@@ -53,12 +55,16 @@ export default class XRSession extends EventHandlerBase {
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
 		}
-		var skip = false;
+		return this._handleRequestFrame(callback)
+	}
+
+    _handleRequestFrame(callback) {
 		return this._display._requestAnimationFrame(() => {
-			if (skip) {
-				skip = false;
-				return;
+			if (this._skip) {
+				this._skip = false;
+				return this._handleRequestFrame(callback)
 			}
+			//this._skip = true;  // try skipping every second raf
 			const frame = this._createPresentationFrame()
 			this._updateCameraAnchor(frame)
 
@@ -120,9 +126,9 @@ export default class XRSession extends EventHandlerBase {
 		MatrixMath.mat4_invert(this._tempMatrix, anchorCoords._poseModelMatrix)
 
 		// get camera to world by inverting world to camera
-		MatrixMath.mat4_invert(this._tempMatrix2, matrix)
-
-		MatrixMath.mat4_multiply(camera.viewMatrix, this._tempMatrix, this._tempMatrix2)
+		// MatrixMath.mat4_invert(this._tempMatrix2, matrix)
+		// MatrixMath.mat4_multiply(camera.viewMatrix, this._tempMatrix, this._tempMatrix2)
+		MatrixMath.mat4_multiply(camera.viewMatrix, this._tempMatrix, matrix)
 	}
 
 	setVideoFrameHandler(callback) {
