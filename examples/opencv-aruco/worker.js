@@ -189,8 +189,8 @@ self.addEventListener('message',  function(event){
             parameter.minMarkerDistanceRate = 0.05;
             parameter.cornerRefinementMethod = cv.CORNER_REFINE_SUBPIX; // cv.CORNER_REFINE_NONE;
             parameter.cornerRefinementWinSize = 5;
-            parameter.cornerRefinementMaxIterations = 30;
-            parameter.cornerRefinementMinAccuracy = 0.1;
+            parameter.cornerRefinementMaxIterations = 50;
+            parameter.cornerRefinementMinAccuracy = 0.01;
             parameter.markerBorderBits = 1;
             parameter.perspectiveRemovePixelPerCell = 4;
             //parameter.perspectiveRemovePixelPerCell = 2;

@@ -215,7 +215,9 @@ export default class CameraReality extends Reality {
 			// set from frame
 			var view = frame.views[0];
 
-			this._videoViewMatrix.set(view.viewMatrix);
+			//this._videoViewMatrix.set(view.viewMatrix);
+			MatrixMath.mat4_invert(this._videoViewMatrix, view.viewMatrix)
+			
 			this._videoProjectionMatrix.set(view.projectionMatrix)
 			
 			var camera = {
