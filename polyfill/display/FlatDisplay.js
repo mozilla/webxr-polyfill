@@ -275,7 +275,14 @@ export default class FlatDisplay extends XRDisplay {
 	
 	_createSession(parameters=null){
 		this._start(parameters)
-		return super._createSession(parameters)
+
+		if(ARKitWrapper.HasARKit()){ // Use ARKit
+			return this._arKitWrapper.waitForInit().then(() => {
+				return super._createSession(parameters)
+			})
+		} else {
+			return super._createSession(parameters)
+		}
 	}
 
 	_supportedCreationParameters(parameters){
