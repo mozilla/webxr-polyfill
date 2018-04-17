@@ -63,19 +63,23 @@
 			// need to figure out how to make loadScripts() work in BlobURLs
 		</script>
 		<script>
-			// RAINBOW Candy of a Certain Name colors
+			// We'll try to guess if the color matches one of the colors of a certain
+			// RAINBOW Candy
 			var colors = [
 				{ cr:  250, cg: 25, cb: 25, name: "RED" },
 				{ cr:  25, cg: 250, cb: 25, name: "GREEN" },
 				{ cr:  250, cg: 250, cb: 50, name: "YELLOW" }
 			] 
+
+			// do some time stamping, just to show the performance numbers
 			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
 			
 			var stats = new Stats();
+
+			// create a new pane for the stats panel to show the fps of the vision processing
 			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
 			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
 			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-
 			var updateCVFPS = function () {
 				frames ++;
 				var time = ( performance || Date ).now();
@@ -86,34 +90,30 @@
 				}
 				beginTime = time;
 			}
-
-			// flag to set true if you want to construct a texture from the UV image 
-			var makeTexUV = false;
-
 			document.body.appendChild( stats.dom );
+
+			// flag to set true if you want to construct a texture from the UV image and show it
+			var makeTexUV = false;
 
 			class ARAnchorExample extends XRExampleBase {
 				constructor(domElement){
 					super(domElement, false, true, true)
 
-
 					this.textBox = document.createElement('span')
 					this.textBox.setAttribute('class', 'text-box')
 					this.textBox.innerText = '0.0'
+					this.el.appendChild(this.textBox)
+
+					// to store the returned values
 					this.intensity = 0;
 					this.cr = 0;
 					this.cg = 0;
 					this.cb = 0;
+
+					// the light estimate from WebXR, if there is one
 					this.lightEstimate = 0;
-					this.el.appendChild(this.textBox)
-				}
 
-				newSession() {
-					// var blob = new Blob([
-					// 	document.querySelector('#worker1').textContent
-					// ], { type: "text/javascript" })
-					// this.worker = new Worker(window.URL.createObjectURL(blob));
-
+					// start a background worker
 					this.worker = new Worker("worker.js")
 
 					var self = this;
@@ -129,11 +129,12 @@
 					this.worker.addEventListener('error', (e) => { 
 						console.log("worker error:" + e) 
 					})
+				}
 
+				// called when there is a new session
+				newSession() {
+					// this can only be done inside the session
 					this.setVideoWorker(this.worker);
-
-					// use this instead to not use worker.
-					//this.setVideoWorker(ev => { this.handleVideoFrame(ev) })
 				}
 
 				// Called during construction
@@ -160,7 +161,8 @@
 						this.camera.add( plane );
 					}
 
-					// Add a box at the scene origin
+					// Add a box at the scene origin, so that we can see if things are working when
+					// we look down
 					let box = new THREE.Mesh(
 						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
 						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
@@ -174,16 +176,10 @@
 					this.scene.add(directionalLight)
 				}
 
+				// called each frame
 				updateScene(frame){
 					this.lightEstimate = frame.lightEstimate || 0;
-					stats.update()
-					if (this.messageText != this.textBox.innerHTML) {
-						this.textBox.innerHTML = this.messageText;
-					}
-				}
 
-						
-				handleVisionDone(videoFrame) {
 					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
 					+ "<br>Center RGB: " + this.cr.toFixed(0) + " / " + this.cg.toFixed(0) + " / " + this.cb.toFixed(0) + "<br><center>";
 					
@@ -203,7 +199,20 @@
 
 					this.messageText = txt;
 
-					// in the worker case, if we don't access the buffer in the worker, it won't be pulled back
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
+					stats.update()
+				}
+
+				handleVisionDone(videoFrame) {
+					// ask for the next frame (before we construct that debugging frame, if we're doing that)
+					this.requestVideoFrame();
+
+					// update CV fps
+					updateCVFPS();
+
+					// check to make sure the 2nd plane exists;  that will be UV
 					if (makeTexUV && videoFrame.buffer(1).buffer) {
 						var buffer = videoFrame.buffer(1);
 						var pixels = buffer.buffer;
@@ -211,7 +220,8 @@
 							this.texSize = pixels.length /2 * 3
 							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
 						}
-						
+
+						// convert it to a simple RGB image.  Super slow, but ok for debugging
 						var j = 0;
 						for ( var i = 0; i < this.texSize; i ++ ) {
 							this.texBuff[i] = pixels[j++];
@@ -222,62 +232,11 @@
 						}
 						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
 						this.uvTexture.needsUpdate = true;
-					}							
-					updateCVFPS();
-
+					}		
+					
+					// must do this to clean up the internal buffer caches, let system know we're done
 					videoFrame.release();
-					this.requestVideoFrame();
 				}
-
-				//////
-				////// NOT USED with worker above, but can switch to callback model using these
-				//////
-				averageIntensity(buffer) {
-					var w = buffer.size.width;
-					var h = buffer.size.height;
-					var pad = buffer.size.bytesPerRow - w;
-					var pixels = buffer.buffer;
-
-					var intensity = 0.0;
-					var p = 0;
-					for (var r = 0; r < h; r++) {
-						var v = 0;
-						for (var i = 0; i < w; i++) {
-							if (p < pixels.length) {
-								v += pixels[p++]
-							} else {
-								console.error("overflow pixel buffer")
-							}
-						}
-						intensity += v / w;
-						p += pad;
-					}
-					this.intensity = (intensity / h) / 255.0;
-				}
-
-				colorAtCenter(buffer) {
-					var w = buffer.size.width;
-					var h = buffer.size.height;
-					var pixels = buffer.buffer;
-
-					var cx = Math.floor(w / 2) * buffer.size.bytesPerPixel
-					var cy = Math.floor(h / 2)
-					var p = cy * buffer.size.bytesPerRow + cx;
-					this.cb = pixels[p++];
-					this.cr = pixels[p];
-				}
-
-				handleVideoFrame(ev) {
-					var videoFrame = ev.detail
-					switch (videoFrame.pixelFormat) {
-					case XRVideoFrame.IMAGEFORMAT_YUV420P:
-						this.averageIntensity(videoFrame.buffer(0))
-						this.colorAtCenter(videoFrame.buffer(1))
-					}
-
-					this.handleVisionDone(videoFrame);
-				}
-
 			}
 
 			window.addEventListener('DOMContentLoaded', () => {

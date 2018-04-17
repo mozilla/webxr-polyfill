@@ -54,11 +54,13 @@ importScripts('../../dist/webxr-worker.js')
 */
 
 
+// some globals to hold the -- silly -- values we compute
 var intensity = 0.0;
 var cr = -1;
 var cg = -1;
 var cb = -1;
 
+// a silly simply function to compute something based on 'all the pixels' in an RGBA image
 averageIntensityRGBA = function (buffer) {
     var w = buffer.size.width;
     var h = buffer.size.height;
@@ -79,6 +81,7 @@ averageIntensityRGBA = function (buffer) {
     intensity = (intensity / h) / 255.0;
 }
 
+// a silly simply function to compute something based on 'all the pixels' in a grayscale image
 averageIntensityLum = function (buffer) {
     var w = buffer.size.width;
     var h = buffer.size.height;
@@ -90,11 +93,7 @@ averageIntensityLum = function (buffer) {
     for (var r = 0; r < h; r++) {
         var v = 0;
         for (var i = 0; i < w; i++) {
-            if (p < pixels.length) {
-                v += pixels[p++]
-            } else {
-                console.error("overflow pixel buffer")
-            }
+            v += pixels[p++]
         }
         intensity += v / w;
         p += pad;
@@ -102,6 +101,7 @@ averageIntensityLum = function (buffer) {
     intensity = (intensity / h) / 255.0;
 }
 
+// sample a single color, just for variety
 colorAtCenterRGB = function(buffer0) {
     var w = buffer0.size.width;
     var h = buffer0.size.height;
@@ -115,6 +115,8 @@ colorAtCenterRGB = function(buffer0) {
     cb = pixels[p];
 }
 
+// Make an attempt to convert a UV color to RBG
+//
 // LUV == LuCbCr
 // 
 // Y = 0.299R + 0.587G + 0.114B
@@ -169,28 +171,39 @@ colorAtCenterLUV = function(buffer0, buffer1) {
     // cb=y+1.772*u;  
 }
 
+// The listener.  
+// 
+// We can ignore the message type field, since we are only receiving one message from
+// the main thread, a new video frame 
 self.addEventListener('message',  function(event){
     try {
+        // a utility function to receive the message.  Takes care of managing the 
+        // internal ArrayBuffers that are being passed around
         var videoFrame = XRVideoFrame.createFromMessage(event);
 
+        // The video frames will come in different formats on different platforms.  
+        // The call to videoFrame.buffer(i) retrieves the i-th plane for the frame;  
+        // (in the case of the WebXR Viewer, it also converts the base64 encoded message
+        // into an ArrayBuffer, which we don't do until the plane is used)  
         switch (videoFrame.pixelFormat) {
+        // the WebXR Viewer uses iOS native YCbCr, which is two buffers, one for Y and one for CbCr
         case XRVideoFrame.IMAGEFORMAT_YUV420P:
             this.averageIntensityLum(videoFrame.buffer(0))
             this.colorAtCenterLUV(videoFrame.buffer(0),videoFrame.buffer(1))
             break;
+        // WebRTC uses web-standard RGBA
         case XRVideoFrame.IMAGEFORMAT_RGBA32:
             this.averageIntensityRGBA(videoFrame.buffer(0))
             this.colorAtCenterRGB(videoFrame.buffer(0))
             break;
         }
+
+        // utility function to send the video frame and additional parameters back.
+        // Want to use this so we pass ArrayBuffers back and forth to avoid having to 
+        // reallocate them every frame.
         videoFrame.postReplyMessage({intensity: intensity, cr: cr, cg: cg, cb: cb})
         videoFrame.release();
     } catch(e) {
         console.error('page error', e)
     }
 });
-
-// setInterval( function(){
-//     console.log("Help me!")
-//     self.postMessage (Math.random() * 255.0);
-//}, 500);

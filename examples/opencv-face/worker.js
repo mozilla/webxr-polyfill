@@ -3,7 +3,8 @@ console.log("loaded webxr-worker.js")
 
 var openCVready = false;
 
-// need to load up the files for tracking the face and eyes
+// need to load up the files for tracking the face and eyes.  WASM module has hooks to pass in 
+// files to be loaded by opencv
 var Module = {
   preRun: [function() {
     console.log("CV preRun")
@@ -76,6 +77,7 @@ console.log("loaded opencv.js:" + cv);
 
 */
 
+// faces and eyes
 var face_cascade;
 var eye_cascade;
 
@@ -213,6 +215,10 @@ function createCVMat2(rotation, buffer, pixelFormat) {
             break;
     }
 
+    // face tracker only works if image is upright.
+    // on mobile, the camera is fixed, even though the display rotates.  So, we need
+    // to rotate the image so it's in the right orientation (upright, relative to how the 
+    // user sees it)
     switch(rotation) {
         case -90:
             cv.rotate(img_gray, rotatedImage, cv.ROTATE_90_CLOCKWISE);

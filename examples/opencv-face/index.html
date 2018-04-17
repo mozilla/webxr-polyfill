@@ -75,12 +75,13 @@
 		<script>
 			var cvStatusTxt = "";
 			// set up for collecting different stats
-			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;			
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;	
+			
+			// set up some stats, including a new pane for CV fps
 			var stats = new Stats();
 			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
 			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
 			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
-
 			// a method to update a new panel for displaying CV FPS
 			var updateCVFPS = function () {
 				frames ++;
@@ -92,6 +93,7 @@
 				}
 				beginTime = time;
 			}
+			document.body.appendChild( stats.dom );
 
 			// keep track of what we think the view size is so we can adjust the 
 			// overlay used to render the 2D detection results
@@ -122,7 +124,6 @@
 			var cvImageDiv = document.getElementById("video_canvas");
 			var cvImageCtx = cvImageDiv.getContext('2d');
 
-			document.body.appendChild( stats.dom );
 
 			class ARAnchorExample extends XRExampleBase {
 				constructor(domElement){
@@ -136,30 +137,34 @@
 					this.lightEstimate = 0;
 					this.el.appendChild(this.textBox)
 
+					// some temp variables
 					this.rotation = -1;
-					this.rotatedImage = null;
-					this.face_cascade = null;
-					this.eye_cascade = null;
-					
 					this.triggerResize = true;
 
+					// try to notice all resizes of the screen
 					window.addEventListener('resize', () => {
 						console.log("resize, trigger adjust canvas size")
 						this.triggerResize = true;
 					})
-				}
 
-				newSession() {					
+					// new worker
 					this.worker = new Worker ("worker.js")
 
 					this.worker.onmessage = (ev) => {
 						switch (ev.data.type) {
 							case "cvFrame":
+								// finished with a frame!
 								var videoFrame = XRVideoFrame.createFromMessage(ev)
+
+								// get the face rectangles
 								this.faceRects = ev.data.faceRects;
+
+								// timing
 								cvEndTime = ev.data.time;
 								cvFaceTime = cvEndTime - cvAfterResizeTime;
 
+								// see if the video frame sizes have changed, since
+								// we'll need to adjust the 2D overlay
 								var rotation = videoFrame.camera.cameraOrientation;
 								var buffer = videoFrame.buffer(0)
 
@@ -171,24 +176,32 @@
 									this.adjustRenderCanvasSize(rotation, width, height)
 								}
 
+								// are we showing the image (for debugging) or just the rectangles?
 								if (showCVImage) {
 									this.showVideoFrame(videoFrame)
 								} else {
 									cvImageCtx.clearRect(0, 0, cvImageDiv.width, cvImageDiv.height);
 								}
+
+								// show the rectangles
 								for (let i = 0; i < this.faceRects.length; i++) {
 									let rect = this.faceRects[i];
 									cvImageCtx.strokeRect(rect.x, rect.y, rect.width , rect.height);
 								}
+
+								// update CV fps, and release the image
 								updateCVFPS();
 								videoFrame.release();
-
-
 								break;
 
 							case "cvStart":
-								// request the next one when the old one finishes
+								// request the next frame when the worker starts working on the current
+								// one, to pipeline a bit
 								this.requestVideoFrame();
+
+								// has there been a delay since the last frame was finished processing?
+								// this shouldn't happen, but is a sign that the background tasks are
+								// being throttled
 								cvStartTime = ev.data.time;
 								if (cvEndTime > 0) {
 									cvIdleTime = cvStartTime - cvEndTime;
@@ -206,11 +219,13 @@
 								break;
 
 							case "cvReady":
+								// opencv is loaded and ready!
 								console.log('OpenCV.js is ready');
 								openCVready = true				
 								break;
 
 							case "cvStatus":
+								// opencv sends status messages sometimes
 								cvStatusTxt = ev.data.msg;
 								break;
 						}
@@ -219,24 +234,15 @@
 					this.worker.addEventListener('error', (e) => { 
 						console.log("worker error:" + e) 
 					})
-
-					this.setVideoWorker(this.worker);
-					// this.setVideoWorker(ev => { 
-					// 	var videoFrame = ev.detail
-					// 	if (openCVready) {
-					// 		try {
-					// 			this.handleVideoFrame(ev)
-					// 		} catch(e) {
-					// 			console.error('CV worker error', e)
-					// 		}
-					// 		updateCVFPS();
-					// 	}
-					// 	// pass the buffers back or they will be garbage collected
-					// 	videoFrame.release();
-					// 	this.requestVideoFrame();
-					// })
 				}
 
+				// new session, tell it about our worker
+				newSession() {					
+					this.setVideoWorker(this.worker);
+				}
+
+				// when the window or video frame resizes, we need to resize and reposition
+				// the 2D overlay
 				adjustRenderCanvasSize (rotation, width, height) {
 					var cameraAspect;
 					console.log("adjustRenderCanvasSize: " + rotation + " degrees, " + width + " by " + height)
@@ -325,6 +331,7 @@
 						this.textBox.innerHTML = this.messageText;
 					}
 
+					// do another check on frame size, to make sure we don't miss one
 					var viewport = frame.views[0].getViewport(this.session.baseLayer);
 					if (viewport.width != viewWidth || viewport.height != viewHeight) {
 						viewHeight = viewport.height;
@@ -335,6 +342,7 @@
 					}
 				}
 
+				// show the video frame for debugging
 				showVideoFrame(videoFrame) {
 					var camera = videoFrame.camera
 					var buffer = videoFrame.buffer(0)

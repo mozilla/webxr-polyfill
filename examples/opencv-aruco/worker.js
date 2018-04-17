@@ -114,25 +114,7 @@ function createCVMat2(rotation, buffer, pixelFormat) {
             cv.cvtColor(img_rgba, img_gray, cv.COLOR_RGBA2GRAY, 0);
             break;
     }
-
-    // switch(rotation) {
-    //     case -90:
-    //         cv.rotate(img_gray, rotatedImage, cv.ROTATE_90_CLOCKWISE);
-    //         return rotatedImage;
-    //         break;
-    //     case 90:
-    //         cv.rotate(img_gray, rotatedImage, cv.ROTATE_90_COUNTERCLOCKWISE);
-    //         return rotatedImage;
-    //         break;
-    //     case 180:
-    //         cv.rotate(img_gray, rotatedImage, cv.ROTATE_180);
-    //         return rotatedImage;
-    //         break;
-    //     default:
-    //         return img_gray;            
-    // }
     return img_gray;            
-
 }
 
 ///////////
@@ -205,22 +187,14 @@ self.addEventListener('message',  function(event){
         var width = buffer.size.width;
         var height = buffer.size.height;
 
-        // // let's pick a size such that the video is below 256 in size in both dimensions
-        // // since face detection is really expensive on large images
-        // while (width > 256 || height > 256) {
-        //     width = width / 2
-        //     height = height / 2
-        //     scale = scale / 2;
-        // }
-      
-        // set up a camera coefficient matrix
+        // set up a camera coefficient matrices, for distortion and projection
         if (camDistortion == null) {
             // we assume we're getting no distortion for now, since our cameras appear rectaliner
             // we probably want to add distortion coefficients to the camera definition since I assume some
             // cameras will have it
             camDistortion = cv.matFromArray(5, 1, cv.CV_64F, [0, 0, 0, 0, 0]);
-        }
-        videoFrame.camera.cameraIntrinsics[8] = 1.0
+        }        
+        //videoFrame.camera.cameraIntrinsics[8] = 1.0  // was broken in the app, should be fixed now
         camIntrinsics.create(3, 3, cv.CV_64F)
         camIntrinsics.data64F.set(videoFrame.camera.cameraIntrinsics);
 
@@ -239,12 +213,16 @@ self.addEventListener('message',  function(event){
           }
         }
         
+        // detect the aruco markers
         cv.detectMarkers(image, dictionary, markerCorners, markerIds, parameter);
         postMessage({type: "cvAfterDetect", time: ( performance || Date ).now()});
 
+        // did we find any?
         if (markerIds.rows > 0) {
-
-            // need to adjust the corners to be around 0,0 at the center
+            // Need to adjust the corners to be around 0,0 at the center.
+            // Weirdly, the aruco detector returns the values in image coordinates, 
+            // even though pose estimation expects them relative to the center of the 
+            // screen.  
             for(let i=0; i < markerIds.rows; ++i) {
               let cornervec = markerCorners.get(i).data32F
               cornervec[0] -= width/2;
@@ -265,6 +243,7 @@ self.addEventListener('message',  function(event){
               // cornervec[7] *= -1
             }
 
+            // estimate the poses of the found markers
             cv.estimatePoseSingleMarkers(markerCorners, 0.053, camIntrinsics, camDistortion, rvecs, tvecs);
 
             for(let i=0; i < markerIds.rows; ++i) {
@@ -281,20 +260,18 @@ self.addEventListener('message',  function(event){
                   tm = Array.from(rotMat.data64F)
                 }
 
-
-
-                //let tvec = [tvecs.doublePtr(0, i)[0], tvecs.doublePtr(0, i)[1], tvecs.doublePtr(0, i)[2]];
-                //var returnMat = [tm[0], tm[1], tm[2], 0, tm[3], tm[4], tm[5], 0, tm[6], tm[7], tm[8], 0, -tvec[0], -tvec[1], -tvec[2], 1]
-                //var returnMat = [tm[0], tm[1], tm[2], 0, tm[3], tm[4], tm[5], 0, tm[6], tm[7], tm[8], 0, tvecs.doublePtr(0, i)[0], tvecs.doublePtr(0, i)[1], -tvecs.doublePtr(0, i)[2], 1] 
-                // var returnMat = [tm[0], tm[3], tm[6], 0, tm[1], tm[4], tm[7], 0, tm[2], tm[5], tm[8], 0, tvecs.doublePtr(0, i)[0], tvecs.doublePtr(0, i)[1], -tvecs.doublePtr(0, i)[2], 1] 
-                //var returnMat = [tm[0], tm[3], tm[6], 0, tm[1], tm[4], tm[7], 0, tm[2], tm[5], tm[8], 0, 0,0,0, 1] 
+                // construct a pose matrix from rotation and position
                 var returnMat = [tm[0], tm[1], tm[2], 0, tm[3], tm[4], tm[5], 0, tm[6], tm[7], tm[8], 0,0,0,0, 1] 
                 mat4.translate(returnMat, returnMat, [tvecs.doublePtr(0, i)[0], tvecs.doublePtr(0, i)[1], tvecs.doublePtr(0, i)[2]]);
+
+                // invert it so it's marker relative to camera, not the usual camera relative to marker
                 mat4.invert(returnMat,returnMat)
 
                 // account for camera rotation relative to screen, which happens in video mixed handhelds
                 mat4.fromZRotation(antiRotation, rotation * Math.PI/180); 
                 mat4.multiply(returnMat, antiRotation, returnMat)
+
+                // save the marker info!
                 markers.push({ 
                   id: id, 
                   corners: [{x: cornervec[0], y: cornervec[1]}, {x: cornervec[2], y: cornervec[3]}, {x: cornervec[4], y: cornervec[5]}, {x: cornervec[6], y: cornervec[7]}],
@@ -303,6 +280,8 @@ self.addEventListener('message',  function(event){
             }
         }
     }
+
+    // reply, even if opencv isn't ready.
     endTime = ( performance || Date ).now()
     videoFrame.postReplyMessage({type: "cvFrame", markers: markers, time: endTime})
     
