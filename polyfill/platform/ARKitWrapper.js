@@ -83,6 +83,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this.planes_ = new Map();
 		this.anchors_ = new Map();
 
+		this._timeOffsets = []
 		this._timeOffset = 0;
 		this._timeOffsetComputed = false;
 		this.timestamp = 0;
@@ -148,9 +149,28 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 
 		window['setNativeTime'] = (detail) => {
-			console.log(detail.nativeTime)
+			this._timeOffsets.push (( performance || Date ).now() - detail.nativeTime)
+			this._timeOffsetComputed = true;
+			this._timeOffset = 0;
+			for (var i = 0; i < this._timeOffsets.length; i++) {
+				this._timeOffset += this._timeOffsets[i];
+			}
+			this._timeOffset = this._timeOffset / this._timeOffsets.length;
+			console.log("Native time: " + detail.nativeTime + ", new timeOffset: " + this._timeOffset)
 		}
 			
+		this._adjustARKitTime = function(time) {
+			// if (!this._timeOffsetComputed && adjust) {
+			// 	this._timeOffsetComputed = true;
+			// 	this._timeOffset = ( performance || Date ).now() - time;
+			// }
+			if (this._timeOffsetComputed) {
+				return time + this._timeOffset; 
+			} else {
+				return ( performance || Date ).now()
+			}
+		}
+
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
 		 * This structure has a single property - modelMatrix - which encodes the
@@ -759,17 +779,6 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 
 	*/
-	_adjustARKitTime(time, adjust) {
-		if (!this._timeOffsetComputed && adjust) {
-			this._timeOffsetComputed = true;
-			this._timeOffset = ( performance || Date ).now() - time;
-		}
-		if (this._timeOffsetComputed) {
-			return time + this._timeOffset; 
-		} else {
-			return ( performance || Date ).now()
-		}
-	}
 
 	_onWatch(data){
 		this._rawARData = data
@@ -777,7 +786,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 			source: this,
 			detail: this._rawARData
 		}))
-		this.timestamp = this._adjustARKitTime(data.timestamp, true)
+		this.timestamp = this._adjustARKitTime(data.timestamp)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
@@ -1026,7 +1035,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					break;
 			}
 
-			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp, false), detail.camera )
+			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
 			this.dispatchEvent(
 				new CustomEvent(
 					ARKitWrapper.COMPUTER_VISION_DATA,
