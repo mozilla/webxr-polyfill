@@ -143,7 +143,7 @@ export default class XRSession extends EventHandlerBase {
 				// }
 				// worker.postMessage(cv, buffs);
 				this._transformToCameraAnchor(ev.detail.camera)
-				ev.detail.postMessageToWorker(worker)
+				ev.detail.postMessageToWorker(worker, {type: "newVideoFrame"})
 				ev.detail.release()
 			})	
 		} else {
