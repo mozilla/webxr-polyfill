@@ -761,8 +761,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform],
-					h_plane_center: {x, y, z},  // only on planes
-					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+					plane_center: {x, y, z},  // only on planes
+					plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			],
 			"removeObjects": [
@@ -772,8 +772,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform]
-					h_plane_center: {x, y, z},  // only on planes
-					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+					plane_center: {x, y, z},  // only on planes
+					plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			]
 		}
@@ -794,11 +794,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.newObjects.length){
 			for (let i = 0; i < data.newObjects.length; i++) {
 				const element = data.newObjects[i];
-				if(element.h_plane_center){
+				if(element.plane_center){
 					this.planes_.set(element.uuid, {
 						id: element.uuid,
-						center: element.h_plane_center,
-						extent: [element.h_plane_extent.x, element.h_plane_extent.z],
+						center: element.plane_center,
+						extent: [element.plane_extent.x, element.plane_extent.z],
 						modelMatrix: element.transform
 					});
 				}else{
@@ -824,18 +824,18 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.objects.length){
 			for (let i = 0; i < data.objects.length; i++) {
 				const element = data.objects[i];
-				if(element.h_plane_center){
+				if(element.plane_center){
 					var plane = this.planes_.get(element.uuid);
 					if(!plane){
 						this.planes_.set(element.uuid, {
 							id: element.uuid,
-							center: element.h_plane_center,
-							extent: [element.h_plane_extent.x, element.h_plane_extent.z],
+							center: element.plane_center,
+							extent: [element.plane_extent.x, element.plane_extent.z],
 							modelMatrix: element.transform
 						});
 					} else {
-						plane.center = element.h_plane_center;
-						plane.extent = [element.h_plane_extent.x, element.h_plane_extent.z];
+						plane.center = element.plane_center;
+						plane.extent = [element.plane_extent.x, element.plane_extent.z];
 						plane.modelMatrix = element.transform;
 					}
 				}else{
