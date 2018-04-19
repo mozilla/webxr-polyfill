@@ -238,21 +238,21 @@
 					var now = ( performance || Date ).now()
 					var txt = "<center>"
 					txt += "ARKit Light Estimate: " + this.lightEstimate.toFixed(2);
-					txt += "<br>TimeOffset = " + (now - frame.timestamp).toFixed(1) + ", Rotation = " + this.rotation + "<br>" ;
+					// txt += "<br>TimeOffset = " + (now - frame.timestamp).toFixed(1) + ", Rotation = " + this.rotation ;
 					if (cvStatusTxt.length > 0) {
-						txt += "OpenCV: " + cvStatusTxt + "<br>"
+						txt += "<br>OpenCV: " + cvStatusTxt + "<br>"
 					} else {
 						txt += "<br>"
 					}
 					if (openCVready) {
 						txt += "Looking for markers: "
 						if (this.markers.length > 0) {
-							txt +=  "found " + this.markers.length.toString() + " markers"
+							txt +=  "<br>found " + this.markers.length.toString() + " markers"
 							var m = this.markers[0].pose;
 							var c = this.camPose
-							txt += "<br>c = " + c[12].toFixed(2) + " " + c[13].toFixed(2) + " " + c[14].toFixed(2)
-							txt += "<br>h = " + h[12].toFixed(2) + " " + h[13].toFixed(2) + " " + h[14].toFixed(2)
-							txt += "<br>p = " + m[12].toFixed(2) + " " + m[13].toFixed(2) + " " + m[14].toFixed(2)
+							// txt += "<br>c = " + c[12].toFixed(2) + " " + c[13].toFixed(2) + " " + c[14].toFixed(2)
+							// txt += "<br>h = " + h[12].toFixed(2) + " " + h[13].toFixed(2) + " " + h[14].toFixed(2)
+							// txt += "<br>p = " + m[12].toFixed(2) + " " + m[13].toFixed(2) + " " + m[14].toFixed(2)
 
 							for (var i = 0; i < this.markers.length; i++ ) {
 								var markerId = this.markers[i].id
@@ -312,10 +312,10 @@
 							// this.camerabox.matrix.fromArray(c)
 							// this.camerabox.matrixWorldNeedsUpdate = true;
 						} else {
-							txt += "NO MARKERS"
+							txt += "<br>NO MARKERS"
 						}
 
-						txt += "<br>timing (idle / createMat / resize / detect:<br> " 
+						txt += "<br><br>idle / init / resize / detect:<br> " 
 						txt += cvIdleTime.toFixed(2) 
 						txt += " " + (cvMatTime).toFixed(2)
 						txt += " " + (cvDetectTime).toFixed(2)
