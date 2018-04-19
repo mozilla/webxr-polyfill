@@ -304,18 +304,16 @@
 					txt += "<br>" ;
 					if (cvStatusTxt.length > 0) {
 						txt += "OpenCV: " + cvStatusTxt + "<br>"
-					} else {
-						txt += "<br>"
 					}
 					if (openCVready) {
-						txt += "Looking for faces: "
+						txt += "Looking for faces:<br>"
 						if (this.faceRects.length > 0) {
 							txt +=  "found " + this.faceRects.length.toString() + " faces and/or eyes"
 						} else {
 							txt += "NO FACE"
 						}
 
-						txt += "<br>timing (idle / createMat / resize / detect:<br> " 
+						txt += "<br><br>idle / init / resize / detect:<br> " 
 						txt += cvIdleTime.toFixed(2) 
 						txt += " " + (cvMatTime).toFixed(2)
 						txt += " " + (cvResizeTime).toFixed(2)
