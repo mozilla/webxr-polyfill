@@ -1,0 +1,352 @@
+<html>
+	<head>
+		<title>OpenCV Aruco example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+				-webkit-overflow-scrolling: touch;			
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			.text-box {
+				position: absolute;
+				top: 5%;
+				left: 50%;
+				color: white;
+				background: rgba(27,55,55,0.75);;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				transform: translate(-50%, 0%);
+				font-size: 0.8em;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 10px;
+			}
+			img.crosshair {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-left: -32px;
+				margin-top: -32px;
+			}
+		</style>
+		<link rel="stylesheet" href="../common.css"/>
+		<script src="../libs/three.js"></script>
+		<script src="../libs/stats.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>OpenCV Aruco Marker Tracking Demo</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Use OpenCV's Aruco library to find and track markers in 3D. You can <a href="createMarker.html">generate marker images here</a>.</p>
+		</div>
+
+		<script>
+			// set up for collecting different stats
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;			
+			var stats = new Stats();
+			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
+			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
+			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+
+			// a method to update a new panel for displaying CV FPS
+			var updateCVFPS = function () {
+				frames ++;
+				var time = ( performance || Date ).now();
+				if ( time >= prevTime + 1000 ) {
+					cvPanel.update( ( frames * 1000 ) / ( time - prevTime ), 100 );
+					prevTime = time;
+					frames = 0;
+				}
+				beginTime = time;
+			}
+
+			var cvStatusTxt = "";
+
+			// various variables to hold values for statistics collected from the worker 
+			var cvStartTime = 0;
+			var cvAfterMatTime = 0;
+			var cvAfterDetectTime = 0;
+			var cvEndTime = 0;
+
+			var cvMatTime = 0;
+			var cvMarkerTime = 0
+			var cvDetectTime = 0;
+			var cvIdleTime = 0;
+			
+			// has openCV loaded?
+			var openCVready = false;
+			
+			// for debugging, show the image we did the CV on 
+			var showCVImage = false;
+			var cvImageBuff = null
+
+			document.body.appendChild( stats.dom );
+
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false, true, true)
+
+					this.textBox = document.createElement('span')
+					this.textBox.setAttribute('class', 'text-box')
+					this.textBox.innerText = '0.0'
+
+					this.markers = [];
+					this.camPose = [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];
+					this.markerAnchors = []
+					this.markerBoxes = []
+					this.rotation = -1;
+					this.tempMat = new THREE.Matrix4();
+					this.tempMat2 = new THREE.Matrix4();
+					this.tempQuat = new THREE.Quaternion();
+					this.tempVec = new THREE.Vector3();
+
+					this.lightEstimate = 0;
+					this.el.appendChild(this.textBox)
+
+					this.triggerResize = true;
+
+					window.addEventListener('resize', () => {
+						this.triggerResize = true;
+					})
+				}
+
+				newSession() {					
+					this.worker = new Worker ("worker.js")
+
+					// start with video frames paused till opencv loaded
+					this.session.stopVideoFrames();
+
+					this.worker.onmessage = (ev) => {
+						switch (ev.data.type) {
+							case "cvFrame":
+								var videoFrame = XRVideoFrame.createFromMessage(ev)
+
+								this.markers = ev.data.markers;
+								this.session.getVideoFramePose(videoFrame, this.camPose);
+
+								cvEndTime = ev.data.time;
+								cvMarkerTime = cvEndTime - cvAfterDetectTime;
+
+								var rotation = videoFrame.camera.cameraOrientation;
+								var buffer = videoFrame.buffer(0)
+
+								var width = buffer.size.width
+								var height = buffer.size.height
+								if (this.triggerResize || this.rotation != rotation) {
+									this.triggerResize = false;
+									this.rotation = rotation;
+								}
+
+								updateCVFPS();
+								videoFrame.release();
+
+								break;
+
+							case "cvStart":
+								// request the next one when the old one finishes
+								this.requestVideoFrame();
+								cvStartTime = ev.data.time;
+								if (cvEndTime > 0) {
+									cvIdleTime = cvStartTime - cvEndTime;
+								}
+								break
+								
+							case "cvAfterMat":
+								cvAfterMatTime = ev.data.time;
+								cvMatTime = cvAfterMatTime - cvStartTime
+								break;
+
+							case "cvAfterDetect":
+								cvAfterDetectTime = ev.data.time;
+								cvDetectTime = cvAfterDetectTime - cvAfterMatTime
+								break;
+
+							case "cvReady":
+								console.log('OpenCV.js is ready');
+								this.session.startVideoFrames();
+								openCVready = true				
+								break;
+
+							case "cvStatus":
+								cvStatusTxt = ev.data.msg;
+								break;
+						}
+					}
+
+					this.worker.addEventListener('error', (e) => { 
+						console.log("worker error:" + e) 
+					})
+
+					this.setVideoWorker(this.worker);
+				}
+
+				// Called during construction
+				initializeScene(){
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0, 0)
+					this.floorGroup.add(box)
+
+					// // Add a box at the scene origin
+					// this.markerbox = new THREE.Object3D();
+					// this.markerboxGeom = new THREE.Mesh(
+					// 	new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
+					// 	new THREE.MeshPhongMaterial({ color: '#2D5FFD' })
+					// )
+					// this.markerboxGeom.position.set(0, 0, 0.053/2);
+					// this.markerbox.add(this.markerboxGeom)
+					// this.markerbox.position.set(0, 0, -1)
+					// this.markerbox.matrixAutoUpdate = false;
+
+					// this.camerabox = new THREE.Object3D();
+					// this.camerabox.matrixAutoUpdate = false;
+
+					// this.scene.add(this.camerabox)
+					// this.camerabox.add(this.markerbox)
+					
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				updateScene(frame){
+					const headPose = frame.getDisplayPose(frame.getCoordinateSystem(XRCoordinateSystem.HEAD_MODEL))
+					const h = headPose.poseModelMatrix
+
+					this.lightEstimate = frame.lightEstimate || 0;
+					stats.update()
+					var now = ( performance || Date ).now()
+					var txt = "<center>"
+					txt += "ARKit Light Estimate: " + this.lightEstimate.toFixed(2);
+					txt += "<br>TimeOffset = " + (now - frame.timestamp).toFixed(1) + ", Rotation = " + this.rotation + "<br>" ;
+					if (cvStatusTxt.length > 0) {
+						txt += "OpenCV: " + cvStatusTxt + "<br>"
+					} else {
+						txt += "<br>"
+					}
+					if (openCVready) {
+						txt += "Looking for markers: "
+						if (this.markers.length > 0) {
+							txt +=  "found " + this.markers.length.toString() + " markers"
+							var m = this.markers[0].pose;
+							var c = this.camPose
+							txt += "<br>c = " + c[12].toFixed(2) + " " + c[13].toFixed(2) + " " + c[14].toFixed(2)
+							txt += "<br>h = " + h[12].toFixed(2) + " " + h[13].toFixed(2) + " " + h[14].toFixed(2)
+							txt += "<br>p = " + m[12].toFixed(2) + " " + m[13].toFixed(2) + " " + m[14].toFixed(2)
+
+							for (var i = 0; i < this.markers.length; i++ ) {
+								var markerId = this.markers[i].id
+								var pose = this.markers[i].pose;
+
+								if (!(markerId in this.markerAnchors)) {
+									// Add a box 
+									var markerbox = new THREE.Object3D();
+									var markerboxGeom = new THREE.Mesh(
+										new THREE.BoxBufferGeometry(0.053, 0.053, 0.053),
+										new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+									)
+									markerboxGeom.position.set(0, 0, 0.053/2);
+									markerbox.add(markerboxGeom)
+									this.markerBoxes[markerId] = markerbox
+									
+									const coordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+
+									markerbox.matrix.fromArray(this.camPose)
+									this.tempMat.fromArray(pose)
+									markerbox.matrix.multiply(this.tempMat)
+									markerbox.matrixWorldNeedsUpdate = true
+
+									this.tempQuat.setFromRotationMatrix(markerbox.matrix)
+
+									const anchorUID = frame.addAnchor(coordinates, 
+												[markerbox.matrix.elements[12], markerbox.matrix.elements[13], markerbox.matrix.elements[14]],
+												[this.tempQuat.x, this.tempQuat.y, this.tempQuat.z, this.tempQuat.w])
+									var anchorOffset = new XRAnchorOffset(anchorUID)
+									this.markerAnchors[markerId] = anchorOffset;
+
+									this.addAnchoredNode(anchorOffset, markerbox)
+								} else {
+									this.tempMat2.fromArray(this.camPose)
+									this.tempMat.fromArray(pose)
+									this.tempMat2.multiply(this.tempMat)
+
+									var markerBox = this.markerBoxes[markerId]
+									var anchorOffset = this.markerAnchors[markerId]  
+
+									anchorOffset.setIdentityOffset()			
+									var anchor = frame.getAnchor(anchorOffset.anchorUID)					
+									this.tempMat.fromArray(anchorOffset.getOffsetTransform(anchor.coordinateSystem))
+									this.tempMat.getInverse(this.tempMat)
+									this.tempMat.premultiply(this.tempMat2)
+
+									anchorOffset.poseMatrix = this.tempMat.elements
+								}
+							}
+							// this.markerbox.matrix.fromArray(c)
+							// this.tempMat.fromArray(m)
+							// this.markerbox.matrix.multiply(this.tempMat)
+							// this.markerbox.matrixWorldNeedsUpdate = true;
+
+							// this.markerbox.matrix.fromArray(m)
+							// this.markerbox.matrixWorldNeedsUpdate = true;
+							// this.camerabox.matrix.fromArray(c)
+							// this.camerabox.matrixWorldNeedsUpdate = true;
+						} else {
+							txt += "NO MARKERS"
+						}
+
+						txt += "<br>timing (idle / createMat / resize / detect:<br> " 
+						txt += cvIdleTime.toFixed(2) 
+						txt += " " + (cvMatTime).toFixed(2)
+						txt += " " + (cvDetectTime).toFixed(2)
+						txt += " " + (cvMarkerTime).toFixed(2) 
+					} else {
+						txt += "(Initializing OpenCV)"
+					}
+
+					txt += "</center>"
+					this.messageText = txt;
+
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
+				}
+
+			}
+			function opencvIsReady() {
+				console.log('OpenCV.js is ready');
+				openCVready = true				
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>

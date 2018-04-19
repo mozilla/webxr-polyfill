@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<head>
+<style>
+canvas {
+    border: 1px solid black;
+}
+.err {
+    color: red;
+}
+</style>
+</head>
+<body>
+<div id="arucoCodeArea">
+<h2>Set the maker number in this code and run it:</h2>
+<p>(Marker generator courtesy of Ningxin Hu @ Intel)</p>
+<button id="arucoTryIt" disabled="true" onclick="arucoExecuteCode()">Generate Marker</button><br>
+<textarea rows="18" cols="100" id="arucoTestCode" spellcheck="false">
+let markerId = 1;
+let markerImage = new cv.Mat();
+let dictionary = new cv.Dictionary(cv.DICT_6X6_250);
+cv.drawMarker(dictionary, markerId, 200, markerImage, 1);
+cv.imshow("arucoCanvasOutput", markerImage);
+markerImage.delete(); dictionary.delete();
+</textarea>
+<p class="err" id="arucoErr"></p>
+</div>
+<div id="arucoShowcase">
+    <div>
+        <canvas id="arucoCanvasOutput"></canvas>
+    </div>
+</div>
+<script src="../utils.js"></script>
+<script async src="opencv.js" id="opencvjs"></script>
+<script>
+
+function arucoExecuteCode() {
+    let arucoText = document.getElementById("arucoTestCode").value;
+    try {
+        eval(arucoText);
+        document.getElementById("arucoErr").innerHTML = " ";
+    } catch(err) {
+        document.getElementById("arucoErr").innerHTML = err;
+    }
+}
+
+function onReady() {
+    document.getElementById("arucoTryIt").disabled = false;
+}
+if (typeof cv !== 'undefined') {
+    onReady();
+} else {
+    document.getElementById("opencvjs").onload = onReady;
+}
+</script>
+</body>
+

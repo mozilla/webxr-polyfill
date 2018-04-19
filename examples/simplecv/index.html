@@ -1,0 +1,253 @@
+<html>
+	<head>
+		<title>Simple Custom CV example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.text-box {
+				position: absolute;
+				top: 5%;
+				left: 50%;
+				color: white;
+				background: rgba(27,55,55,0.75);;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				transform: translate(-50%, 0%);
+				font-size: 0.8em;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 10px;
+			}
+			img.crosshair {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-left: -32px;
+				margin-top: -32px;
+			}
+		</style>
+		<link rel="stylesheet" href="../common.css"/>
+		<script src="../libs/three.js"></script>
+		<script src="../libs/stats.js"></script>
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<img src="target-28139_64.png" class="crosshair" />
+		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>Simple Computer Vision</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Compute the average intensity of the video image pixels.</p>
+		</div>
+		<script id="worker1" type="javascript/worker">
+			// need to figure out how to make loadScripts() work in BlobURLs
+		</script>
+		<script>
+			// We'll try to guess if the color matches one of the colors of a certain
+			// RAINBOW Candy
+			var colors = [
+				{ cr:  250, cg: 25, cb: 25, name: "RED" },
+				{ cr:  25, cg: 250, cb: 25, name: "GREEN" },
+				{ cr:  250, cg: 250, cb: 50, name: "YELLOW" }
+			] 
+
+			// do some time stamping, just to show the performance numbers
+			var beginTime = ( performance || Date ).now(), prevTime = beginTime, frames = 0;
+			
+			var stats = new Stats();
+
+			// create a new pane for the stats panel to show the fps of the vision processing
+			stats.domElement.style.cssText = 'position:fixed;top:2%;right:2%;cursor:pointer;opacity:0.9;z-index:10000';
+			var cvPanel = stats.addPanel( new Stats.Panel( 'CV fps', '#ff8', '#221' ) );
+			stats.showPanel( 2 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+			var updateCVFPS = function () {
+				frames ++;
+				var time = ( performance || Date ).now();
+				if ( time >= prevTime + 1000 ) {
+					cvPanel.update( ( frames * 1000 ) / ( time - prevTime ), 100 );
+					prevTime = time;
+					frames = 0;
+				}
+				beginTime = time;
+			}
+			document.body.appendChild( stats.dom );
+
+			// flag to set true if you want to construct a texture from the UV image and show it
+			var makeTexUV = false;
+
+			class ARAnchorExample extends XRExampleBase {
+				constructor(domElement){
+					super(domElement, false, true, true)
+
+					this.textBox = document.createElement('span')
+					this.textBox.setAttribute('class', 'text-box')
+					this.textBox.innerText = '0.0'
+					this.el.appendChild(this.textBox)
+
+					// to store the returned values
+					this.intensity = 0;
+					this.cr = 0;
+					this.cg = 0;
+					this.cb = 0;
+
+					// the light estimate from WebXR, if there is one
+					this.lightEstimate = 0;
+
+					// start a background worker
+					this.worker = new Worker("worker.js")
+
+					var self = this;
+					this.worker.onmessage = function(ev) {
+						var videoFrame = XRVideoFrame.createFromMessage(ev)
+						self.intensity = ev.data.intensity;
+						self.cr = ev.data.cr;
+						self.cg = ev.data.cg;
+						self.cb = ev.data.cb;
+						self.handleVisionDone(videoFrame);
+					}
+					
+					this.worker.addEventListener('error', (e) => { 
+						console.log("worker error:" + e) 
+					})
+				}
+
+				// called when there is a new session
+				newSession() {
+					// this can only be done inside the session
+					this.setVideoWorker(this.worker);
+				}
+
+				// Called during construction
+				initializeScene(){
+					// make and display an image of the UV image buffer
+					if (makeTexUV) {
+						var size = 4;
+						var data = new Uint8Array( 12 );
+						for ( var i = 0; i < 12; i ++ ) {
+							data[i] = 255 / (i + 1);
+						}
+						this.texBuff = data;
+						this.texSize = 12;
+						this.uvTexture = new THREE.DataTexture( data, 2, 2, THREE.RGBFormat );
+						this.uvTexture.needsUpdate = true;
+
+						var geometry = new THREE.PlaneGeometry(1, 1);
+						var material = new THREE.MeshBasicMaterial( {color: 0xff00ff88, map: this.uvTexture, side: THREE.DoubleSide } );
+						var plane = new THREE.Mesh( geometry, material );
+						var mat = new THREE.Matrix4();
+						mat = mat.makeScale(0.1,0.1,0.1);
+						mat = mat.setPosition(new THREE.Vector3(-.05,0.0,-.33))
+						plane.applyMatrix(mat)
+						this.camera.add( plane );
+					}
+
+					// Add a box at the scene origin, so that we can see if things are working when
+					// we look down
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0, 0)
+					this.floorGroup.add(box)
+
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+				}
+
+				// called each frame
+				updateScene(frame){
+					this.lightEstimate = frame.lightEstimate || 0;
+
+					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
+					+ "<br>Center RGB: " + this.cr.toFixed(0) + " / " + this.cg.toFixed(0) + " / " + this.cb.toFixed(0) + "<br><center>";
+					
+					for (var i=0; i<colors.length; i++) {
+						var c = colors[i];
+						c.dist = (c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb);
+						c.dist = Math.sqrt(c.dist + (c.cg - this.cg) * (c.cg - this.cg))
+						txt += c.dist.toFixed(0) + " " 
+					}
+					for (i=0; i<colors.length; i++) {
+						c = colors[i];
+						if (c.dist < 30) {
+							txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
+						} 
+					}
+					txt+="</center>"
+
+					this.messageText = txt;
+
+					if (this.messageText != this.textBox.innerHTML) {
+						this.textBox.innerHTML = this.messageText;
+					}
+					stats.update()
+				}
+
+				handleVisionDone(videoFrame) {
+					// ask for the next frame (before we construct that debugging frame, if we're doing that)
+					this.requestVideoFrame();
+
+					// update CV fps
+					updateCVFPS();
+
+					// check to make sure the 2nd plane exists;  that will be UV
+					if (makeTexUV && videoFrame.buffer(1).buffer) {
+						var buffer = videoFrame.buffer(1);
+						var pixels = buffer.buffer;
+						if (this.texSize != (pixels.length /2 *3)) {
+							this.texSize = pixels.length /2 * 3
+							this.texBuff = new Uint8Array( this.texSize );  // convert each pixel from 2 to 3 bytes
+						}
+
+						// convert it to a simple RGB image.  Super slow, but ok for debugging
+						var j = 0;
+						for ( var i = 0; i < this.texSize; i ++ ) {
+							this.texBuff[i] = pixels[j++];
+							i++;
+							this.texBuff[i] = 0;
+							i++;
+							this.texBuff[i] = pixels[j++];
+						}
+						this.uvTexture.image = { data: this.texBuff, width: buffer.size.width, height: buffer.size.height };
+						this.uvTexture.needsUpdate = true;
+					}		
+					
+					// must do this to clean up the internal buffer caches, let system know we're done
+					videoFrame.release();
+				}
+			}
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new ARAnchorExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>

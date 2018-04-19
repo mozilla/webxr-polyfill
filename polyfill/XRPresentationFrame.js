@@ -7,6 +7,7 @@ XRPresentationFrame provides all of the values needed to render a single frame o
 export default class XRPresentationFrame {
 	constructor(session){
 		this._session = session
+		this._timestamp = this._session.reality._getTimeStamp();
 	}
 
 	get session(){ return this._session }
@@ -36,6 +37,9 @@ export default class XRPresentationFrame {
 		return this._session.reality._getLightAmbientIntensity();
 	}
 
+	get timestamp () {
+		return this._timestamp;
+	}
 	/*
 	Returns an array of known XRAnchor instances. May be empty.
 	*/

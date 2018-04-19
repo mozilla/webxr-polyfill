@@ -1,6 +1,7 @@
 import XRDisplay from '../XRDisplay.js'
 import XRView from '../XRView.js'
 import XRSession from '../XRSession.js'
+import XRFieldOfView from '../XRFieldOfView.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
 import Quaternion from '../fill/Quaternion.js'
@@ -41,7 +42,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._views.push(new XRView(this._fov, this._depthNear, this._depthFar))
 	}
 
-	_start(){
+	_start(parameters=null){
 		if(this._reality._vrDisplay){ // Use ARCore
 			if(this._vrFrameData === null){
 				this._vrFrameData = new VRFrameData()
@@ -60,11 +61,14 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.WINDOW_RESIZE_EVENT, this._handleARKitWindowResize.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.ON_ERROR, this._handleOnError.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
+				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
 				this._arKitWrapper.waitForInit().then(() => {
-					this._arKitWrapper.watch()
+					// doing this in the reality
+					// this._arKitWrapper.watch()
 				})
 			} else {
-				this._arKitWrapper.watch()
+				// doing this in the reality
+				// this._arKitWrapper.watch()
 			}
 		} else { // Use device orientation
 			if(this._initialized === false){
@@ -74,10 +78,12 @@ export default class FlatDisplay extends XRDisplay {
 				this._deviceWorldMatrix = new Float32Array(16)
 				this._deviceOrientationTracker = new DeviceOrientationTracker()
 				this._deviceOrientationTracker.addEventListener(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, this._updateFromDeviceOrientationTracker.bind(this))
+				this._reality.addEventListener(Reality.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
+				this._reality.addEventListener(Reality.WINDOW_RESIZE_EVENT, this._handleWindowResize.bind(this))
 			}
 		}
 		this.running = true
-		this._reality._start()
+		this._reality._start(parameters)
 	}
 
 	_stop(){
@@ -85,6 +91,29 @@ export default class FlatDisplay extends XRDisplay {
 		if(this.running === false) return
 		this.running = false
 		this._reality._stop()
+	}
+
+	_fixFov (width, height, focalLength) {
+		if (!this.baseLayer) {
+			return;
+		}
+		var ratio = width / this.baseLayer._context.canvas.clientWidth
+		focalLength = focalLength / ratio
+
+		var x = 0.5 * this.baseLayer._context.canvas.clientWidth / focalLength
+		var fovx = (180/Math.PI) * 2 * Math.atan(x)
+		var y = 0.5 * this.baseLayer._context.canvas.clientHeight / focalLength
+		var fovy = (180/Math.PI) * 2 * Math.atan(y)
+
+		// var x = (Math.tan(0.5 * fov) / this.baseLayer.framebufferHeight) * this.baseLayer.framebufferWidth
+		// var fovx = (Math.atan(x) * 2) / (Math.PI/180);
+		this._fov = new XRFieldOfView(fovy/2, fovy/2, fovx/2, fovx/2)
+
+		this._views[0].fov = this._fov
+	}
+
+	_handleWindowResize(ev){
+		this._fixFov(ev.detail.width, ev.detail.height, ev.detail.focalLength)
 	}
 
 	/*
@@ -105,6 +134,7 @@ export default class FlatDisplay extends XRDisplay {
 				baseLayer.framebufferHeight = baseLayer._context.canvas.clientHeight;
 			}, false)	
 		}
+		//this._fixFov(baseLayer.framebufferWidth, baseLayer.framebufferHeight, this._reality._focalLength)
 
 		this._xr._sessionEls.appendChild(baseLayer._context.canvas)
 	}
@@ -125,6 +155,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._devicePosition.set(...this._vrFrameData.pose.position)
 		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
+		this._views[0].setViewMatrix(this._deviceWorldMatrix)
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose._position = this._devicePosition.toArray()
 	}
@@ -136,6 +167,7 @@ export default class FlatDisplay extends XRDisplay {
 		this._devicePosition.add(0, XRViewPose.SITTING_EYE_HEIGHT, 0)
 		MatrixMath.mat4_fromRotationTranslation(this._deviceWorldMatrix, this._deviceOrientation.toArray(), this._devicePosition.toArray())
 		this._headPose._setPoseModelMatrix(this._deviceWorldMatrix)
+		this._views[0].setViewMatrix(this._deviceWorldMatrix)
 		this._eyeLevelPose._position = this._devicePosition.toArray()
 	}
 
@@ -143,6 +175,7 @@ export default class FlatDisplay extends XRDisplay {
 		const cameraTransformMatrix = this._arKitWrapper.getData('camera_transform')
 		if (cameraTransformMatrix) {
 			this._headPose._setPoseModelMatrix(cameraTransformMatrix)
+			this._views[0].setViewMatrix(cameraTransformMatrix)
 			this._headPose._poseModelMatrix[13] += XRViewPose.SITTING_EYE_HEIGHT
 			this._eyeLevelPose._position = this._headPose._position
 		} else {
@@ -158,14 +191,16 @@ export default class FlatDisplay extends XRDisplay {
 	}
 
 	_handleARKitInit(ev){
-		setTimeout(() => {
-			this._arKitWrapper.watch({
-				location: true,
-				camera: true,
-				objects: true,
-				light_intensity: true
-			})
-		}, 1000)
+		// doing this in the reality
+		// 	setTimeout(() => {
+		// 		this._arKitWrapper.watch({
+		// 			location: true,
+		// 			camera: true,
+		// 			objects: true,
+		// 			light_intensity: true,
+		//             computer_vision_data: true
+		// 		})
+		// 	}, 1000)
 	}
 
 	_handleARKitWindowResize(ev){
@@ -190,13 +225,68 @@ export default class FlatDisplay extends XRDisplay {
 		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
 	}
 
-	_createSession(parameters){
-		this._start()
-		return super._createSession(parameters)
+
+    _handleComputerVisionData(ev) {
+        // Do whatever is needed with the image buffers here
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					"videoFrame",
+					{
+						source: this,
+						detail: ev.detail
+					}
+				)
+			)	
+		} catch(e) {
+			console.error('computer vision callback error', e)
+		}
+	}
+
+	_requestVideoFrame() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._requestComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._requestVideoFrame()
+		}
+	}
+
+	_stopVideoFrames() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._stopSendingComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._stopVideoFrames()
+		}
+	}
+
+	_startVideoFrames() {
+		if(this._arKitWrapper){ // Use ARKit
+			// call this._arKitWrapper.requestComputerVisionData(buffers) to request a new one
+			this._arKitWrapper._startSendingComputerVisionData()
+		} else {
+			//  might have webrtc video in the reality
+			this._reality._startVideoFrames()
+		}
+	}
+	
+	_createSession(parameters=null){
+		this._start(parameters)
+
+		if(ARKitWrapper.HasARKit()){ // Use ARKit
+			return this._arKitWrapper.waitForInit().then(() => {
+				return super._createSession(parameters)
+			})
+		} else {
+			return super._createSession(parameters)
+		}
 	}
 
 	_supportedCreationParameters(parameters){
-		return parameters.type === XRSession.AUGMENTATION && parameters.exclusive === false		
+		return parameters.type === XRSession.AUGMENTATION && parameters.exclusive === false	
 	}
 
 	//attribute EventHandler ondeactivate; // FlatDisplay never deactivates

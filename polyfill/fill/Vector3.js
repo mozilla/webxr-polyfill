@@ -57,20 +57,20 @@ export default class Vector3 {
 	}
 
 	applyQuaternion(q){
-		const x = this.x
-		const y = this.y
-		const z = this.z
+		var x = this.x
+		var y = this.y
+		var z = this.z
 
-		const qx = q.x
-		const qy = q.y
-		const qz = q.z
-		const qw = q.w
+		var qx = q.x
+		var qy = q.y
+		var qz = q.z
+		var qw = q.w
 
 		// calculate quat * vector
-		const ix =  qw * x + qy * z - qz * y
-		const iy =  qw * y + qz * x - qx * z
-		const iz =  qw * z + qx * y - qy * x
-		const iw = - qx * x - qy * y - qz * z
+		var ix =  qw * x + qy * z - qz * y
+		var iy =  qw * y + qz * x - qx * z
+		var iz =  qw * z + qx * y - qy * x
+		var iw = - qx * x - qy * y - qz * z
 
 		// calculate result * inverse quat
 		this.x = ix * qw + iw * - qx + iy * - qz - iz * - qy
@@ -81,10 +81,10 @@ export default class Vector3 {
 	}
 
 	applyMatrix4(matrix){
-		const x = this.x
-		const y = this.y
-		const z = this.z
-		const w = 1 / (matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15])
+		var x = this.x
+		var y = this.y
+		var z = this.z
+		var w = 1 / (matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15])
 		this.x = (matrix[0] * x + matrix[4] * y + matrix[8]  * z + matrix[12]) * w
 		this.y = (matrix[1] * x + matrix[5] * y + matrix[9]  * z + matrix[13]) * w
 		this.z = (matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14]) * w
@@ -96,8 +96,8 @@ export default class Vector3 {
 	}
 
 	crossVectors(a, b){
-		const ax = a.x, ay = a.y, az = a.z
-		const bx = b.x, by = b.y, bz = b.z
+		var ax = a.x, ay = a.y, az = a.z
+		var bx = b.x, by = b.y, bz = b.z
 		this.x = ay * bz - az * by
 		this.y = az * bx - ax * bz
 		this.z = ax * by - ay * bx
