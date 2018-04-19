@@ -9,9 +9,18 @@ XRAnchorOffset represents a pose in relation to an XRAnchor
 export default class XRAnchorOffset {
 	constructor(anchorUID, poseMatrix=null){
 		this._anchorUID = anchorUID
+		this._tempArray = new Float32Array(16);
 		this._poseMatrix = poseMatrix || MatrixMath.mat4_generateIdentity()
 	}
 
+	setIdentityOffset() {
+		var p = this._poseMatrix 
+		p[0] = p[5] = p[10] = p[15] = 1
+		p[1] = p[2] = p[3] = 0
+		p[4] = p[6] = p[7] = 0
+		p[8] = p[9] = p[11] = 0
+		p[12] = p[13] = p[14] = 0		
+	}
 	get anchorUID(){ return this._anchorUID }
 
 	/*
@@ -45,6 +54,6 @@ export default class XRAnchorOffset {
 	Return a transform matrix that is offset by this XRAnchorOffset.poseMatrix relative to coordinateSystem
 	*/
 	getOffsetTransform(coordinateSystem){
-		return MatrixMath.mat4_multiply(new Float32Array(16), this._poseMatrix, coordinateSystem._poseModelMatrix)
+		return MatrixMath.mat4_multiply(this._tempArray, this._poseMatrix, coordinateSystem._poseModelMatrix)
 	}
 }

@@ -3,6 +3,9 @@ import * as glMatrix from "../fill/gl-matrix/common.js";
 import * as mat4 from "../fill/gl-matrix/mat4.js";
 import * as quat from "../fill/gl-matrix/quat.js";
 import * as vec3 from "../fill/gl-matrix/vec3.js";
+import base64 from "../fill/base64-binary.js";
+import Quaternion from '../fill/Quaternion.js';
+import MatrixMath from '../fill/MatrixMath.js';
 
 /*	
 ARKitWrapper talks	 to Apple ARKit, as exposed by Mozilla's test ARDemo app.
@@ -39,27 +42,52 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._isInitialized = false
 		this._rawARData = null
 
+		// worker to convert buffers
+		// var blobURL = this._buildWorkerBlob()
+		// this._worker = new Worker(blobURL);
+		// URL.revokeObjectURL(blobURL);
+
+		// var self = this;
+		// this._worker.onmessage = function (ev) {
+		// 	setTimeout(function () {
+		// 		self.dispatchEvent(
+		// 			new CustomEvent(
+		// 				ARKitWrapper.COMPUTER_VISION_DATA,
+		// 				{
+		// 					source: self,
+		// 					detail: ev.data
+		// 				}
+		// 			)
+		// 		)	
+		// 	})
+		// }
+
 		this.lightIntensity = 1000;
 		/**
-     * The current projection matrix of the device.
-     * @type {Float32Array}
-     * @private
-     */
-    this.projectionMatrix_ = new Float32Array(16);
-    /**
-     * The current view matrix of the device.
-     * @type {Float32Array}
-     * @private
-     */
-    this.viewMatrix_ = new Float32Array(16);
-			/**
+		 * The current projection matrix of the device.
+		 * @type {Float32Array}
+		 * @private
+		 */
+		this.projectionMatrix_ = new Float32Array(16);
+		/**
+		 * The current view matrix of the device.
+		 * @type {Float32Array}
+		 * @private
+		 */
+		this.viewMatrix_ = new Float32Array(16);
+		/**
 		 * The list of planes coming from ARKit.
 		 * @type {Map<number, ARPlane}
 		 * @private
 		 */
 		this.planes_ = new Map();
-
 		this.anchors_ = new Map();
+
+		this._timeOffsets = []
+		this._timeOffset = 0;
+		this._timeOffsetComputed = false;
+		this.timestamp = 0;
+
 
 		this._globalCallbacksMap = {} // Used to map a window.arkitCallback method name to an ARKitWrapper.on* method name
 		// Set up the window.arkitCallback methods that the ARKit bridge depends on
@@ -67,6 +95,22 @@ export default class ARKitWrapper extends EventHandlerBase {
 		for(let i=0; i < callbackNames.length; i++){
 			this._generateGlobalCallback(callbackNames[i], i)
 		}
+			
+		// default options for initializing ARKit
+		this._defaultOptions = {
+			location: true,
+			camera: true,
+			objects: true,
+			light_intensity: true,
+			computer_vision_data: false
+		}
+		this._m90 = mat4.fromZRotation(mat4.create(), 90*MatrixMath.PI_OVER_180);
+		this._m90neg = mat4.fromZRotation(mat4.create(), -90*MatrixMath.PI_OVER_180);
+		this._m180 = mat4.fromZRotation(mat4.create(), 180*MatrixMath.PI_OVER_180);
+		this._mTemp = mat4.create();
+
+		// temp storage for CV arraybuffers
+		//this._ab = []
 
 		// Set up some named global methods that the ARKit to JS bridge uses and send out custom events when they are called
 		let eventCallbacks = [
@@ -79,7 +123,9 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitShowDebug', ARKitWrapper.SHOW_DEBUG_EVENT],
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
-			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED]
+			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
+			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA]
+            //,['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
@@ -95,6 +141,36 @@ export default class ARKitWrapper extends EventHandlerBase {
 				)	
 			}
 		}
+		/*
+		 * Computer vision needs massaging
+		 */
+		window['onComputerVisionData'] = (detail) => {
+			this._onComputerVisionData(detail);
+		}
+
+		window['setNativeTime'] = (detail) => {
+			this._timeOffsets.push (( performance || Date ).now() - detail.nativeTime)
+			this._timeOffsetComputed = true;
+			this._timeOffset = 0;
+			for (var i = 0; i < this._timeOffsets.length; i++) {
+				this._timeOffset += this._timeOffsets[i];
+			}
+			this._timeOffset = this._timeOffset / this._timeOffsets.length;
+			console.log("Native time: " + detail.nativeTime + ", new timeOffset: " + this._timeOffset)
+		}
+			
+		this._adjustARKitTime = function(time) {
+			// if (!this._timeOffsetComputed && adjust) {
+			// 	this._timeOffsetComputed = true;
+			// 	this._timeOffset = ( performance || Date ).now() - time;
+			// }
+			if (this._timeOffsetComputed) {
+				return time + this._timeOffset; 
+			} else {
+				return ( performance || Date ).now()
+			}
+		}
+
 		/**
 		 * The result of a raycast into the AR world encoded as a transform matrix.
 		 * This structure has a single property - modelMatrix - which encodes the
@@ -544,6 +620,15 @@ export default class ARKitWrapper extends EventHandlerBase {
 		})
 	}
 
+	removeAnchor(uid) {
+		window.webkit.messageHandlers.removeAnchors.postMessage([uid])
+	}
+
+	/* 
+	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
+	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
+	*/
+
 	/*
 	If this instance is currently watching, send the stopAR message to ARKit to request that it stop sending data on onWatch
 	*/
@@ -553,6 +638,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 				resolve();
 				return;
 			}
+			console.log('----STOP');
 			window.webkit.messageHandlers.stopAR.postMessage({
 				callback: this._createPromiseCallback('stop', resolve)
 			})
@@ -566,9 +652,11 @@ export default class ARKitWrapper extends EventHandlerBase {
 			location: boolean,
 			camera: boolean,
 			objects: boolean,
-			light_intensity: boolean
+			light_intensity: boolean,
+			computer_vision_data: boolean
 		}
 	*/
+
 	watch(options=null){
 		if (!this._isInitialized){
 			return false
@@ -578,19 +666,23 @@ export default class ARKitWrapper extends EventHandlerBase {
 		}
 		this._isWatching = true
 
-		if(options === null){
-			options = {
-				location: true,
-				camera: true,
-				objects: true,
-				light_intensity: true
-			}
+		var newO = Object.assign({}, this._defaultOptions);
+
+		if(options != null) {
+			newO = Object.assign(newO, options)
 		}
-		
+
+		// option to WebXRView is different than the WebXR option
+		if (newO.videoFrames) {
+			delete newO.videoFrames
+			newO.computer_vision_data = true;
+		}
+
 		const data = {
-			options: options,
+			options: newO,
 			callback: this._globalCallbacksMap.onWatch
 		}
+		console.log('----WATCH');
 		window.webkit.messageHandlers.watchAR.postMessage(data)
 		return true
 	}
@@ -638,6 +730,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 	*/
 	_sendInit(options){
 		// get device id
+		console.log('----INIT');
 		window.webkit.messageHandlers.initAR.postMessage({
 			options: options,
 			callback: this._globalCallbacksMap.onInit
@@ -660,29 +753,40 @@ export default class ARKitWrapper extends EventHandlerBase {
 	_onWatch is called from native ARKit on each frame:
 		data:
 		{
-			"camera_transform":[4x4 column major affine transform matrix],
+			"timestamp": time value
+			"light_intensity": value
+			"camera_view":[4x4 column major affine transform matrix],
 			"projection_camera":[4x4 projection matrix],
-			"location":{
-				"altitude": 176.08457946777344,
-				"longitude": -79.222516606740456,
-				"latitude": 35.789005972772181
-			},
+			"newObjects": [
+				{
+					uuid: DOMString (unique UID),
+					transform: [4x4 column major affine transform],
+					h_plane_center: {x, y, z},  // only on planes
+					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+				}, ...
+			],
+			"removeObjects": [
+				uuid: DOMString (unique UID), ...
+			]
 			"objects":[
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform]
+					h_plane_center: {x, y, z},  // only on planes
+					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			]
 		}
 
 	*/
+
 	_onWatch(data){
 		this._rawARData = data
 		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
 			source: this,
 			detail: this._rawARData
 		}))
-
+		this.timestamp = this._adjustARKitTime(data.timestamp)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
@@ -709,10 +813,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.removedObjects.length){
 			for (let i = 0; i < data.removedObjects.length; i++) {
 				const element = data.removedObjects[i];
-				if(element.h_plane_center){
-					this.planes_.delete(element.uuid);
+				if(this.planes_.get(element)){
+					this.planes_.delete(element);
 				}else{
-					this.anchors_.delete(element.uuid);
+					this.anchors_.delete(element);
 				}
 			}
 		}
@@ -727,22 +831,22 @@ export default class ARKitWrapper extends EventHandlerBase {
 							id: element.uuid,
 							center: element.h_plane_center,
 							extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-							transform: element.transform
+							modelMatrix: element.transform
 						});
 					} else {
 						plane.center = element.h_plane_center;
 						plane.extent = [element.h_plane_extent.x, element.h_plane_extent.z];
-						plane.transform = element.transform;
+						plane.modelMatrix = element.transform;
 					}
 				}else{
 					var anchor = this.anchors_.get(element.uuid);
 					if(!anchor){
 						this.anchors_.set(element.uuid, {
 							id: element.uuid,
-							transform: element.transform
+							modelMatrix: element.transform
 						});
 					}else{
-						anchor.transform = element.transform;
+						anchor.modelMatrix = element.transform;
 					}
 				}
 			}
@@ -788,6 +892,294 @@ export default class ARKitWrapper extends EventHandlerBase {
 			self['_' + callbackName](deviceData)
 		}
 	}
+
+	/*
+	ev.detail contains:
+		{
+		  "frame": {
+			"buffers": [ // Array of base64 encoded string buffers
+			  {
+				"size": {
+				  "width": 320,
+				  "height": 180,
+				  "bytesPerRow": 320,
+				  "bytesPerPixel": 1
+				},
+				"buffer": "e3x...d7d"   /// convert to Uint8 buffer in code below
+			  },
+			  {
+				"size": {
+				  "width": 160,
+				  "height": 90,
+				  "bytesPerRow": 320,
+				  "bytesPerPixel": 2
+				},
+				"buffer": "ZZF.../fIJ7"  /// convert to Uint8 buffer in code below
+			  }
+			],
+			"pixelFormatType": "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange",
+			"pixelFormat": "YUV420P",  /// Added in the code below, clients should ignore pixelFormatType
+			"timestamp": 337791
+		  },
+		  "camera": {
+			"cameraIntrinsics": [3x3 matrix],
+				fx 0   px
+				0  fy  py
+				0  0   1
+				fx and fy are the focal length in pixels.
+				px and py are the coordinates of the principal point in pixels.
+				The origin is at the center of the upper-left pixel.
+
+			"cameraImageResolution": {
+			  "width": 1280,
+			  "height": 720
+			},
+			"viewMatrix": [4x4 camera view matrix],
+			"arCamera": true;
+		    "cameraOrientation": 0,  // orientation in degrees of image relative to display
+                            // normally 0, but on video mixed displays that keep the camera in a fixed 
+                            // orientation, but rotate the UI, like on some phones, this will change
+                            // as the display orientation changes
+			"interfaceOrientation": 3,
+				// 0 UIDeviceOrientationUnknown
+				// 1 UIDeviceOrientationPortrait
+				// 2 UIDeviceOrientationPortraitUpsideDown
+				// 3 UIDeviceOrientationLandscapeRight
+				// 4 UIDeviceOrientationLandscapeLeft
+			"projectionMatrix": [4x4 camera projection matrix]
+		  }
+		}
+	 */
+	_onComputerVisionData(detail) {
+		// convert the arrays
+		if (!detail) {
+			console.error("detail passed to _onComputerVisionData is null")
+			this._requestComputerVisionData() 
+			return;
+		}
+		// convert the arrays
+		if (!detail.frame || !detail.frame.buffers || detail.frame.buffers.length <= 0) {
+			console.error("detail passed to _onComputerVisionData is bad, no buffers")
+			this._requestComputerVisionData() 
+			return;
+		}
+
+		// the orientation matrix we get is relative to the current view orientation.  
+		// We need to add an orientation around z, so that we have the orientation that goes from 
+		// camera frame to the current view orientation, since the camera is fixed and the view
+		// changes as we rotate the device. 
+		//
+		// We also set a cameraOrientation value for the orientation of the camera relative to the
+		// display.  This will be particular to video-mixed-AR where the camera is the video on the
+		// screen, since any other setup would need to use the full orientation (and probably 
+		// wouldn't be rotating the content / UI)
+		detail.camera.arCamera = true;
+		var orientation = detail.camera.interfaceOrientation;
+		detail.camera.viewMatrix = detail.camera.inverse_viewMatrix;
+		// mat4.copy(this._mTemp, detail.camera.viewMatrix)
+        switch (orientation) {
+			case 1: 
+				// rotate by -90;
+				detail.camera.cameraOrientation = -90;
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90neg)
+				break;
+
+			case 2: 
+				// rotate by 90;
+				detail.camera.cameraOrientation = 90;
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m90)
+				break;
+			case 3: 
+				detail.camera.cameraOrientation = 0;
+			// rotate by nothing
+				break;
+			case 4: 
+				// rotate by 180;
+				detail.camera.cameraOrientation = 180;
+				// mat4.multiply(detail.camera.viewMatrix, this._mTemp, this._m180)
+				break;
+		}
+		// convert buffers in place
+		//var buffers = detail.frame.buffers;
+
+		// if there are too many cached array buffers, drop the unneeded ones
+		// if (this._ab.length > buffers.length) {
+		// 	this._ab = this._ab.slice(0, buffer.length)
+		// }
+		
+		// if (this._worker) {
+		// 	detail.ab = this._ab;
+		// 	if (this._ab) {
+		// 		this._worker.postMessage(detail, this._ab);
+		// 	} else {
+		// 		this._worker.postMessage(detail);
+		// 	}
+		// } else {
+			// for (var i = 0; i < buffers.length; i++) {
+			// 	// gradually increase the size of the ab[] array to hold the temp buffers, 
+			// 	// and add null so it gets allocated properly
+			// 	if (this._ab.length <= i) {
+			// 		this._ab.push(null)
+			// 	}
+			// 	var bufflen = buffers[i].buffer.length;
+			// 	this._ab[i] = buffers[i].buffer = base64.decodeArrayBuffer(buffers[i].buffer, this._ab[i]);
+			// 	var buffersize = buffers[i].buffer.byteLength;
+			// 	var imagesize = buffers[i].size.height * buffers[i].size.bytesPerRow;
+			// }
+			switch(detail.frame.pixelFormatType) {
+				case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+					detail.frame.pixelFormat = "YUV420P";
+					break;
+				default:
+					detail.frame.pixelFormat = detail.frame.pixelFormatType; 
+					break;
+			}
+
+			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
+			this.dispatchEvent(
+				new CustomEvent(
+					ARKitWrapper.COMPUTER_VISION_DATA,
+					{
+						source: this,
+						detail: xrVideoFrame
+					}
+				)
+			)
+		//}	
+	}
+
+	/*
+	Requests ARKit a new set of buffers for computer vision processing
+	 */
+    _requestComputerVisionData() {
+        window.webkit.messageHandlers.requestComputerVisionData.postMessage({})
+	}
+
+	/*
+	Requests ARKit to start sending CV data (data is send automatically when requested and approved)
+	 */
+    _startSendingComputerVisionData() {
+        window.webkit.messageHandlers.startSendingComputerVisionData.postMessage({})
+	}
+
+	/*
+	Requests ARKit to stop sending CV data
+	 */
+    _stopSendingComputerVisionData() {
+        window.webkit.messageHandlers.stopSendingComputerVisionData.postMessage({})
+	}
+
+	// _buildWorkerBlob() {
+	// 	var blobURL = URL.createObjectURL( new Blob([ '(',
+
+	// 	function(){
+	// 		// could not get workers working, so am not using this.
+	// 		//
+	// 		// Tried to use Transferable ArrayBuffers but kept getting DOM Error 25. 
+	// 		// 
+
+	// 		var b64 = {
+	// 			_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+	// 			/* will return a  Uint8Array type */
+	// 			decodeArrayBuffer: function(input, buffer) {
+	// 				var bytes = (input.length/4) * 3;
+	// 				if (!buffer || buffer.byteLength != bytes) {
+	// 					// replace the buffer with a new, appropriately sized one
+	// 					buffer = new ArrayBuffer(bytes);
+	// 				}
+	// 				this.decode(input, buffer);
+					
+	// 				return buffer;
+	// 			},
+
+	// 			removePaddingChars: function(input){
+	// 				var lkey = this._keyStr.indexOf(input.charAt(input.length - 1));
+	// 				if(lkey == 64){
+	// 					return input.substring(0,input.length - 1);
+	// 				}
+	// 				return input;
+	// 			},
+
+	// 			decode: function(input, arrayBuffer) {
+	// 				//get last chars to see if are valid
+	// 				input = this.removePaddingChars(input);
+	// 				input = this.removePaddingChars(input);
+
+	// 				var bytes = parseInt((input.length / 4) * 3, 10);
+					
+	// 				var uarray;
+	// 				var chr1, chr2, chr3;
+	// 				var enc1, enc2, enc3, enc4;
+	// 				var i = 0;
+	// 				var j = 0;
+					
+	// 				if (arrayBuffer)
+	// 					uarray = new Uint8Array(arrayBuffer);
+	// 				else
+	// 					uarray = new Uint8Array(bytes);
+					
+	// 				input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+					
+	// 				for (i=0; i<bytes; i+=3) {	
+	// 					//get the 3 octects in 4 ascii chars
+	// 					enc1 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc2 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc3 = this._keyStr.indexOf(input.charAt(j++));
+	// 					enc4 = this._keyStr.indexOf(input.charAt(j++));
+
+	// 					chr1 = (enc1 << 2) | (enc2 >> 4);
+	// 					chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+	// 					chr3 = ((enc3 & 3) << 6) | enc4;
+
+	// 					uarray[i] = chr1;			
+	// 					if (enc3 != 64) uarray[i+1] = chr2;
+	// 					if (enc4 != 64) uarray[i+2] = chr3;
+	// 				}
+
+	// 				return uarray;	
+	// 			}
+	// 		}
+
+	// 		self.addEventListener('message',  function(event){
+	// 			var frame = event.data.frame
+	// 			var camera = event.data.camera
+
+	// 			var ab = event.data.ab;
+
+	// 			// convert buffers in place
+	// 			var buffers = frame.buffers;
+	// 			var buffs = []
+	// 			// if there are too many cached array buffers, drop the unneeded ones
+	// 			if (ab.length > buffers.length) {
+	// 				ab = ab.slice(0, buffer.length)
+	// 			}
+	// 			for (var i = 0; i < buffers.length; i++) {
+	// 				// gradually increase the size of the ab[] array to hold the temp buffers, 
+	// 				// and add null so it gets allocated properly
+	// 				if (ab.length <= i) {
+	// 					ab.push(null)
+	// 				}
+	// 				ab[i] = buffers[i].buffer = b64.decodeArrayBuffer(buffers[i].buffer, ab[i]);
+	// 				buffs.push(buffers[i].buffer)
+	// 			}
+	// 			switch(frame.pixelFormatType) {
+	// 				case "kCVPixelFormatType_420YpCbCr8BiPlanarFullRange":
+	// 					frame.pixelFormat = "YUV420P";
+	// 					break;
+	// 				default:
+	// 					frame.pixelFormat = frame.pixelFormatType; 
+	// 					break;
+	// 			}
+
+	// 			postMessage(event.data, buffs);
+	// 		});
+	// 	}.toString(),
+	// 	')()' ], { type: 'application/javascript' } ) )
+		
+	// 	return( blobURL );			
+	// }
+	
 }
 
 // ARKitWrapper event names:
@@ -803,6 +1195,8 @@ ARKitWrapper.SHOW_DEBUG_EVENT = 'arkit-show-debug'
 ARKitWrapper.WINDOW_RESIZE_EVENT = 'arkit-window-resize'
 ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
+ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
+ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1

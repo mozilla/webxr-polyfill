@@ -27,7 +27,7 @@ export default class Reality extends EventHandlerBase {
 	/*
 	Called when at least one active XRSession is using this Reality
 	*/
-	_start(){
+	_start(parameters){
 		throw new Error('Exending classes should implement _start')
 	}
 
@@ -38,6 +38,21 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _stop')
 	}
 
+	/*
+	Request another video frame be generated, typically from video-mixed Realities.
+	*/
+	_requestVideoFrame() {
+	}
+
+	/*
+	Start or stop video frames
+	*/
+	_stopVideoFrames() {
+	}
+
+	_startVideoFrames() {
+	}
+	
 	/*
 	Called by a session before it hands a new XRPresentationFrame to the app
 	*/
@@ -65,17 +80,7 @@ export default class Reality extends EventHandlerBase {
 	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown
 	*/
 	_findFloorAnchor(display, uid=null){
-		// Copy the head model matrix for the current pose so we have it in the promise below
-		const headModelMatrix = new Float32Array(display._headPose.poseModelMatrix)
-		return new Promise((resolve, reject) => {
-			// For now, just create an anchor at origin level. Maybe in the future search for a surface?
-			headModelMatrix[13] = 0 // Set height to 0
-			const coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
-			coordinateSystem._relativeMatrix = headModelMatrix
-			const anchor = new XRAnchor(coordinateSystem, uid)
-			this._addAnchor(anchor, display)
-			resolve(new XRAnchorOffset(anchor.uid))
-		})
+		throw new Error('Exending classes should implement _findFloorAnchor')
 	}
 
 	_getAnchor(uid){
@@ -94,5 +99,9 @@ export default class Reality extends EventHandlerBase {
 	_getLightAmbientIntensity(){
 		throw new Error('Exending classes should implement _getLightAmbientIntensity')
 	}
+
 	// attribute EventHandler onchange;
 }
+
+Reality.COMPUTER_VISION_DATA = 'cv_data'
+Reality.WINDOW_RESIZE_EVENT = 'window-resize'

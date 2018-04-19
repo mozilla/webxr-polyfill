@@ -14,10 +14,12 @@
 
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, alignEUS=true){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
+		this.useComputerVision = useComputerVision
+		this.alignEUS = alignEUS
 
 		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
 
@@ -81,12 +83,14 @@ class XRExampleBase {
 	}
 
 	_startSession(){
-		let sessionInitParamers = {
+		let sessionInitParameters = {
 			exclusive: this.createVirtualReality,
-			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION
+			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION,
+			videoFrames: this.useComputerVision,    //computer_vision_data
+			alignEUS: this.alignEUS
 		}
 		for(let display of this.displays){
-			if(display.supportsSession(sessionInitParamers)){
+			if(display.supportsSession(sessionInitParameters)){
 				this.display = display
 				break
 			}
@@ -95,7 +99,7 @@ class XRExampleBase {
 			this.showMessage('Could not find a display for this type of session')
 			return
 		}
-		this.display.requestSession(sessionInitParamers).then(session => {
+		this.display.requestSession(sessionInitParameters).then(session => {
 			this.session = session
 			this.session.depthNear = 0.1
 			this.session.depthFar = 1000.0
@@ -104,6 +108,8 @@ class XRExampleBase {
 			this.session.addEventListener('focus', ev => { this.handleSessionFocus(ev) })
 			this.session.addEventListener('blur', ev => { this.handleSessionBlur(ev) })
 			this.session.addEventListener('end', ev => { this.handleSessionEnded(ev) })
+
+			this.newSession();
 
 			if(this.shouldStartPresenting){
 				// VR Displays need startPresenting called due to input events like a click
@@ -114,6 +120,11 @@ class XRExampleBase {
 			this.showMessage('Could not initiate the session')
 		})
 	}
+
+	/*
+	  Clients should override to be called when a new session is created
+	  */
+	newSession() {}
 
 	/*
 		Empties this.el, adds a div with the message text, and shows a button to test rendering the scene to this.el
@@ -161,6 +172,19 @@ class XRExampleBase {
 	handleLayerBlur(ev){}
 
 	/*
+	* set up the video processing
+	*/
+	setVideoWorker(worker){
+		this.session.setVideoFrameHandler(worker)
+	}
+
+	// request the next frame
+	// buffers is an optional parameter, suggesting buffers that could be used
+	requestVideoFrame() {
+		this.session.requestVideoFrame();
+	}
+	
+	/*
 	Extending classes should override this to set up the scene during class construction
 	*/
 	initializeScene(){}
@@ -179,8 +203,10 @@ class XRExampleBase {
 			this.requestedFloor = true
 			frame.findFloorAnchor('first-floor-anchor').then(anchorOffset => {
 				if(anchorOffset === null){
-					console.error('could not find the floor anchor')
-					return
+					console.log('could not find the floor anchor')
+					const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
+					const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0])
+					anchorOffset = new XRAnchorOffset(anchorUID)
 				}
 				this.addAnchoredNode(anchorOffset, this.floorGroup)
 			}).catch(err => {
@@ -202,12 +228,13 @@ class XRExampleBase {
 		this.renderer.clear()
 
 		this.camera.matrixAutoUpdate = false
-		this.camera.matrix.fromArray(headPose.poseModelMatrix)
-		this.camera.updateMatrixWorld()
+		// this.camera.matrix.fromArray(headPose.poseModelMatrix)
+		// this.camera.updateMatrixWorld()
 		// Render each view into this.session.baseLayer.context
 		for(const view of frame.views){
 			// Each XRView has its own projection matrix, so set the camera to use that
-			this.camera.matrixWorldInverse.fromArray(view.viewMatrix)
+			this.camera.matrix.fromArray(view.viewMatrix)
+			this.camera.updateMatrixWorld()
 			this.camera.projectionMatrix.fromArray(view.projectionMatrix)
 
 			// Set up the renderer to the XRView's viewport and then render
@@ -251,6 +278,24 @@ class XRExampleBase {
 		this.scene.add(node)
 	}
 
+	/* 
+	Remove a node from the scene
+	*/
+	removeAnchoredNode(node) {
+		for (var i = 0; i < this.anchoredNodes.length; i++) {
+			if (node === this.anchoredNodes[i].node) {
+				this.anchoredNodes.splice(i,1);
+                this.scene.remove(node)
+				return;
+			}
+		}
+	}
+
+	/*
+	Extending classes should override this to get notified when an anchor for node is removed
+	*/
+	anchoredNodeRemoved(node) {}
+	
 	/*
 	Get the anchor data from the frame and use it and the anchor offset to update the pose of the node, this must be an Object3D
 	*/
@@ -258,6 +303,8 @@ class XRExampleBase {
 		const anchor = frame.getAnchor(anchorOffset.anchorUID)
 		if(anchor === null){
 			throttledConsoleLog('Unknown anchor uid', anchorOffset.anchorUID)
+			this.anchoredNodeRemoved(node);
+			this.removeAnchoredNode(node);
 			return
 		}
 		node.matrixAutoUpdate = false

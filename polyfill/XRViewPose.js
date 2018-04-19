@@ -54,4 +54,6 @@ export default class XRViewPose {
 	}
 }
 
-XRViewPose.SITTING_EYE_HEIGHT = 1.1 // meters
+// We are not going to use this any more.  The way it was handled was broken, we'll just
+// use the raw values for the coordinate systems.
+XRViewPose.SITTING_EYE_HEIGHT = 0 // meters
