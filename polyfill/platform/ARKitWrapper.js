@@ -431,7 +431,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 					 */
  
 				 ////////////////////////////////////////////////
+				 mat4.getRotation(hitVars.planeQuaternion, hitVars.planeMatrix)
+
 				 // Test by converting intersection into plane-space.
+
 				 mat4.invert(hitVars.planeMatrix, hitVars.planeMatrix);
 				 vec3.transformMat4(
 					 hitVars.planeIntersectionLocal,
@@ -459,7 +462,6 @@ export default class ARKitWrapper extends EventHandlerBase {
  
 				 // The intersection is valid - create a matrix from hit position.
 				 //mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
-				 mat4.getRotation(hitVars.planeQuaternion, hitVars.planeMatrix)
                  mat4.fromRotationTranslation(hitVars.planeHit, hitVars.planeQuaternion, hitVars.planeIntersection);
 				var hit = new VRHit();
 				 for (var j = 0; j < 16; j++) {
@@ -839,7 +841,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 							id: element.uuid,
 							center: element.plane_center,
 							extent: [element.plane_extent.x, element.plane_extent.z],
-							modelMatrix: element.transform
+							modelMatrix: element.transform,
+							alignment: element.plane_alignment
 						});
 					} else {
 						plane.center = element.plane_center;
