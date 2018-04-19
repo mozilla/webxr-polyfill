@@ -222,8 +222,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 planeNormal: vec3.create(),
 			 planeIntersection: vec3.create(),
 			 planeIntersectionLocal: vec3.create(),
-			 planeHit: mat4.create()
-			 //planeQuaternion: quat.create()
+			 planeHit: mat4.create(),
+			 planeQuaternion: quat.create()
 		 };
  
 		 /**
@@ -366,20 +366,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 // Get the position of the anchor in world-space.
 				 vec3.set(
 					 hitVars.planeCenter,
-					 0,
-					 0,
-					 0
+                     plane.center.x,
+                     plane.center.y,
+                     plane.center.z
 				 );
 				 vec3.transformMat4(
 					 hitVars.planePosition,
 					 hitVars.planeCenter,
 					 hitVars.planeMatrix
 				 );
- 
+
+				 hitVars.planeAlignment = plane.alignment
+
 				 // Get the plane normal.
-				 // TODO: use alignment to determine this.
-				 vec3.set(hitVars.planeNormal, 0, 1, 0);
- 
+				 if (hitVars.planeAlignment === 0) {
+                     vec3.set(hitVars.planeNormal, 0, 1, 0);
+				 } else {
+                     vec3.set(hitVars.planeNormal, hitVars.planeMatrix[4], hitVars.planeMatrix[5], hitVars.planeMatrix[6]);
+				 }
+
 				 // Check if the ray intersects the plane.
 				 var t = rayIntersectsPlane(
 					 hitVars.planeNormal,
@@ -453,7 +458,9 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 ////////////////////////////////////////////////
  
 				 // The intersection is valid - create a matrix from hit position.
-				 mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
+				 //mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
+				 mat4.getRotation(hitVars.planeQuaternion, hitVars.planeMatrix)
+                 mat4.fromRotationTranslation(hitVars.planeHit, hitVars.planeQuaternion, hitVars.planeIntersection);
 				var hit = new VRHit();
 				 for (var j = 0; j < 16; j++) {
 					 hit.modelMatrix[j] = hitVars.planeHit[j];
@@ -799,7 +806,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 						id: element.uuid,
 						center: element.plane_center,
 						extent: [element.plane_extent.x, element.plane_extent.z],
-						modelMatrix: element.transform
+						modelMatrix: element.transform,
+						alignment: element.plane_alignment
 					});
 				}else{
 					this.anchors_.set(element.uuid, {
