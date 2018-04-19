@@ -633,6 +633,19 @@ export default class ARKitWrapper extends EventHandlerBase {
 		window.webkit.messageHandlers.removeAnchors.postMessage([uid])
 	}
 
+	/*
+	 * ask for an image anchor.
+	 * 
+	 * Provide a uid for the anchor that will be created.
+	 * Supply the image in an ArrayBuffer, typedArray or ImageData
+	 * width and height are in meters 
+	 */
+	createImageAnchor(uid, buffer, width, height) {
+		var b64 = base64.encode(buffer);
+
+		// something like addAnchor?
+	}
+		
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
@@ -1079,6 +1092,7 @@ export default class ARKitWrapper extends EventHandlerBase {
     _stopSendingComputerVisionData() {
         window.webkit.messageHandlers.stopSendingComputerVisionData.postMessage({})
 	}
+
 
 	// _buildWorkerBlob() {
 	// 	var blobURL = URL.createObjectURL( new Blob([ '(',
