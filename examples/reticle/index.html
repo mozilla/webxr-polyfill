@@ -70,13 +70,25 @@
 				// Called during construction to allow the app to populate this.scene
 				initializeScene(){
 					// Add a reticle at the scene
+                    /*this.reticle = new THREE.Mesh(
+                        new THREE.CubeGeometry(0.1, 0.1, 0.1, 30, 30, 30),
+                        new THREE.MeshBasicMaterial({ color: '#DDFFDD' })
+                    )*/
+
+                    this.reticleParent = new THREE.Object3D()
 					this.reticle = new THREE.Mesh(
 						new THREE.RingGeometry(0.04, 0.05, 36, 64),
 						new THREE.MeshBasicMaterial({ color: '#DDFFDD' })
 					)
+
+                    /*this.reticle = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.01, 32, 32),
+                        new THREE.MeshBasicMaterial({ color: '#DDFFDD' })
+                    )*/
 					this.reticle.geometry.applyMatrix(new THREE.Matrix4().makeRotationX(THREE.Math.degToRad(-90)))
 					this.reticle.visible = false
-					this.scene.add(this.reticle)
+                    this.reticleParent.add(this.reticle)
+					this.scene.add(this.reticleParent)
 
 					// Add a few lights
 					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
@@ -100,8 +112,9 @@
 							this.reticle.visible = true
 							model.fromArray(hit[0].modelMatrix);
 							model.decompose(tempPos, tempQuat, tempScale);
-							this.reticle.position.copy(tempPos);
-							this.reticle.quaternion.copy(tempQuat);
+                            this.reticleParent.position.copy(tempPos);
+                            this.reticleParent.quaternion.copy(tempQuat);
+                            //this.reticle.matrixWorld.set(hit[0].modelMatrix)
 						}
 				}
 

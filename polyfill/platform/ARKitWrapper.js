@@ -222,8 +222,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			 planeNormal: vec3.create(),
 			 planeIntersection: vec3.create(),
 			 planeIntersectionLocal: vec3.create(),
-			 planeHit: mat4.create()
-			 //planeQuaternion: quat.create()
+			 planeHit: mat4.create(),
+			 planeQuaternion: quat.create()
 		 };
  
 		 /**
@@ -366,20 +366,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 // Get the position of the anchor in world-space.
 				 vec3.set(
 					 hitVars.planeCenter,
-					 0,
-					 0,
-					 0
+                     plane.center.x,
+                     plane.center.y,
+                     plane.center.z
 				 );
 				 vec3.transformMat4(
 					 hitVars.planePosition,
 					 hitVars.planeCenter,
 					 hitVars.planeMatrix
 				 );
- 
+
+				 hitVars.planeAlignment = plane.alignment
+
 				 // Get the plane normal.
-				 // TODO: use alignment to determine this.
-				 vec3.set(hitVars.planeNormal, 0, 1, 0);
- 
+				 if (hitVars.planeAlignment === 0) {
+                     vec3.set(hitVars.planeNormal, 0, 1, 0);
+				 } else {
+                     vec3.set(hitVars.planeNormal, hitVars.planeMatrix[4], hitVars.planeMatrix[5], hitVars.planeMatrix[6]);
+				 }
+
 				 // Check if the ray intersects the plane.
 				 var t = rayIntersectsPlane(
 					 hitVars.planeNormal,
@@ -426,7 +431,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 					 */
  
 				 ////////////////////////////////////////////////
+				 mat4.getRotation(hitVars.planeQuaternion, hitVars.planeMatrix)
+
 				 // Test by converting intersection into plane-space.
+
 				 mat4.invert(hitVars.planeMatrix, hitVars.planeMatrix);
 				 vec3.transformMat4(
 					 hitVars.planeIntersectionLocal,
@@ -453,7 +461,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				 ////////////////////////////////////////////////
  
 				 // The intersection is valid - create a matrix from hit position.
-				 mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
+				 //mat4.fromTranslation(hitVars.planeHit, hitVars.planeIntersection);
+                 mat4.fromRotationTranslation(hitVars.planeHit, hitVars.planeQuaternion, hitVars.planeIntersection);
 				var hit = new VRHit();
 				 for (var j = 0; j < 16; j++) {
 					 hit.modelMatrix[j] = hitVars.planeHit[j];
@@ -624,6 +633,19 @@ export default class ARKitWrapper extends EventHandlerBase {
 		window.webkit.messageHandlers.removeAnchors.postMessage([uid])
 	}
 
+	/*
+	 * ask for an image anchor.
+	 * 
+	 * Provide a uid for the anchor that will be created.
+	 * Supply the image in an ArrayBuffer, typedArray or ImageData
+	 * width and height are in meters 
+	 */
+	createImageAnchor(uid, buffer, width, height) {
+		var b64 = base64.encode(buffer);
+
+		// something like addAnchor?
+	}
+		
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
@@ -761,8 +783,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform],
-					h_plane_center: {x, y, z},  // only on planes
-					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+					plane_center: {x, y, z},  // only on planes
+					plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			],
 			"removeObjects": [
@@ -772,8 +794,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 				{
 					uuid: DOMString (unique UID),
 					transform: [4x4 column major affine transform]
-					h_plane_center: {x, y, z},  // only on planes
-					h_plane_center: {x, y, z}	// only on planes, where x/z are used,
+					plane_center: {x, y, z},  // only on planes
+					plane_center: {x, y, z}	// only on planes, where x/z are used,
 				}, ...
 			]
 		}
@@ -794,12 +816,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.newObjects.length){
 			for (let i = 0; i < data.newObjects.length; i++) {
 				const element = data.newObjects[i];
-				if(element.h_plane_center){
+				if(element.plane_center){
 					this.planes_.set(element.uuid, {
 						id: element.uuid,
-						center: element.h_plane_center,
-						extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-						modelMatrix: element.transform
+						center: element.plane_center,
+						extent: [element.plane_extent.x, element.plane_extent.z],
+						modelMatrix: element.transform,
+						alignment: element.plane_alignment
 					});
 				}else{
 					this.anchors_.set(element.uuid, {
@@ -824,18 +847,19 @@ export default class ARKitWrapper extends EventHandlerBase {
 		if(data.objects.length){
 			for (let i = 0; i < data.objects.length; i++) {
 				const element = data.objects[i];
-				if(element.h_plane_center){
+				if(element.plane_center){
 					var plane = this.planes_.get(element.uuid);
 					if(!plane){
 						this.planes_.set(element.uuid, {
 							id: element.uuid,
-							center: element.h_plane_center,
-							extent: [element.h_plane_extent.x, element.h_plane_extent.z],
-							modelMatrix: element.transform
+							center: element.plane_center,
+							extent: [element.plane_extent.x, element.plane_extent.z],
+							modelMatrix: element.transform,
+							alignment: element.plane_alignment
 						});
 					} else {
-						plane.center = element.h_plane_center;
-						plane.extent = [element.h_plane_extent.x, element.h_plane_extent.z];
+						plane.center = element.plane_center;
+						plane.extent = [element.plane_extent.x, element.plane_extent.z];
 						plane.modelMatrix = element.transform;
 					}
 				}else{
@@ -1069,6 +1093,7 @@ export default class ARKitWrapper extends EventHandlerBase {
         window.webkit.messageHandlers.stopSendingComputerVisionData.postMessage({})
 	}
 
+
 	// _buildWorkerBlob() {
 	// 	var blobURL = URL.createObjectURL( new Blob([ '(',
 
@@ -1200,9 +1225,11 @@ ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
-ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE = 8
 ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE = 2
+ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_VERTICAL_PLANE = 4
+ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE = 8
 ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT = 16
+ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_GEOMETRY = 32
 
 ARKitWrapper.HIT_TEST_TYPE_ALL = ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT |
 	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
