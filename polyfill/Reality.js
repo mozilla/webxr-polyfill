@@ -75,6 +75,10 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _findAnchor')
 	}
 
+    _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+        throw new Error('Exending classes should implement _createImageAnchor')
+	}
+
 	/*
 	Find an XRAnchorOffset that is at floor level below the current head pose
 	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown

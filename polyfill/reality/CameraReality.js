@@ -470,6 +470,12 @@ export default class CameraReality extends Reality {
 		})
 	}
 
+    _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+		if (this._arKitWrapper) {
+            this._arKitWrapper.createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
+        }
+	}
+
 	_removeAnchor(uid){
 		if(this._arKitWrapper) {
 			this._arKitWrapper.removeAnchor(uid)

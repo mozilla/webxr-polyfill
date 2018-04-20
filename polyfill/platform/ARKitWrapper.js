@@ -640,10 +640,16 @@ export default class ARKitWrapper extends EventHandlerBase {
 	 * Supply the image in an ArrayBuffer, typedArray or ImageData
 	 * width and height are in meters 
 	 */
-	createImageAnchor(uid, buffer, width, height) {
+	createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
 		var b64 = base64.encode(buffer);
 
-		// something like addAnchor?
+        window.webkit.messageHandlers.addImageAnchor.postMessage({
+			uid: uid,
+			buffer: b64,
+			imageWidth: width,
+			imageHeight: height,
+			physicalWidth: physicalWidthInMeters
+		})
 	}
 		
 	/* 
@@ -1222,6 +1228,16 @@ ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
 ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
 ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
+
+// ARKit Detection Image Orientations
+ARKitWrapper.ORIENTATION_UP = 1        			// 0th row at top,    0th column on left   - default orientation
+ARKitWrapper.ORIENTATION_UP_MIRRORED = 2    	// 0th row at top,    0th column on right  - horizontal flip
+ARKitWrapper.ORIENTATION_DOWN = 3          		// 0th row at bottom, 0th column on right  - 180 deg rotation
+ARKitWrapper.ORIENTATION_DOWN_MIRRORED = 4  	// 0th row at bottom, 0th column on left   - vertical flip
+ARKitWrapper.ORIENTATION_LEFT_MIRRORED = 5  	// 0th row on left,   0th column at top
+ARKitWrapper.ORIENTATION_RIGHT = 6         		// 0th row on right,  0th column at top    - 90 deg CW
+ARKitWrapper.ORIENTATION_RIGHT_MIRRORED = 7 	// 0th row on right,  0th column on bottom
+ARKitWrapper.ORIENTATION_LEFT = 8				// 0th row on left,   0th column at bottom - 90 deg CCW
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
