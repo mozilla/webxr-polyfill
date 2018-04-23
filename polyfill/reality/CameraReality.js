@@ -472,8 +472,10 @@ export default class CameraReality extends Reality {
 
     _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
 		if (this._arKitWrapper) {
-            this._arKitWrapper.createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
-        }
+            return this._arKitWrapper.createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
+        } else {
+			return null;
+		}
 	}
 
 	_removeAnchor(uid){

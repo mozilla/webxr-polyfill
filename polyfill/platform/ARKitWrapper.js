@@ -640,18 +640,21 @@ export default class ARKitWrapper extends EventHandlerBase {
 	 * Supply the image in an ArrayBuffer, typedArray or ImageData
 	 * width and height are in meters 
 	 */
-	createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
-		var b64 = base64.encode(buffer);
+    createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+		return new Promise((resolve, reject) => {
+            let b64 = base64.encode(buffer);
 
-        window.webkit.messageHandlers.addImageAnchor.postMessage({
-			uid: uid,
-			buffer: b64,
-			imageWidth: width,
-			imageHeight: height,
-			physicalWidth: physicalWidthInMeters
+            window.webkit.messageHandlers.addImageAnchor.postMessage({
+                uid: uid,
+                buffer: b64,
+                imageWidth: width,
+                imageHeight: height,
+                physicalWidth: physicalWidthInMeters,
+				callback: this._createPromiseCallback('createImageAnchor', resolve)
+            })
 		})
 	}
-		
+
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?

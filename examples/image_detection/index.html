@@ -37,17 +37,25 @@
 </head>
 <body>
 <div id="target" />
-<img id="aruco-marker" src="Aruco-marker.jpg">
+<div id="aruco-marker-1" style="width: 100px">
+	<img id="aruco-marker-1-image" src="Aruco-marker-1.png" >
+	<button id="aruco-marker-1-button" style="width: 100px" onclick="window.pageApp.registerMarker1Clicked()">Register detection image</button>
+	<div id="aruco-marker-1-text" hidden="true" style="color: white; width: 100px"></div>
+</div>
+<div id="aruco-marker-2" style="width: 100px">
+	<img id="aruco-marker-2-image" src="Aruco-marker-2.png" >
+	<button id="aruco-marker-2-button" style="width: 100px" onclick="window.pageApp.registerMarker2Clicked()">Register detection image</button>
+	<div id="aruco-marker-2-text" hidden="true" style="color: white; width: 100px"></div>
+</div>
 <div onclick="hideMe(this)" id="description">
-	<h2>Hit Test</h2>
+	<h2>Image detection test</h2>
 	<h5>(click to dismiss)</h5>
-	<p>Find anchors by searching on tap events.</p>
+	<p>Register the images by tapping the buttons and let ARKit detect them.</p>
 </div>
 <script>
     class ARKitImageDetectionExample extends XRExampleBase {
         constructor(domElement){
             super(domElement, false)
-            this._tapEventData = null // Will be filled in on touch start and used in updateScene
 
             // A message at the bottom of the screen that shows whether a surface has been found
             this._messageEl = document.createElement('div')
@@ -58,7 +66,8 @@
             this._messageEl.style.color = 'white'
             this._messageEl.style['font-size'] = '16px'
 
-            this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+            this.shouldRegisterMarker1 = false
+            this.shouldRegisterMarker2 = false
         }
 
         // Called during construction to allow the app to populate this.scene
@@ -80,65 +89,61 @@
 
         // Called once per frame, before render, to give the app a chance to update this.scene
         updateScene(frame){
-            // If we have tap data, attempt a hit test for a surface
-            if(this._tapEventData !== null){
-                const x = this._tapEventData[0]
-                const y = this._tapEventData[1]
-                this._tapEventData = null
 
-                let imageData = this.getImageData()
-                frame.createImageAnchor('aruco-marker', imageData.data, imageData.width, imageData.height, 0.1)
+            if (this.shouldRegisterMarker1) {
+                this.shouldRegisterMarker1 = false
 
+				let arucoMarker1Button = document.getElementById('aruco-marker-1-button')
+                arucoMarker1Button.hidden = true
 
+                let imageData = this.getImageData('aruco-marker-1-image')
+                let arucoMarker1Image = document.getElementById('aruco-marker-1-image')
+                arucoMarker1Image.hidden = true
 
-                // Attempt a hit test using the normalized screen coordinates
-				/*
-                frame.findAnchor(x, y).then(anchorOffset => {
-                    if(anchorOffset === null){
-                        this._messageEl.innerHTML = 'miss'
-                    } else {
-                        this._messageEl.innerHTML = 'hit'
-                        this.addAnchoredNode(anchorOffset, this._createSceneGraphNode())
-                    }
-                }).catch(err => {
-                    console.error('Error in hit test', err)
+                frame.createImageAnchor('aruco-marker-1', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
+                    let anchor = result;
+                    let div = document.getElementById("aruco-marker-1-text")
+                    div.hidden = false
+                    div.innerText = JSON.stringify(anchor)
                 })
-                */
+			}
+
+
+            if (this.shouldRegisterMarker2) {
+                this.shouldRegisterMarker2 = false
+
+                let arucoMarker2Button = document.getElementById('aruco-marker-2-button')
+                arucoMarker2Button.hidden = true
+
+                let imageData = this.getImageData('aruco-marker-2-image')
+                let arucoMarker2Image = document.getElementById('aruco-marker-2-image')
+                arucoMarker2Image.hidden = true
+
+                frame.createImageAnchor('aruco-marker-2', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
+                    let anchor = result;
+                    let div = document.getElementById("aruco-marker-2-text")
+                    div.hidden = false
+                    div.innerText = JSON.stringify(anchor)
+                })
             }
         }
 
-        getImageData() {
+        getImageData(imageID) {
             let canvas = document.createElement('canvas');
             let context = canvas.getContext('2d');
-            let img = document.getElementById('aruco-marker');
+            let img = document.getElementById(imageID);
             canvas.width = img.width;
             canvas.height = img.height;
             context.drawImage(img, 0, 0 );
             return context.getImageData(0, 0, img.width, img.height);
 		}
 
-        // Save screen taps as normalized coordinates for use in this.updateScene
-        _onTouchStart(ev){
-            if (!ev.touches || ev.touches.length === 0) {
-                console.error('No touches on touch event', ev)
-                return
-            }
-            //save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
-            this._tapEventData = [
-                ev.touches[0].clientX / window.innerWidth,
-                ev.touches[0].clientY / window.innerHeight
-            ]
-        }
+        registerMarker1Clicked() {
+            this.shouldRegisterMarker1 = true
+		}
 
-        // Creates a box used to indicate the location of an anchor offset
-        _createSceneGraphNode(){
-            let group = new THREE.Group()
-            let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
-            let material = new THREE.MeshPhongMaterial({ color: '#99FF99' })
-            let mesh = new THREE.Mesh(geometry, material)
-            mesh.position.set(0, 0.05, 0)
-            group.add(mesh)
-            return group
+        registerMarker2Clicked() {
+            this.shouldRegisterMarker2 = true
         }
     }
 

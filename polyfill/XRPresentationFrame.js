@@ -71,7 +71,7 @@ export default class XRPresentationFrame {
 	}
 
     createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
-		this._session.reality._createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
+		return this._session.reality._createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
 	}
 
 	hitTestNoAnchor(normalizedScreenX, normalizedScreenY){
