@@ -14,12 +14,13 @@
 
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, alignEUS=true){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, alignEUS=true, worldSensing=true){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
 		this.useComputerVision = useComputerVision
 		this.alignEUS = alignEUS
+		this.worldSensing = worldSensing
 
 		this._boundHandleFrame = this._handleFrame.bind(this) // Useful for setting up the requestAnimationFrame callback
 
@@ -87,7 +88,8 @@ class XRExampleBase {
 			exclusive: this.createVirtualReality,
 			type: this.createVirtualReality ? XRSession.REALITY : XRSession.AUGMENTATION,
 			videoFrames: this.useComputerVision,    //computer_vision_data
-			alignEUS: this.alignEUS
+			alignEUS: this.alignEUS,
+			worldSensing: this.worldSensing
 		}
 		for(let display of this.displays){
 			if(display.supportsSession(sessionInitParameters)){
