@@ -99,8 +99,8 @@
                 let imageData = this.getImageData('aruco-marker-1-image')
                 let arucoMarker1Image = document.getElementById('aruco-marker-1-image')
                 arucoMarker1Image.hidden = true
-
-                frame.createImageAnchor('aruco-marker-1', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
+				
+                this.session.createImageAnchor('aruco-marker-1', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
                     let anchor = result;
                     let div = document.getElementById("aruco-marker-1-text")
                     div.hidden = false

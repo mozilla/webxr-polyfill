@@ -70,10 +70,6 @@ export default class XRPresentationFrame {
 		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
 	}
 
-    createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
-		return this._session.reality._createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
-	}
-
 	hitTestNoAnchor(normalizedScreenX, normalizedScreenY){
 		// Array<VRHit> hitTestNoAnchor(float32, float32); // cast a ray to find all plane intersections in the Reality
 		return this._session.reality._hitTestNoAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
