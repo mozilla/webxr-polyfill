@@ -124,7 +124,8 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
 			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
-			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA]
+			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA],
+			['userGrantedWorldSensingData', ARKitWrapper.USER_GRANTED_WORLD_SENSING_DATA]
             //,['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
@@ -1231,6 +1232,7 @@ ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
 ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
 ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
+ARKitWrapper.USER_GRANTED_WORLD_SENSING_DATA = 'user-granted-world-sensing-data'
 
 // ARKit Detection Image Orientations
 ARKitWrapper.ORIENTATION_UP = 1        			// 0th row at top,    0th column on left   - default orientation
