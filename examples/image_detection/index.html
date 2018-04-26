@@ -119,7 +119,7 @@
                 let arucoMarker2Image = document.getElementById('aruco-marker-2-image')
                 arucoMarker2Image.hidden = true
 
-                frame.createImageAnchor('aruco-marker-2', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
+                this.session.createImageAnchor('aruco-marker-2', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
                     let anchor = result;
                     let div = document.getElementById("aruco-marker-2-text")
                     div.hidden = false
