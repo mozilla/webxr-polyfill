@@ -5,9 +5,9 @@ import MatrixMath from './fill/MatrixMath.js'
 XRPresentationFrame provides all of the values needed to render a single frame of an XR scene to the XRDisplay.
 */
 export default class XRPresentationFrame {
-	constructor(session){
+	constructor(session, timestamp){
 		this._session = session
-		this._timestamp = this._session.reality._getTimeStamp();
+		this._timestamp = this._session.reality._getTimeStamp(timestamp);
 	}
 
 	get session(){ return this._session }

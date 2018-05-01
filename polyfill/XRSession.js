@@ -59,13 +59,13 @@ export default class XRSession extends EventHandlerBase {
 	}
 
     _handleRequestFrame(callback) {
-		return this._display._requestAnimationFrame(() => {
+		return this._display._requestAnimationFrame((timestamp) => {
 			if (this._skip) {
 				this._skip = false;
 				return this._handleRequestFrame(callback)
 			}
 			//this._skip = true;  // try skipping every second raf
-			const frame = this._createPresentationFrame()
+			const frame = this._createPresentationFrame(timestamp)
 			this._updateCameraAnchor(frame)
 
 			this._display._reality._handleNewFrame(frame)
@@ -177,8 +177,8 @@ export default class XRSession extends EventHandlerBase {
 		this._display._startVideoFrames();
 	}
 
-	_createPresentationFrame(){
-		return new XRPresentationFrame(this)
+	_createPresentationFrame(timestamp){
+		return new XRPresentationFrame(this, timestamp)
 	}
 
 	_getCoordinateSystem(...types){
