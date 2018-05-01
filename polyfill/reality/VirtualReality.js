@@ -73,6 +73,9 @@ export default class VirtualReality extends Reality {
 		})
 	}
 
+	_getTimeStamp(timestamp) {
+		return timestamp
+	}
 
 
 }
