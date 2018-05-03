@@ -183,18 +183,34 @@
 					var txt = "ARKit Light Estimate: " + this.lightEstimate.toFixed(2) + "<br>CV Average Intensity: " + this.intensity.toFixed(2)
 					+ "<br>Center RGB: " + this.cr.toFixed(0) + " / " + this.cg.toFixed(0) + " / " + this.cb.toFixed(0) + "<br><center>";
 					
-					for (var i=0; i<colors.length; i++) {
-						var c = colors[i];
-						c.dist = (c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb);
-						c.dist = Math.sqrt(c.dist + (c.cg - this.cg) * (c.cg - this.cg))
-						txt += c.dist.toFixed(0) + " " 
+					if (this.cb < 100) {
+						// there are no blue Skittles!
+						if (this.cr > 225) {
+						// red, yellow, or orange
+							if (this.cg > 225) {
+								// yellow
+								txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>YELLOW</h2>"; 
+							} else if (this.cg < 100) {
+								txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>RED</h2>"; 
+							} else {
+								txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>ORANGE</h2>"; 
+							}
+						} else if (this.cr < 150 && this.cg > 200) {
+							txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>GREEN</h2>"; 
+						}
 					}
-					for (i=0; i<colors.length; i++) {
-						c = colors[i];
-						if (c.dist < 30) {
-							txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
-						} 
-					}
+					// for (var i=0; i<colors.length; i++) {
+					// 	var c = colors[i];
+					// 	c.dist = (c.cr - this.cr) * (c.cr - this.cr) + (c.cb - this.cb)*(c.cb - this.cb);
+					// 	c.dist = Math.sqrt(c.dist + (c.cg - this.cg) * (c.cg - this.cg))
+					// 	txt += c.dist.toFixed(0) + " " 
+					// }
+					// for (i=0; i<colors.length; i++) {
+					// 	c = colors[i];
+					// 	if (c.dist < 30) {
+					// 		txt += "<br><br>TASTE THE<br>RAINBOW!<br><h2>" + c.name + "</h2>"; 
+					// 	} 
+					// }
 					txt+="</center>"
 
 					this.messageText = txt;
