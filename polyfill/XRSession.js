@@ -82,9 +82,9 @@ export default class XRSession extends EventHandlerBase {
 	end(){
 		if(this._ended) return
 		for (var i = 0; i< this._frameAnchors.length; i++) {
-			this._display._reality._removeAnchor(this._frameAnchors[i])			
+			this._display._reality._removeAnchor(this._frameAnchors[i].uid)			
 		}
-		this._frameAnchors = null;
+		this._frameAnchors = [];
 		this._ended = true
 		this._display._stop()
 		return new Promise((resolve, reject) => {
