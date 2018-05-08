@@ -607,12 +607,13 @@ export default class CameraReality extends Reality {
 		}
 	}
 
-	_getTimeStamp() {
+	_getTimeStamp(timestamp) {
 		if(this._arKitWrapper !== null){
 			return this._arKitWrapper.timestamp;
 		}else{
 			// use performance.now()
-			return 	( performance || Date ).now();
+			//return 	( performance || Date ).now();
+			return timestamp
 		}
 	}
 	/*
