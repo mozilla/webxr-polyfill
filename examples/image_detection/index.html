@@ -20,6 +20,14 @@
 			height: 100%;
 			position: absolute;
 		}
+        .reset-button {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 2em;
+				padding: 10px;
+			}
 		.common-message {
 			position: absolute;
 			top: 50%;
@@ -79,6 +87,8 @@
 
 			this.duckyCreated = false
             this.imageDetectionCreationRequested = false
+            this.imageActivateDection = false;
+            this.imageActivated = false;
 
 			loadGLTF('./DuckyMesh.glb').then(gltf => {
 			    this.ducky = new THREE.Group()
@@ -94,46 +104,64 @@
 
         // Called once per frame, before render, to give the app a chance to update this.scene
         updateScene(frame){
+            let hubsImageName = 'hubs'
 
             if (!this.imageDetectionCreationRequested && this.duckyCreated) {
                 this.imageDetectionCreationRequested = true
 
                 let hubsImageData = this.getImageData('hubs-image')
-				let hubsImageName = 'hubs'
 
                 this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
-					this.session.activateDetectionImage(hubsImageName).then(imageAnchorTransform => {
-                        const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+                    this.resetButton = document.createElement('button')
+                    this.resetButton.setAttribute('class', 'reset-button')
+                    this.resetButton.innerText = 'Reset'
+                    this.el.appendChild(this.resetButton)
+                    this.resetButton.addEventListener('click', ev => {
+                        this.imageActivateDection = true;
+                        this.removeAnchoredNode(this.ducky)
+                    })
 
-						let model = new THREE.Matrix4();
-                        let tempPos = new THREE.Vector3();
-                        let tempQuat = new THREE.Quaternion();
-                        let tempScale = new THREE.Vector3();
+                    // ready to go!
+                    this.imageActivateDection = true;
+                }).catch(error => {
+                    console.error(`error creating ducky: ${error}`)
+				})
+            }
 
-                        model.fromArray(imageAnchorTransform);
-                        model.decompose(tempPos, tempQuat, tempScale);
+            if (!this.imageActivated && this.imageActivateDection) {
+                this.imageActivated = true;
+                this.imageActivateDection = false;
 
-                        const anchorUID = frame.addAnchor(headCoordinateSystem, [tempPos.x, tempPos.y, tempPos.z], [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w])
+                this.session.activateDetectionImage(hubsImageName).then(imageAnchorTransform => {
+                    this.imageActivated = false;
+                    const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
-                        // var markerbox = new THREE.Object3D();
-                        // var markerboxGeom = new THREE.Mesh(
-                        //     new THREE.BoxBufferGeometry(0.2, 0.01, 0.145),
-                        //     new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
-                        // )
-                        // markerboxGeom.position.set(0, 0.005, 0);
-                        // markerbox.add(markerboxGeom)
-                        // markerbox.add(this.ducky)
-                        // this.addAnchoredNode(new XRAnchorOffset(anchorUID), markerbox)
+                    let model = new THREE.Matrix4();
+                    let tempPos = new THREE.Vector3();
+                    let tempQuat = new THREE.Quaternion();
+                    let tempScale = new THREE.Vector3();
 
-                        // uncomment the above and comment this line, if you want to see how well
-                        // the 3D content lines up with the image
-                        this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
-					}).catch(error => {
-                        console.error(`error activating ducky: ${error}`)
-					})
+                    model.fromArray(imageAnchorTransform);
+                    model.decompose(tempPos, tempQuat, tempScale);
+
+                    const anchorUID = frame.addAnchor(headCoordinateSystem, [tempPos.x, tempPos.y, tempPos.z], [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w])
+
+                    // var markerbox = new THREE.Object3D();
+                    // var markerboxGeom = new THREE.Mesh(
+                    //     new THREE.BoxBufferGeometry(0.2, 0.01, 0.145),
+                    //     new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+                    // )
+                    // markerboxGeom.position.set(0, 0.005, 0);
+                    // markerbox.add(markerboxGeom)
+                    // markerbox.add(this.ducky)
+                    // this.addAnchoredNode(new XRAnchorOffset(anchorUID), markerbox)
+
+                    // uncomment the above and comment this line, if you want to see how well
+                    // the 3D content lines up with the image
+                    this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
                 }).catch(error => {
                     console.error(`error activating ducky: ${error}`)
-				})
+                })
             }
         }
 
