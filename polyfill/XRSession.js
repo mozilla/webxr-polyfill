@@ -202,6 +202,10 @@ export default class XRSession extends EventHandlerBase {
     createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
         return this.reality._createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
     }
+
+    activateDetectionImage(uid) {
+        return this.reality._activateDetectionImage(uid, this._display)
+	}
 	
 	/*
 	attribute EventHandler onblur;

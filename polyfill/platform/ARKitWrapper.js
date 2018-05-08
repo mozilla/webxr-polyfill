@@ -616,7 +616,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		transform - anchor transformation matrix
 	}
 	*/
-	addAnchor(uid, transform){
+    addAnchor(uid, transform){
 		return new Promise((resolve, reject) => {
 			if (!this._isInitialized){
 				reject(new Error('ARKit is not initialized'));
@@ -643,9 +643,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 	 */
     createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
 		return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
+
             let b64 = base64.encode(buffer);
 
-            window.webkit.messageHandlers.addImageAnchor.postMessage({
+            window.webkit.messageHandlers.createImageAnchor.postMessage({
                 uid: uid,
                 buffer: b64,
                 imageWidth: width,
@@ -654,6 +659,25 @@ export default class ARKitWrapper extends EventHandlerBase {
 				callback: this._createPromiseCallback('createImageAnchor', resolve)
             })
 		})
+	}
+
+    /***
+	 * activateDetectionImage activates an image and waits for the detection
+     * @param uid The UID of the image to activate, previously created via "createImageAnchor"
+     * @returns {Promise<any>} a promise that will be resolved when ARKit detects the image, or an error otherwise
+     */
+	activateDetectionImage(uid) {
+        return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
+
+            window.webkit.messageHandlers.activateDetectionImage.postMessage({
+                uid: uid,
+                callback: this._createPromiseCallback('activateDetectionImage', resolve)
+            })
+        })
 	}
 
 	/* 

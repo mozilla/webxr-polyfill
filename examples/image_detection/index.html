@@ -30,6 +30,7 @@
 	</style>
 	<link rel="stylesheet" href="../common.css"/>
 	<script src="../libs/three.min.js"></script>
+	<script src="../libs/three-gltf-loader.js"></script>
 	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 	<script type="module" src="../../polyfill/platform/ARKitWrapper.js"></script>
 	<script nomodule src="../../dist/webxr-polyfill.js"></script>
@@ -37,20 +38,14 @@
 </head>
 <body>
 <div id="target" />
-<div id="aruco-marker-1" style="width: 100px">
-	<img id="aruco-marker-1-image" src="Aruco-marker-1.png" >
-	<button id="aruco-marker-1-button" style="width: 100px" onclick="window.pageApp.registerMarker1Clicked()">Register detection image</button>
-	<div id="aruco-marker-1-text" hidden="true" style="color: white; width: 100px"></div>
-</div>
-<div id="aruco-marker-2" style="width: 100px">
-	<img id="aruco-marker-2-image" src="Aruco-marker-2.png" >
-	<button id="aruco-marker-2-button" style="width: 100px" onclick="window.pageApp.registerMarker2Clicked()">Register detection image</button>
-	<div id="aruco-marker-2-text" hidden="true" style="color: white; width: 100px"></div>
+<div id="hubs" style="width: 100px">
+	<img id="hubs-image" src="hubs.png" >
+	<div id="hubs-text" hidden="true" style="color: white; width: 100px"></div>
 </div>
 <div onclick="hideMe(this)" id="description">
-	<h2>Image detection test</h2>
+	<h2>ARKit 1.5 Image Detection Example</h2>
 	<h5>(click to dismiss)</h5>
-	<p>Register the images by tapping the buttons and let ARKit detect them.</p>
+	<p>This sample automatically creates and activates a reference image, and places an anchored ducky when it's detected.</p>
 </div>
 <script>
     class ARKitImageDetectionExample extends XRExampleBase {
@@ -65,9 +60,6 @@
             this._messageEl.style.left = '10px'
             this._messageEl.style.color = 'white'
             this._messageEl.style['font-size'] = '16px'
-
-            this.shouldRegisterMarker1 = false
-            this.shouldRegisterMarker2 = false
         }
 
         // Called during construction to allow the app to populate this.scene
@@ -85,46 +77,53 @@
             let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
             directionalLight.position.set(0, 10, 0)
             this.scene.add(directionalLight)
+
+			this.duckyCreated = false
+            this.imageDetectionCreationRequested = false
+
+			loadGLTF('./DuckyMesh.glb').then(gltf => {
+			    this.ducky = new THREE.Group()
+                this.ducky.name = "Duck group"
+                this.duckyNode = gltf.scene
+                this.duckyNode.position.set(0, -0.07, 0)
+				this.ducky.add(this.duckyNode)
+                this.duckyCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
         }
 
         // Called once per frame, before render, to give the app a chance to update this.scene
         updateScene(frame){
 
-            if (this.shouldRegisterMarker1) {
-                this.shouldRegisterMarker1 = false
+            if (!this.imageDetectionCreationRequested && this.duckyCreated) {
+                this.imageDetectionCreationRequested = true
 
-				let arucoMarker1Button = document.getElementById('aruco-marker-1-button')
-                arucoMarker1Button.hidden = true
+                let hubsImageData = this.getImageData('hubs-image')
+                let hubsImage = document.getElementById('hubs-image')
+                hubsImage.hidden = true
+				let hubsImageName = 'hubs'
 
-                let imageData = this.getImageData('aruco-marker-1-image')
-                let arucoMarker1Image = document.getElementById('aruco-marker-1-image')
-                arucoMarker1Image.hidden = true
-				
-                this.session.createImageAnchor('aruco-marker-1', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
-                    let anchor = result;
-                    let div = document.getElementById("aruco-marker-1-text")
-                    div.hidden = false
-                    div.innerText = JSON.stringify(anchor)
-                })
-			}
+                this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
+					this.session.activateDetectionImage(hubsImageName).then(imageAnchorTransform => {
+                        const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
 
+						let model = new THREE.Matrix4();
+                        let tempPos = new THREE.Vector3();
+                        let tempQuat = new THREE.Quaternion();
+                        let tempScale = new THREE.Vector3();
 
-            if (this.shouldRegisterMarker2) {
-                this.shouldRegisterMarker2 = false
+                        model.fromArray(imageAnchorTransform);
+                        model.decompose(tempPos, tempQuat, tempScale);
 
-                let arucoMarker2Button = document.getElementById('aruco-marker-2-button')
-                arucoMarker2Button.hidden = true
-
-                let imageData = this.getImageData('aruco-marker-2-image')
-                let arucoMarker2Image = document.getElementById('aruco-marker-2-image')
-                arucoMarker2Image.hidden = true
-
-                this.session.createImageAnchor('aruco-marker-2', imageData.data, imageData.width, imageData.height, 0.1).then(result => {
-                    let anchor = result;
-                    let div = document.getElementById("aruco-marker-2-text")
-                    div.hidden = false
-                    div.innerText = JSON.stringify(anchor)
-                })
+                        const anchorUID = frame.addAnchor(headCoordinateSystem, [tempPos.x, tempPos.y, tempPos.z], [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w])
+                        this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
+					}).catch(error => {
+                        console.error(`error activating ducky: ${error}`)
+					})
+                }).catch(error => {
+                    console.error(`error activating ducky: ${error}`)
+				})
             }
         }
 
@@ -137,14 +136,6 @@
             context.drawImage(img, 0, 0 );
             return context.getImageData(0, 0, img.width, img.height);
 		}
-
-        registerMarker1Clicked() {
-            this.shouldRegisterMarker1 = true
-		}
-
-        registerMarker2Clicked() {
-            this.shouldRegisterMarker2 = true
-        }
     }
 
 

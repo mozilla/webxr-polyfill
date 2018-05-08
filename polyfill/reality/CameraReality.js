@@ -470,12 +470,51 @@ export default class CameraReality extends Reality {
 		})
 	}
 
+    /**
+	 * Creates an ARReferenceImage in the ARKit native side
+     * @param uid the ID of the image to create
+     * @param buffer the base64 encoded image
+     * @param width
+     * @param height
+     * @param physicalWidthInMeters
+     * @returns a promise when the image has been created, error otherwise
+     * @private
+     */
     _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
 		if (this._arKitWrapper) {
             return this._arKitWrapper.createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
         } else {
 			return null;
 		}
+	}
+
+    /**
+	 * _activateDetectionImage Uses the ARKit wrapper to add a new reference image to the set of detection images in the ARKit configuration object
+	 * and runs the session again. The promise is resolved when the image is detected by ARKit
+     * @param uid The name (id) if the image to activate. It has to be previously created calling the "createImageAnchor" method
+     * @param display The current display
+     * @returns {Promise<any>} A promise resolved with the image transform in case of success, rejected with error otherwise
+     */
+    _activateDetectionImage(uid, display) {
+        return new Promise((resolve, reject) => {
+            if (this._arKitWrapper) {
+                this._arKitWrapper.activateDetectionImage(uid).then(aRKitImageAnchor => {
+                    if (aRKitImageAnchor.activated === true) {
+                    	let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+						coordinateSystem._relativeMatrix = aRKitImageAnchor.imageAnchor.transform
+						let anchor = new XRAnchor(coordinateSystem, aRKitImageAnchor.imageAnchor.uuid)
+						this._anchors.set(aRKitImageAnchor.imageAnchor.uuid, anchor)
+                        resolve(aRKitImageAnchor.imageAnchor.transform)
+					} else if (aRKitImageAnchor.error !== null) {
+                		reject(aRKitImageAnchor.error)
+					} else {
+                    	reject(null)
+					}
+				})
+            } else {
+                reject('ARKit not supported')
+            }
+        })
 	}
 
 	_removeAnchor(uid){
