@@ -38,14 +38,13 @@
 </head>
 <body>
 <div id="target" />
-<div id="hubs" style="width: 100px">
+<div id="hubs" style="width: 100px; display: none">
 	<img id="hubs-image" src="hubs.png" >
-	<div id="hubs-text" hidden="true" style="color: white; width: 100px"></div>
 </div>
 <div onclick="hideMe(this)" id="description">
 	<h2>ARKit 1.5 Image Detection Example</h2>
 	<h5>(click to dismiss)</h5>
-	<p>This sample automatically creates and activates a reference image, and places an anchored ducky when it's detected.</p>
+	<p>This sample automatically creates and activates a reference image, and places an anchored ducky when it's detected.  Print hubs.png so that it's 20cm wide.</p>
 </div>
 <script>
     class ARKitImageDetectionExample extends XRExampleBase {
@@ -85,7 +84,7 @@
 			    this.ducky = new THREE.Group()
                 this.ducky.name = "Duck group"
                 this.duckyNode = gltf.scene
-                this.duckyNode.position.set(0, -0.07, 0)
+                this.duckyNode.position.set(0, -0.01, 0)
 				this.ducky.add(this.duckyNode)
                 this.duckyCreated = true
 			}).catch((...params) =>{
@@ -100,8 +99,6 @@
                 this.imageDetectionCreationRequested = true
 
                 let hubsImageData = this.getImageData('hubs-image')
-                let hubsImage = document.getElementById('hubs-image')
-                hubsImage.hidden = true
 				let hubsImageName = 'hubs'
 
                 this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
@@ -117,6 +114,19 @@
                         model.decompose(tempPos, tempQuat, tempScale);
 
                         const anchorUID = frame.addAnchor(headCoordinateSystem, [tempPos.x, tempPos.y, tempPos.z], [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w])
+
+                        // var markerbox = new THREE.Object3D();
+                        // var markerboxGeom = new THREE.Mesh(
+                        //     new THREE.BoxBufferGeometry(0.2, 0.01, 0.145),
+                        //     new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+                        // )
+                        // markerboxGeom.position.set(0, 0.005, 0);
+                        // markerbox.add(markerboxGeom)
+                        // markerbox.add(this.ducky)
+                        // this.addAnchoredNode(new XRAnchorOffset(anchorUID), markerbox)
+
+                        // uncomment the above and comment this line, if you want to see how well
+                        // the 3D content lines up with the image
                         this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
 					}).catch(error => {
                         console.error(`error activating ducky: ${error}`)
