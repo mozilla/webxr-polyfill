@@ -9,6 +9,10 @@ import Vector3 from '../fill/Vector3.js'
 
 import DeviceOrientationTracker from '../fill/DeviceOrientationTracker.js'
 import ARKitWrapper from '../platform/ARKitWrapper.js'
+import XRPlaneAnchor from '../XRPlaneAnchor.js'
+import XRFaceAnchor from '../XRFaceAnchor.js'
+import XRAnchor from '../XRAnchor.js'
+import XRImageAnchor from '../XRImageAnchor.js'
 
 /*
 FlatDisplay takes over a handset's full screen and presents a moving view into a Reality, as if it were a magic window.
@@ -62,7 +66,8 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.ON_ERROR, this._handleOnError.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
-				this._arKitWrapper.waitForInit().then(() => {
+                this._reality.addEventListener(Reality.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+                this._arKitWrapper.waitForInit().then(() => {
 					// doing this in the reality
 					// this._arKitWrapper.watch()
 				})
@@ -114,6 +119,50 @@ export default class FlatDisplay extends XRDisplay {
 
 	_handleWindowResize(ev){
 		this._fixFov(ev.detail.width, ev.detail.height, ev.detail.focalLength)
+	}
+
+    _handleNewWorldAnchor(event) {
+		let anchorObject = event.detail
+        let coordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.TRACKER)
+        coordinateSystem._relativeMatrix = anchorObject.transform
+
+		let anchor
+        switch (anchorObject.type) {
+			case ARKitWrapper.ANCHOR_TYPE_PLANE:
+                anchor = new XRPlaneAnchor(coordinateSystem,
+                    anchorObject.uuid,
+                    anchorObject.plane_center,
+					[anchorObject.plane_extent.x, anchorObject.plane_extent.z],
+                    anchorObject.plane_alignment)
+
+				break
+            case ARKitWrapper.ANCHOR_TYPE_FACE:
+            	anchor = new XRFaceAnchor(coordinateSystem, anchorObject.uuid)
+            	break
+            case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
+            	anchor = new XRAnchor(coordinateSystem, anchorObject.uuid)
+            	break
+            case ARKitWrapper.ANCHOR_TYPE_IMAGE:
+            	anchor = new XRImageAnchor(coordinateSystem, anchorObject.uuid)
+            	break
+		}
+
+        this._reality._anchors.set(anchorObject.uuid, anchor)
+        //console.log(`New world anchor: ${JSON.stringify(ev)}`)
+
+        try {
+            this.dispatchEvent(
+                new CustomEvent(
+                    XRDisplay.NEW_WORLD_ANCHOR,
+                    {
+                        source: this,
+                        detail: anchor
+                    }
+                )
+            )
+        } catch(e) {
+            console.error('new world anchor callback error', e)
+        }
 	}
 
 	/*

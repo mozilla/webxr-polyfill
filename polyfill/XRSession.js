@@ -1,5 +1,11 @@
 import EventHandlerBase from './fill/EventHandlerBase.js'
 import MatrixMath from './fill/MatrixMath.js'
+import XRDisplay from './XRDisplay.js'
+import XRFaceAnchor from './XRFaceAnchor.js'
+import XRImageAnchor from './XRImageAnchor.js'
+import XRAnchor from './XRAnchor.js'
+import ARKitWrapper from './platform/ARKitWrapper.js'
+import XRPlaneAnchor from './XRPlaneAnchor.js'
 
 /*
 A script that wishes to make use of an XRDisplay can request an XRSession.
@@ -20,8 +26,10 @@ export default class XRSession extends EventHandlerBase {
 
 		this._frameAnchors = []
 		this._tempMatrix = MatrixMath.mat4_generateIdentity()		
-		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()		
-	}
+		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()
+
+		this._display.addEventListener(XRDisplay.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+    }
 
 	get display(){ return this._display }
 
@@ -206,6 +214,21 @@ export default class XRSession extends EventHandlerBase {
     activateDetectionImage(uid) {
         return this.reality._activateDetectionImage(uid, this._display)
 	}
+
+    _handleNewWorldAnchor(event) {
+		let xrAnchor = event.detail
+        //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
+
+        this.dispatchEvent(
+            new CustomEvent(
+                XRDisplay.NEW_WORLD_ANCHOR,
+                {
+                    source: this,
+                    detail: xrAnchor
+                }
+            )
+        )
+    }
 	
 	/*
 	attribute EventHandler onblur;
@@ -223,3 +246,5 @@ XRSession.REALITY = 'reality'
 XRSession.AUGMENTATION = 'augmentation'
 
 XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]
+
+XRSession.NEW_WORLD_ANCHOR = 'world-anchor'

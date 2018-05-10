@@ -11,6 +11,7 @@ import Quaternion from '../fill/Quaternion.js'
 
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 import ARCoreCameraRenderer from '../platform/ARCoreCameraRenderer.js'
+import XRImageAnchor from "../XRImageAnchor.js"
 
 /*
 CameraReality displays the forward facing camera.
@@ -366,11 +367,26 @@ export default class CameraReality extends Reality {
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
 			}
 		}
+
 		if (ev.detail && ev.detail.removedObjects) {
 			for (let removedAnchor of ev.detail.removedObjects) {
 				this._deleteAnchorFromARKitUpdate(removedAnchor)
 			}
 		}
+
+        if (ev.detail && ev.detail.newObjects) {
+            for (let addedAnchor of ev.detail.newObjects) {
+                this.dispatchEvent(
+                    new CustomEvent(
+                        Reality.NEW_WORLD_ANCHOR,
+                        {
+                            source: this,
+                            detail: addedAnchor
+                        }
+                    )
+                )
+            }
+        }
 	}
 
     _deleteAnchorFromARKitUpdate(anchorUUID) {
@@ -502,7 +518,7 @@ export default class CameraReality extends Reality {
                     if (aRKitImageAnchor.activated === true) {
                     	let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
 						coordinateSystem._relativeMatrix = aRKitImageAnchor.imageAnchor.transform
-						let anchor = new XRAnchor(coordinateSystem, aRKitImageAnchor.imageAnchor.uuid)
+						let anchor = new XRImageAnchor(coordinateSystem, aRKitImageAnchor.imageAnchor.uuid)
 						this._anchors.set(aRKitImageAnchor.imageAnchor.uuid, anchor)
                         resolve(aRKitImageAnchor.imageAnchor.transform)
 					} else if (aRKitImageAnchor.error !== null) {
