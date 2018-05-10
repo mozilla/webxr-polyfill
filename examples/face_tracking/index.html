@@ -23,6 +23,7 @@
 	</style>
 	<link rel="stylesheet" href="../common.css"/>
 	<script src="../libs/three.min.js"></script>
+	<script src="../libs/three-gltf-loader.js"></script>
 	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 	<script nomodule src="../../dist/webxr-polyfill.js"></script>
 	<script src="../common.js"></script>
@@ -32,10 +33,25 @@
 <div onclick="hideMe(this)" id="description">
 	<h2>ARKit face tracking Example</h2>
 	<h5>(click to dismiss)</h5>
-	<p>This detects and tracks your face using ARKit and places a 3D  model on it.</p>
+	<p>This detects and tracks your face using ARKit and places a 3D  model on it.
+        (Glasses model by <a href="https://sketchfab.com/models/5c78f100eea749c895d69fe2ed728197#">person-x</a>)
+    </p>
 </div>
 <script>
     class ARKitFaceTrackingExample extends XRExampleBase {
+        constructor(domElement){
+            super(domElement, false)
+
+            // A message at the bottom of the screen that shows whether a surface has been found
+            this._messageEl = document.createElement('div')
+            this.el.appendChild(this._messageEl)
+            this._messageEl.style.position = 'absolute'
+            this._messageEl.style.bottom = '10px'
+            this._messageEl.style.left = '10px'
+            this._messageEl.style.color = 'white'
+            this._messageEl.style['font-size'] = '16px'
+        }
+
         // Called during construction to allow the app to populate this.scene
         initializeScene() {
             // Add a box at the scene origin
@@ -52,24 +68,38 @@
             directionalLight.position.set(0, 10, 0)
             this.scene.add(directionalLight)
 
-			this.cube = new THREE.Mesh(
+			this.duckyCreated = false
+            this.glassesCreated = false;
+
+            this.ducky = new THREE.Group()
+            this.ducky.name = "Duck group"
+			loadGLTF('./DuckyMesh.glb').then(gltf => {
+                this.duckyNode = gltf.scene
+                this.duckyNode.position.set(0, 0.2, 0)
+				this.ducky.add(this.duckyNode)
+                this.duckyCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
+
+            this.glasses = new THREE.Group()
+            this.glasses.name = "Glasses group"
+			loadGLTF('./glasses/glasses.gltf').then(gltf => {
+                this.glassesNode = gltf.scene
+                this.glassesNode.position.set(0, 0.01, 0.06)
+                this.glassesNode.scale.set(0.0005,0.0005,0.0005)
+				this.glasses.add(this.glassesNode)
+                this.glassesCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
+
+            this.cube = new THREE.Mesh(
                 new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
                 new THREE.MeshPhongMaterial({color: '#DDFFDD'})
             )
+            this.cube.position.set(0, 0.1, 0)
 			this.listenerSetup = false
-        }
-
-        constructor(domElement){
-            super(domElement, false)
-
-            // A message at the bottom of the screen that shows whether a surface has been found
-            this._messageEl = document.createElement('div')
-            this.el.appendChild(this._messageEl)
-            this._messageEl.style.position = 'absolute'
-            this._messageEl.style.bottom = '10px'
-            this._messageEl.style.left = '10px'
-            this._messageEl.style.color = 'white'
-            this._messageEl.style['font-size'] = '16px'
         }
 
         // Called once per frame, before render, to give the app a chance to update this.scene
@@ -83,7 +113,7 @@
         _handleNewWorldAnchor(event) {
             let anchor = event.detail
 			if (anchor instanceof XRFaceAnchor) {
-                this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this.cube)
+                this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this.glasses)
 			}
 		}
     }
