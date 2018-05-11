@@ -68,6 +68,10 @@
             directionalLight.position.set(0, 10, 0)
             this.scene.add(directionalLight)
 
+            directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+            directionalLight.position.set(0, 10, 10)
+            this.scene.add(directionalLight)
+
 			this.duckyCreated = false
             this.glassesCreated = false;
 
@@ -107,13 +111,56 @@
             if (!this.listenerSetup) {
                 this.listenerSetup = true
                 this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
             }
         }
+
+        _handleUpdateWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    let currentVertexIndex = 0
+                    for (let vertex of anchor.geometry.vertices) {
+                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.x
+                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.y
+                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.z
+                    }
+
+                    this.faceMesh.geometry.verticesNeedUpdate = true;
+				}
+            }
+		}
 
         _handleNewWorldAnchor(event) {
             let anchor = event.detail
 			if (anchor instanceof XRFaceAnchor) {
-                this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this.glasses)
+                if (anchor.geometry !== null) {
+                    if (!this.faceMesh) {
+                        let vertexCount = anchor.geometry.vertexCount
+
+                        let vertices = new Float32Array( vertexCount * 3 );
+                        let currentVertexIndex = 0
+						for (let vertex of anchor.geometry.vertices) {
+						    vertices[currentVertexIndex++] = vertex.x
+						    vertices[currentVertexIndex++] = vertex.y
+						    vertices[currentVertexIndex++] = vertex.z
+						}
+						
+						let triangleIndices = anchor.geometry.triangleIndices
+
+                        let geometry = new THREE.BufferGeometry()
+						let verticesBufferAttribute = new THREE.BufferAttribute( vertices, 3 )
+                        verticesBufferAttribute.dynamic = true
+                        geometry.addAttribute( 'position', verticesBufferAttribute );
+                        geometry.setIndex(triangleIndices)
+
+						let material = new THREE.MeshPhongMaterial({color: '#DDFFDD'})
+
+						this.faceMesh = new THREE.Mesh(geometry, material)
+
+						this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this.faceMesh)
+					}
+				}
 			}
 		}
     }

@@ -29,6 +29,7 @@ export default class XRSession extends EventHandlerBase {
 		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()
 
 		this._display.addEventListener(XRDisplay.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+		this._display.addEventListener(XRDisplay.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
     }
 
 	get display(){ return this._display }
@@ -221,7 +222,7 @@ export default class XRSession extends EventHandlerBase {
 
         this.dispatchEvent(
             new CustomEvent(
-                XRDisplay.NEW_WORLD_ANCHOR,
+                XRSession.NEW_WORLD_ANCHOR,
                 {
                     source: this,
                     detail: xrAnchor
@@ -229,6 +230,21 @@ export default class XRSession extends EventHandlerBase {
             )
         )
     }
+
+    _handleUpdateWorldAnchor(event) {
+        let xrAnchor = event.detail
+        //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
+
+        this.dispatchEvent(
+            new CustomEvent(
+                XRSession.UPDATE_WORLD_ANCHOR,
+                {
+                    source: this,
+                    detail: xrAnchor
+                }
+            )
+        )
+	}
 	
 	/*
 	attribute EventHandler onblur;
@@ -248,3 +264,4 @@ XRSession.AUGMENTATION = 'augmentation'
 XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]
 
 XRSession.NEW_WORLD_ANCHOR = 'world-anchor'
+XRSession.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
