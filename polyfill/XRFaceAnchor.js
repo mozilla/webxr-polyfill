@@ -8,6 +8,10 @@ export default class XRFaceAnchor extends XRAnchor {
         super(coordinateSystem, uid)
         this.geometry = geometry
         this.blendShapes = {}
+        this.updateBlendShapes(blendShapeArray)
+    }
+
+    updateBlendShapes(blendShapeArray) {
         for (let i = 0; i < blendShapeNames.length; i++) {
             this.blendShapes[blendShapeNames[i]] = blendShapeArray[i]
         }

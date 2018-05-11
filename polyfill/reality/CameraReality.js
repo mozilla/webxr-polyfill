@@ -426,8 +426,13 @@ export default class CameraReality extends Reality {
 				anchor.geometry = anchorInfo.geometry
 				break
 			case ARKitWrapper.ANCHOR_TYPE_FACE:
-				anchor.geometry = anchorInfo.geometry
-            	break
+			 	if (anchorInfo.geometry) {
+					anchor.geometry.vertices = anchorInfo.geometry.vertices
+				 }
+				 if (anchorInfo.blendShapes) {
+					anchor.updateBlendShapes(anchorInfo.blendShapes)
+				 }
+				break
             case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
             	break
             case ARKitWrapper.ANCHOR_TYPE_IMAGE:
