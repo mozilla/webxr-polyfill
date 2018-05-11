@@ -3,7 +3,6 @@ import XRAnchor from '../XRAnchor.js'
 import XRViewPose from '../XRViewPose.js'
 
 import XRAnchorOffset from '../XRAnchorOffset.js'
-
 import XRLightEstimate from '../XRLightEstimate.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
@@ -12,6 +11,8 @@ import Quaternion from '../fill/Quaternion.js'
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 import ARCoreCameraRenderer from '../platform/ARCoreCameraRenderer.js'
 import XRImageAnchor from "../XRImageAnchor.js"
+import XRPlaneAnchor from "../XRPlaneAnchor.js"
+import XRFaceAnchor from "../XRFaceAnchor.js"
 
 /*
 CameraReality displays the forward facing camera.
@@ -414,6 +415,24 @@ export default class CameraReality extends Reality {
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
 		anchor.coordinateSystem._relativeMatrix = anchorInfo.transform
+
+		// update internal data if any
+        switch (anchorInfo.type) {
+			case ARKitWrapper.ANCHOR_TYPE_PLANE:
+				anchor.center = anchorInfo.plane_center
+				anchor.extent =  
+					[anchorInfo.plane_extent.x, anchorInfo.plane_extent.z]
+				anchor.alignment = anchorInfo.plane_alignment
+				anchor.geometry = anchorInfo.geometry
+				break
+            case ARKitWrapper.ANCHOR_TYPE_FACE:
+            	break
+            case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
+            	break
+            case ARKitWrapper.ANCHOR_TYPE_IMAGE:
+            	break
+		}
+		
 	}
 
 	_addAnchor(anchor, display){

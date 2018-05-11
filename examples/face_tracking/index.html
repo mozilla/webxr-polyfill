@@ -79,7 +79,8 @@
             this.ducky.name = "Duck group"
 			loadGLTF('./DuckyMesh.glb').then(gltf => {
                 this.duckyNode = gltf.scene
-                this.duckyNode.position.set(0, 0.2, 0)
+                this.duckyNode.position.set(0, -0.25, -0.15)
+                this.duckyNode.scale.set(3,3,3)
 				this.ducky.add(this.duckyNode)
                 this.duckyCreated = true
 			}).catch((...params) =>{
@@ -133,7 +134,7 @@
 
         _handleNewWorldAnchor(event) {
             let anchor = event.detail
-			if (anchor instanceof XRFaceAnchor) {
+	      		if (anchor instanceof XRFaceAnchor) {
                 if (anchor.geometry !== null) {
                     if (!this.faceMesh) {
                         let vertexCount = anchor.geometry.vertexCount
