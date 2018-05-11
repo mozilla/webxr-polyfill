@@ -425,7 +425,8 @@ export default class CameraReality extends Reality {
 				anchor.alignment = anchorInfo.plane_alignment
 				anchor.geometry = anchorInfo.geometry
 				break
-            case ARKitWrapper.ANCHOR_TYPE_FACE:
+			case ARKitWrapper.ANCHOR_TYPE_FACE:
+				anchor.geometry = anchorInfo.geometry
             	break
             case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
             	break

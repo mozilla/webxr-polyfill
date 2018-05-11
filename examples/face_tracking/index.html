@@ -22,7 +22,7 @@
 		}
 	</style>
 	<link rel="stylesheet" href="../common.css"/>
-	<script src="../libs/three.min.js"></script>
+	<script src="../libs/three.js"></script>
 	<script src="../libs/three-gltf-loader.js"></script>
 	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
 	<script nomodule src="../../dist/webxr-polyfill.js"></script>
@@ -121,14 +121,14 @@
             if (anchor instanceof XRFaceAnchor) {
                 if (anchor.geometry !== null) {
                     let currentVertexIndex = 0
+                    var position = this.faceMesh.geometry.attributes.position;                    
                     for (let vertex of anchor.geometry.vertices) {
-                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.x
-                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.y
-                        this.faceMesh.geometry.attributes.position.array[currentVertexIndex++] = vertex.z
+                        position.setXYZ(currentVertexIndex++, vertex.x, vertex.y, vertex.z)
                     }
 
-                    this.faceMesh.geometry.verticesNeedUpdate = true;
-				}
+                    //this.faceMesh.geometry.verticesNeedUpdate = true;
+                    position.needsUpdate = true;
+                }
             }
 		}
 
