@@ -138,7 +138,7 @@ export default class FlatDisplay extends XRDisplay {
                     anchorObject.geometry)
       				break
             case ARKitWrapper.ANCHOR_TYPE_FACE:
-            	anchor = new XRFaceAnchor(coordinateSystem, anchorObject.uuid, anchorObject.geometry)
+            	anchor = new XRFaceAnchor(coordinateSystem, anchorObject.uuid, anchorObject.geometry, anchorObject.blendShapes)
             	break
             case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
             	anchor = new XRAnchor(coordinateSystem, anchorObject.uuid)
