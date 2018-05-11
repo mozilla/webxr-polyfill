@@ -4,11 +4,12 @@ import XRAnchor from './XRAnchor.js'
 XRPlaneAnchor represents a flat surfaces like floors, table tops, or walls.
 */
 export default class XRPlaneAnchor extends XRAnchor {
-	constructor(coordinateSystem, uid=null, center, extent, modelMatrix, alignment) {
+	constructor(coordinateSystem, uid=null, center, extent, alignment, geometry) {
 		super(coordinateSystem, uid)
 		this.center = center
 		this.extent = extent
 		this.alignment = alignment
+		this.geometry = geometry
 	}
 
 	get width(){
