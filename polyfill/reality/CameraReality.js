@@ -366,6 +366,15 @@ export default class CameraReality extends Reality {
 		if(ev.detail && ev.detail.objects){
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+                this.dispatchEvent(
+                    new CustomEvent(
+                        Reality.UPDATE_WORLD_ANCHOR,
+                        {
+                            source: this,
+                            detail: anchorInfo.uuid
+                        }
+                    )
+                )
 			}
 		}
 

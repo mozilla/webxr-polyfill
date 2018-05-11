@@ -67,6 +67,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.AR_TRACKING_CHANGED, this._handleArTrackingChanged.bind(this))
 				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
                 this._reality.addEventListener(Reality.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+                this._reality.addEventListener(Reality.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
                 this._arKitWrapper.waitForInit().then(() => {
 					// doing this in the reality
 					// this._arKitWrapper.watch()
@@ -132,12 +133,12 @@ export default class FlatDisplay extends XRDisplay {
                 anchor = new XRPlaneAnchor(coordinateSystem,
                     anchorObject.uuid,
                     anchorObject.plane_center,
-					[anchorObject.plane_extent.x, anchorObject.plane_extent.z],
-					anchorObject.plane_alignment,
-					anchorObject.geometry)
-				break
+				          	[anchorObject.plane_extent.x, anchorObject.plane_extent.z],
+                    anchorObject.plane_alignment,
+                    anchorObject.geometry)
+      				break
             case ARKitWrapper.ANCHOR_TYPE_FACE:
-            	anchor = new XRFaceAnchor(coordinateSystem, anchorObject.uuid)
+            	anchor = new XRFaceAnchor(coordinateSystem, anchorObject.uuid, anchorObject.geometry)
             	break
             case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
             	anchor = new XRAnchor(coordinateSystem, anchorObject.uuid)
@@ -163,6 +164,26 @@ export default class FlatDisplay extends XRDisplay {
         } catch(e) {
             console.error('new world anchor callback error', e)
         }
+	}
+
+    _handleUpdateWorldAnchor(event) {
+		let anchorUUID = event.detail
+		let anchor = this._reality._anchors.get(anchorUUID)
+		if (anchor !== null) {
+            try {
+                this.dispatchEvent(
+                    new CustomEvent(
+                        XRDisplay.UPDATE_WORLD_ANCHOR,
+                        {
+                            source: this,
+                            detail: anchor
+                        }
+                    )
+                )
+            } catch(e) {
+                console.error('new world anchor callback error', e)
+            }
+		}
 	}
 
 	/*

@@ -114,3 +114,4 @@ export default class Reality extends EventHandlerBase {
 Reality.COMPUTER_VISION_DATA = 'cv_data'
 Reality.WINDOW_RESIZE_EVENT = 'window-resize'
 Reality.NEW_WORLD_ANCHOR = 'world-anchor'
+Reality.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
