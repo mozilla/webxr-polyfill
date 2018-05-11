@@ -14,7 +14,7 @@
 
 */
 class XRExampleBase {
-	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, alignEUS=true, worldSensing=true){
+	constructor(domElement, createVirtualReality=true, shouldStartPresenting=true, useComputerVision=false, worldSensing=false, alignEUS=true){
 		this.el = domElement
 		this.createVirtualReality = createVirtualReality
 		this.shouldStartPresenting = shouldStartPresenting
