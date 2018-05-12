@@ -158,19 +158,23 @@ export default class CameraReality extends Reality {
 		this._videoEl.style.height = windowHeight.toFixed(2) + 'px'		
 		this._videoEl.style.transform = "translate(" + translateX.toFixed(2) + "px, "+ translateY.toFixed(2) + "px)"
 
-		this.dispatchEvent(
-			new CustomEvent(
-				Reality.WINDOW_RESIZE_EVENT,
-				{
-					source: this,
-					detail: {
-						width: canvasWidth,
-						height: canvasHeight,
-						focalLength: this._focalLength
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					Reality.WINDOW_RESIZE_EVENT,
+					{
+						source: this,
+						detail: {
+							width: canvasWidth,
+							height: canvasHeight,
+							focalLength: this._focalLength
+						}
 					}
-				}
+				)
 			)
-		)
+        } catch(e) {
+            console.error('WINDOW_RESIZE_EVENT error', e)
+        }
 	}
 	
 	/*
@@ -239,15 +243,19 @@ export default class CameraReality extends Reality {
 
 			var xrVideoFrame = new XRVideoFrame(buffers, pixelFormat, timestamp, camera )
 
-			this.dispatchEvent(
-				new CustomEvent(
-					Reality.COMPUTER_VISION_DATA,
-					{
-						source: this,
-						detail: xrVideoFrame
-					}
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						Reality.COMPUTER_VISION_DATA,
+						{
+							source: this,
+							detail: xrVideoFrame
+						}
+					)
 				)
-			)
+			} catch(e) {
+				console.error('COMPUTER_VISION_DATA event error', e)
+			}
 		}
 		// TODO update the anchor positions using ARCore or ARKit
 	}
@@ -366,15 +374,19 @@ export default class CameraReality extends Reality {
 		if(ev.detail && ev.detail.objects){
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
-                this.dispatchEvent(
-                    new CustomEvent(
-                        Reality.UPDATE_WORLD_ANCHOR,
-                        {
-                            source: this,
-                            detail: anchorInfo.uuid
-                        }
-                    )
-                )
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.UPDATE_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: anchorInfo.uuid
+							}
+						)
+					)
+				} catch(e) {
+					console.error('UPDATE_WORLD_ANCHOR event error', e)
+				}
 			}
 		}
 
@@ -386,16 +398,20 @@ export default class CameraReality extends Reality {
 
         if (ev.detail && ev.detail.newObjects) {
             for (let addedAnchor of ev.detail.newObjects) {
-                this.dispatchEvent(
-                    new CustomEvent(
-                        Reality.NEW_WORLD_ANCHOR,
-                        {
-                            source: this,
-                            detail: addedAnchor
-                        }
-                    )
-                )
-            }
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.NEW_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: addedAnchor
+							}
+						)
+					)
+				} catch(e) {
+					console.error('NEW_WORLD_ANCHOR event error', e)
+				}
+			}
         }
 	}
 

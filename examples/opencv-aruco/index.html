@@ -138,8 +138,12 @@
 								var videoFrame = XRVideoFrame.createFromMessage(ev)
 
 								this.markers = ev.data.markers;
-								this.session.getVideoFramePose(videoFrame, this.camPose);
 
+								try {
+								  this.session.getVideoFramePose(videoFrame, this.camPose);
+								} catch (e) {
+									console.log("can't get pose ", e)
+								}
 								cvEndTime = ev.data.time;
 								cvMarkerTime = cvEndTime - cvAfterDetectTime;
 

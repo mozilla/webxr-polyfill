@@ -131,15 +131,19 @@ export default class ARKitWrapper extends EventHandlerBase {
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
 				detail = detail || null
-				this.dispatchEvent(
-					new CustomEvent(
-						eventCallbacks[i][1],
-						{
-							source: this,
-							detail: detail
-						}
-					)
-				)	
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							eventCallbacks[i][1],
+							{
+								source: this,
+								detail: detail
+							}
+						)
+					)	
+				} catch(e) {
+					console.error(eventCallbacks[i][0] + ' callback error', e)
+				}
 			}
 		}
 		/*
@@ -800,9 +804,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 	_onInit(deviceId){
 		this._deviceId = deviceId
 		this._isInitialized = true
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.INIT_EVENT, {
-			source: this
-		}))
+		try {
+			this.dispatchEvent(new CustomEvent(ARKitWrapper.INIT_EVENT, {
+				source: this
+			}))
+        } catch(e) {
+            console.error('INIT_EVENT event error', e)
+        }
 	}
 
 	/*
@@ -838,10 +846,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	_onWatch(data){
 		this._rawARData = data
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
-			source: this,
-			detail: this._rawARData
-		}))
+		try {
+			this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
+				source: this,
+				detail: this._rawARData
+			}))
+        } catch(e) {
+            console.error('WATCH_EVENT event error', e)
+        }
 		this.timestamp = this._adjustARKitTime(data.timestamp)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
@@ -1094,16 +1106,20 @@ export default class ARKitWrapper extends EventHandlerBase {
 			}
 
 			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
-			this.dispatchEvent(
-				new CustomEvent(
-					ARKitWrapper.COMPUTER_VISION_DATA,
-					{
-						source: this,
-						detail: xrVideoFrame
-					}
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						ARKitWrapper.COMPUTER_VISION_DATA,
+						{
+							source: this,
+							detail: xrVideoFrame
+						}
+					)
 				)
-			)
-		//}	
+			} catch(e) {
+				console.error('COMPUTER_VISION_DATA event error', e)
+			}
+			//}	
 	}
 
 	/*

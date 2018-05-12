@@ -169,9 +169,27 @@ export default class XRSession extends EventHandlerBase {
     {
         if (!videoFrame.camera._anchorUid) return 
 
+		var anchorPose;
 		var anchor = this.reality._getAnchor(videoFrame.camera._anchorUid)
-		var anchorPose = anchor.coordinateSystem._poseModelMatrix
+		if (anchor) {
+			anchorPose = anchor.coordinateSystem._poseModelMatrix
+		} else {
+			var i =0;
+			for (; i < this._frameAnchors.length; i++) {
+				if (videoFrame.camera._anchorUid == this._frameAnchors[i].uid) {
+					anchorPose = this._frameAnchors[i].coordinateSystem._poseModelMatrix;
+					break;
+				}
+			}
+
+			if (i == this._frameAnchors.length) {
+				// shouldn't happen!
+				console.warn("should never get here: session.getVideoFramePose can't find anchor")
+				return;
+			}
+		}
 		MatrixMath.mat4_multiply(poseOut, anchorPose, videoFrame.camera.viewMatrix )
+
 	}
 	
 	requestVideoFrame() {
@@ -220,30 +238,38 @@ export default class XRSession extends EventHandlerBase {
 		let xrAnchor = event.detail
         //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
 
-        this.dispatchEvent(
-            new CustomEvent(
-                XRSession.NEW_WORLD_ANCHOR,
-                {
-                    source: this,
-                    detail: xrAnchor
-                }
-            )
-        )
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					XRSession.NEW_WORLD_ANCHOR,
+					{
+						source: this,
+						detail: xrAnchor
+					}
+				)
+			)
+        } catch(e) {
+            console.error('NEW_WORLD_ANCHOR event error', e)
+        }
     }
 
     _handleUpdateWorldAnchor(event) {
         let xrAnchor = event.detail
         //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
 
-        this.dispatchEvent(
-            new CustomEvent(
-                XRSession.UPDATE_WORLD_ANCHOR,
-                {
-                    source: this,
-                    detail: xrAnchor
-                }
-            )
-        )
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					XRSession.UPDATE_WORLD_ANCHOR,
+					{
+						source: this,
+						detail: xrAnchor
+					}
+				)
+			)
+        } catch(e) {
+            console.error('UPDATE_WORLD_ANCHOR event error', e)
+        }
 	}
 	
 	/*

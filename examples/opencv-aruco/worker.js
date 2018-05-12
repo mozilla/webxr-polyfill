@@ -154,6 +154,8 @@ self.addEventListener('message',  function(event){
 
             camIntrinsics = new cv.Mat();
             rotMat = new cv.Mat();
+            resizeMat = new cv.Mat();
+            flipMat = new cv.Mat();
 
             parameter = new cv.DetectorParameters();
             parameter.adaptiveThreshWinSizeMin = 3,
@@ -206,15 +208,22 @@ self.addEventListener('message',  function(event){
         var imageToUse = image;
         // did we decide to scale?
         if (scale != 1) {
-          var m = new cv.Mat()
-          cv.resize(image, m, new cv.Size(), scale, scale);
+          cv.resize(image, resizeMat, new cv.Size(), scale, scale);
           for (var i = 0; i < 8; i++) {
             camIntrinsics.data64F[i] = camIntrinsics.data64F[i] * scale; 
           }
+          imageToUse = resizeMat;
         }
         
+        // While experimenting with the front facing camera on iOS, I realized that you need flip the image on the y
+        // axis, since they flip it behind your back inside.  But, then the results are then wrong, and would need to
+        // be scaled on the appropriate axis.  Not worth the effort right now.
+        //
+        //cv.flip(imageToUse, flipMat, 1);
+        //imageToUse = flipMat
+
         // detect the aruco markers
-        cv.detectMarkers(image, dictionary, markerCorners, markerIds, parameter);
+        cv.detectMarkers(imageToUse, dictionary, markerCorners, markerIds, parameter);
         postMessage({type: "cvAfterDetect", time: ( performance || Date ).now()});
 
         // did we find any?

@@ -162,7 +162,7 @@ export default class FlatDisplay extends XRDisplay {
                 )
             )
         } catch(e) {
-            console.error('new world anchor callback error', e)
+            console.error('NEW_WORLD_ANCHOR event error', e)
         }
 	}
 
@@ -181,7 +181,7 @@ export default class FlatDisplay extends XRDisplay {
                     )
                 )
             } catch(e) {
-                console.error('new world anchor callback error', e)
+                console.error('UPDATE_WORLD_ANCHOR event error', e)
             }
 		}
 	}
