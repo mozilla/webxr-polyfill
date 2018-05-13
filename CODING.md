@@ -41,7 +41,7 @@ Once you have the displays, you look for one that will support the type of sessi
 
 Once you have a display and the user has chosen to start using it, you ask the display for an `XRSession` and request the first frame:
 
-		display.requestSession(sessionInitParamers).then(sess => {
+		display.requestSession(sessionInitOptions).then(sess => {
 			session = sess
 			session.depthNear = 0.1
 			session.depthFar = 1000.0
