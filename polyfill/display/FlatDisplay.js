@@ -68,6 +68,7 @@ export default class FlatDisplay extends XRDisplay {
 				this._arKitWrapper.addEventListener(ARKitWrapper.COMPUTER_VISION_DATA, this._handleComputerVisionData.bind(this))
                 this._reality.addEventListener(Reality.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
                 this._reality.addEventListener(Reality.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+                this._reality.addEventListener(Reality.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
                 this._arKitWrapper.waitForInit().then(() => {
 					// doing this in the reality
 					// this._arKitWrapper.watch()
@@ -182,6 +183,26 @@ export default class FlatDisplay extends XRDisplay {
                 )
             } catch(e) {
                 console.error('UPDATE_WORLD_ANCHOR event error', e)
+            }
+		}
+	}
+
+    _handleRemoveWorldAnchor(event) {
+		let anchorUUID = event.detail
+		let anchor = this._reality._anchors.get(anchorUUID)
+		if (anchor !== null) {
+            try {
+                this.dispatchEvent(
+                    new CustomEvent(
+                        XRDisplay.REMOVE_WORLD_ANCHOR,
+                        {
+                            source: this,
+                            detail: anchor
+                        }
+                    )
+                )
+            } catch(e) {
+                console.error('REMOVE_WORLD_ANCHOR event error', e)
             }
 		}
 	}

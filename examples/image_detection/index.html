@@ -108,9 +108,13 @@
         updateScene(frame){
             let hubsImageName = 'hubs'
 
+            if (!this.listenerSetup) {
+                this.listenerSetup = true
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
+            }
+
             if (!this.imageDetectionCreationRequested && this.duckyCreated) {
                 this.imageDetectionCreationRequested = true
-
                 let hubsImageData = this.getImageData('hubs-image')
 
                 this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
@@ -162,9 +166,21 @@
                     // the 3D content lines up with the image
                     this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
                 }).catch(error => {
+                    this.imageActivated = false;
                     console.error(`error activating ducky: ${error}`)
                 })
             }
+        }
+
+
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            
+            if (anchor instanceof XRImageAnchor) {
+                this.imageActivated = false;
+                this.imageActivateDetection = true;
+                this.removeAnchoredNode(this.ducky)
+            }    
         }
 
         getImageData(imageID) {

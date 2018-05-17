@@ -29,6 +29,7 @@ export default class XRSession extends EventHandlerBase {
 		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()
 
 		this._display.addEventListener(XRDisplay.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+		this._display.addEventListener(XRDisplay.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
 		this._display.addEventListener(XRDisplay.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
     }
 
@@ -272,6 +273,24 @@ export default class XRSession extends EventHandlerBase {
         }
 	}
 	
+    _handleRemoveWorldAnchor(event) {
+		let xrAnchor = event.detail
+        //console.log(`Remove world anchor: ${JSON.stringify(xrAnchor)}`)
+
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					XRSession.REMOVE_WORLD_ANCHOR,
+					{
+						source: this,
+						detail: xrAnchor
+					}
+				)
+			)
+        } catch(e) {
+            console.error('REMOVE_WORLD_ANCHOR event error', e)
+        }
+    }
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;
@@ -291,3 +310,4 @@ XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]
 
 XRSession.NEW_WORLD_ANCHOR = 'world-anchor'
 XRSession.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
+XRSession.REMOVE_WORLD_ANCHOR = 'remove-world-anchor'

@@ -139,6 +139,7 @@
                 this.listenerSetup = true
                 this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
                 this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
             }
 
             if (this.params.ducky) {
@@ -174,6 +175,17 @@
             }
         }
 
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    this.faceMesh.remove(this.transparentMesh)
+                    this.transparentMesh = null
+                    this.removeAnchoredNode(this.faceMesh);
+                }                
+            }
+        }
+
         _handleUpdateWorldAnchor(event) {
             let anchor = event.detail
             if (anchor instanceof XRFaceAnchor) {
@@ -192,7 +204,7 @@
 
         _handleNewWorldAnchor(event) {
             let anchor = event.detail
-	      		if (anchor instanceof XRFaceAnchor) {
+	      	if (anchor instanceof XRFaceAnchor) {
                 if (anchor.geometry !== null) {
                     if (!this.meshOcclusionMesh) {
                         let vertexCount = anchor.geometry.vertexCount

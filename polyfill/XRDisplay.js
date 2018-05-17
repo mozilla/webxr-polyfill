@@ -103,3 +103,4 @@ export default class XRDisplay extends EventHandlerBase {
 
 XRDisplay.NEW_WORLD_ANCHOR = 'world-anchor'
 XRDisplay.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
+XRDisplay.REMOVE_WORLD_ANCHOR = 'remove-world-anchor'

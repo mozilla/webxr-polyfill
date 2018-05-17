@@ -392,6 +392,19 @@ export default class CameraReality extends Reality {
 
 		if (ev.detail && ev.detail.removedObjects) {
 			for (let removedAnchor of ev.detail.removedObjects) {
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.REMOVE_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: removedAnchor
+							}
+						)
+					)
+				} catch(e) {
+					console.error('REMOVE_WORLD_ANCHOR event error', e)
+				}
 				this._deleteAnchorFromARKitUpdate(removedAnchor)
 			}
 		}

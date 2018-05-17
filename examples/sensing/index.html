@@ -136,6 +136,13 @@
             }
 		}
 
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor.node !== null) {
+                this.removeAnchoredNode(anchor.node);
+            }                
+        }
+
         _handleNewWorldAnchor(event) {
             let anchor = event.detail
             let anchorGroup = new THREE.Group();
