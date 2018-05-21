@@ -488,43 +488,54 @@ export default class CameraReality extends Reality {
 	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	returns a Promise that resolves either to an AnchorOffset with the first hit result or null if the hit test failed
 	*/
-	_findAnchor(normalizedScreenX, normalizedScreenY, display){
+	_findAnchor(normalizedScreenX, normalizedScreenY, display, testOptions=null){
 		return new Promise((resolve, reject) => {
 			if(this._arKitWrapper !== null){	
 				// Perform a hit test using the ARKit integration
-				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
+				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, testOptions || ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
 						// console.log('miss')
 						return
 					}
 					const hit = this._pickARKitHit(hits)
-					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
-					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
-					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
+					// if it's a plane
+					if (hit.anchor_transform) {
+						hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+						hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
-					// TODO use XRPlaneAnchor for anchors with extents
+						// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
 
-					let anchor = this._getAnchor(hit.uuid)
-					if(anchor === null){
+						// TODO use XRPlaneAnchor for anchors with extents;  hopefully the plane will have been created, tho
+						let anchor = this._getAnchor(hit.uuid)
+						if(anchor === null){
+							let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+							coordinateSystem._relativeMatrix = hit.anchor_transform
+							anchor = new XRAnchor(coordinateSystem, hit.uuid)
+							this._anchors.set(anchor.uid, anchor)
+						}
+
+						const offsetPosition = [
+							hit.world_transform[12] - hit.anchor_transform[12],
+							hit.world_transform[13] - hit.anchor_transform[13],
+							hit.world_transform[14] - hit.anchor_transform[14]
+						]
+						const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
+						const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
+						const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
+						const anchorOffset = new XRAnchorOffset(anchor.uid)
+						anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
+						resolve(anchorOffset)
+					} else {
 						let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
-						coordinateSystem._relativeMatrix = hit.anchor_transform
-						anchor = new XRAnchor(coordinateSystem, hit.uuid)
+						coordinateSystem._relativeMatrix = hit.world_transform
+						const anchor = new XRAnchor(coordinateSystem, hit.uuid)
 						this._anchors.set(anchor.uid, anchor)
-					}
 
-					const offsetPosition = [
-						hit.world_transform[12] - hit.anchor_transform[12],
-						hit.world_transform[13] - hit.anchor_transform[13],
-						hit.world_transform[14] - hit.anchor_transform[14]
-					]
-					const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
-					const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
-					const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
-					const anchorOffset = new XRAnchorOffset(anchor.uid)
-					anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
-					resolve(anchorOffset)
+						const anchorOffset = new XRAnchorOffset(anchor.uid)
+						resolve(anchorOffset)
+					}
 				})
 			} else if(this._vrDisplay !== null){
 				// Perform a hit test using the ARCore data
