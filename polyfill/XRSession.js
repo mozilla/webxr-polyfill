@@ -192,6 +192,12 @@ export default class XRSession extends EventHandlerBase {
 		MatrixMath.mat4_multiply(poseOut, anchorPose, videoFrame.camera.viewMatrix )
 
 	}
+
+	// normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
+	hitTest(normalizedScreenX, normalizedScreenY, options=null){
+		// Promise<XRAnchorOffset?> findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
+		return this.reality._findAnchor(normalizedScreenX, normalizedScreenY, this.display, options)
+	}
 	
 	requestVideoFrame() {
 		this._display._requestVideoFrame();
