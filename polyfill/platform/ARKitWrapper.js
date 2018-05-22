@@ -905,8 +905,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 						});
 					} else {
 						plane.center = element.plane_center;
-						plane.extent = [element.plane_extent.x, element.plane_extent.z];
+						plane.extent[0] = element.plane_extent.x
+						plane.extent[1] = element.plane_extent.y
 						plane.modelMatrix = element.transform;
+						plane.alignment = element.plane_alignment
 					}
 				}else{
 					var anchor = this.anchors_.get(element.uuid);
