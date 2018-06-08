@@ -49,6 +49,12 @@
 			your application would quickly slow down tracking so many anchors. Instead, find an anchor
 			for groups of content that are positioned relative to some surface or other feature.
 			*/
+
+			var model = new THREE.Matrix4();
+			var tempPos = new THREE.Vector3();
+			var tempQuat = new THREE.Quaternion();
+			var tempScale = new THREE.Vector3();
+
 			class HitTestExample extends XRExampleBase {
 				constructor(domElement){
 					super(domElement, false)
@@ -64,6 +70,7 @@
 					this._messageEl.style['font-size'] = '16px'
 
 					this._tapEventData = [ 0.5, 0.5 ]
+					this._hitAnchorOffset = null;
 					this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
 				}
 
@@ -86,27 +93,43 @@
 					this.scene.add(this.directionalLight);
 				}
 
+				// updated to use session.hitTest, since that's what WebXR looks like it will use
+				newSession() {
+					const x = this._tapEventData[0]
+					const y = this._tapEventData[1]
+					this.session.hitTest(x, y, XRPresentationFrame.HIT_TEST_TYPE_ALL).then(this.handleHit.bind(this)).catch(err => {
+						console.error('Error in hit test', err)
+					})
+				}
+
+				handleHit(anchorOffset) {
+					if(anchorOffset === null){
+						this._messageEl.innerHTML = 'miss'
+					} else {
+						this._messageEl.innerHTML = 'hit'
+						this.reticle.visible = true;
+						this._hitAnchorOffset = anchorOffset;
+					}
+					// keep testing!
+					const x = this._tapEventData[0]
+					const y = this._tapEventData[1]
+					window.setTimeout(() => {
+						this.session.hitTest(x, y, XRPresentationFrame.HIT_TEST_TYPE_ALL).then(this.handleHit.bind(this)).catch(err => {
+							console.error('Error in hit test', err)
+						})
+					})
+				}
+
 				// Called once per frame, before render, to give the app a chance to update this.scene
 				updateScene(frame){
-						const x = this._tapEventData[0]
-						const y = this._tapEventData[1]
+					if (this._hitAnchorOffset) {
+						this.updateNodeFromAnchorOffset(frame, this.reticle, this._hitAnchorOffset)
+					}
 
-						const hit = frame.hitTestNoAnchor(x, y);
-						if(frame.hasLightEstimate){
-							this.ambientLight.intensity = frame.lightEstimate;
-							this.directionalLight.intensity = frame.lightEstimate * 0.5;
-						}
-						var model = new THREE.Matrix4();
-						var tempPos = new THREE.Vector3();
-						var tempQuat = new THREE.Quaternion();
-						var tempScale = new THREE.Vector3();
-						if (hit && hit.length > 0) {
-							this.reticle.visible = true
-							model.fromArray(hit[0].modelMatrix);
-							model.decompose(tempPos, tempQuat, tempScale);
-							this.reticle.position.copy(tempPos);
-							this.reticle.quaternion.copy(tempQuat);
-						}
+					if(frame.hasLightEstimate){
+						this.ambientLight.intensity = frame.lightEstimate;
+						this.directionalLight.intensity = frame.lightEstimate * 0.5;
+					}
 				}
 
 				// Save screen taps as normalized coordinates for use in this.updateScene

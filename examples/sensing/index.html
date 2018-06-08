@@ -1,0 +1,243 @@
+
+<html>
+<head>
+	<title>Show What Information is Being Sensed in the World</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body, html {
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+			position: fixed;
+			width: 100%;
+			height: 100vh;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+        #gui { position: absolute; top: 5%; right: 2px }
+		#target {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+		}
+	</style>
+	<link rel="stylesheet" href="../common.css"/>
+	<script src="../libs/three.js"></script>
+	<script src="../libs/three-gltf-loader.js"></script>
+	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+	<script nomodule src="../../dist/webxr-polyfill.js"></script>
+	<script src="../common.js"></script>
+</head>
+<body>
+<div id="target" />
+<div onclick="hideMe(this)" id="description">
+	<h2>Show World Knowledge</h2>
+	<h5>(click to dismiss)</h5>
+	<p>Render the anchors, including planes and face geometry, detected by the platform.
+    </p>
+</div>
+<script>
+    
+    class WorldKnowledgeExample extends XRExampleBase {
+        constructor(domElement){
+            super(domElement, false, true, false, true)
+
+            // A message at the bottom of the screen that shows whether a surface has been found
+            this._messageEl = document.createElement('div')
+            this.el.appendChild(this._messageEl)
+            this._messageEl.style.position = 'absolute'
+            this._messageEl.style.bottom = '10px'
+            this._messageEl.style.left = '10px'
+            this._messageEl.style.color = 'white'
+            this._messageEl.style['font-size'] = '16px'
+
+            this.anchorMap = new Map()
+        }
+
+        // Called during construction to allow the app to populate this.scene
+        initializeScene() {
+            // Add a box at the scene origin
+            let box = new THREE.Mesh(
+                new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+                new THREE.MeshPhongMaterial({color: '#DDFFDD'})
+            )
+            box.position.set(0, 0.05, 0)
+            var axesHelper = AxesHelper( 0.2 );
+            this.floorGroup.add( axesHelper );
+            this.floorGroup.add(box)
+
+            // Add a few lights
+            this.ambientLight = new THREE.AmbientLight('#FFF', 0.2)
+            this.scene.add(this.ambientLight);
+
+            this.directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+            this.directionalLight.position.set(0, 10, 0)
+            this.scene.add(this.directionalLight)
+
+			this.listenerSetup = false
+        }
+
+        // Called once per frame, before render, to give the app a chance to update this.scene
+        updateScene(frame){
+            if(frame.hasLightEstimate){
+                // intensity is 1 for "normal"
+                this.ambientLight.intensity = frame.lightEstimate * (2/10);
+                this.directionalLight.intensity = frame.lightEstimate * (8/10);
+            }
+            if (!this.listenerSetup) {
+                this.listenerSetup = true
+                this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+            }
+        }
+
+        _handleUpdateWorldAnchor(event) {
+            let anchor = event.detail
+
+            if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    if (anchor.mesh) {
+                        let currentVertexIndex = 0
+                        var position = anchor.mesh.geometry.attributes.position;                    
+                        for (let vertex of anchor.geometry.vertices) {
+                            position.setXYZ(currentVertexIndex++, vertex.x, vertex.y, vertex.z)
+                        }
+
+                        //this.faceMesh.geometry.verticesNeedUpdate = true;
+                        position.needsUpdate = true;                            
+                    } else {
+                        mesh = this.newMeshNode(anchor, '#999999', '#999900')
+                        if (mesh) {
+                            anchor.node.add(mesh)
+                        }
+                    }
+                }
+            } else if (anchor instanceof XRPlaneAnchor) {
+                if (anchor.geometry !== null) {
+                    if (anchor.mesh) {
+                        if  ((anchor.mesh.extent[0] != anchor.extent[0]) || (anchor.mesh.extent[1] != anchor.extent[1])) {
+                            // assume that any change to the plane will results in the extent changing at least a little
+                            anchor.node.remove(anchor.mesh)
+
+                            let mesh = this.newMeshNode(anchor, '#11FF11', '#009900')
+                            if (mesh) {
+                                mesh.extent = [anchor.extent[0], anchor.extent[1]]
+                                anchor.node.add(mesh)
+                            }
+                        }
+                    } else {
+                        mesh = this.newMeshNode(anchor, '#11FF11', '#009900')
+                        if (mesh) {
+                            mesh.extent = [anchor.extent[0], anchor.extent[1]]
+                        }
+                    }
+                }
+            }
+		}
+
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor.node !== null) {
+                this.removeAnchoredNode(anchor.node);
+            }                
+        }
+
+        _handleNewWorldAnchor(event) {
+            let anchor = event.detail
+            let anchorGroup = new THREE.Group();
+            var mesh = null;
+
+	      	if (anchor instanceof XRFaceAnchor) {
+                mesh = this.newMeshNode(anchor, '#999999', '#999900')
+            } else if (anchor instanceof XRPlaneAnchor) {
+                mesh = this.newMeshNode(anchor, '#11FF11', '#009900')
+                if (mesh) {
+                    mesh.extent = [anchor.extent[0], anchor.extent[1]]
+                }
+            }
+            if (mesh) {
+                anchorGroup.add(mesh)
+            }
+            var axesHelper = AxesHelper( 0.1 );
+            anchorGroup.add( axesHelper );
+            anchor.node = anchorGroup;
+            this.addAnchoredNode(new XRAnchorOffset(anchor.uid), anchorGroup)
+		}
+
+        newMeshNode(anchor, edgeColor, polyColor) {
+	      	if (anchor instanceof XRFaceAnchor || anchor instanceof XRPlaneAnchor) {
+                if (anchor.geometry !== null) {
+                    let mesh = new THREE.Group();
+
+                    let vertexCount = anchor.geometry.vertexCount
+                    let vertices = new Float32Array( vertexCount * 3 );
+                    let currentVertexIndex = 0
+                    for (let vertex of anchor.geometry.vertices) {
+                        vertices[currentVertexIndex++] = vertex.x
+                        vertices[currentVertexIndex++] = vertex.y
+                        vertices[currentVertexIndex++] = vertex.z
+                    }
+                    
+                    let triangleIndices = anchor.geometry.triangleIndices
+                    let verticesBufferAttribute = new THREE.BufferAttribute( vertices, 3 )
+                    verticesBufferAttribute.dynamic = true
+
+                    let geometry = new THREE.BufferGeometry()
+                    geometry.addAttribute( 'position', verticesBufferAttribute );
+                    geometry.setIndex(triangleIndices)
+
+                    // transparent mesh
+                    var wireMaterial = new THREE.MeshPhongMaterial({color: edgeColor, wireframe: true})
+                    var material = new THREE.MeshPhongMaterial({color: polyColor, transparent: true, opacity: 0.25})
+
+                    mesh.add(new THREE.Mesh(geometry, material))
+                    mesh.add(new THREE.Mesh(geometry, wireMaterial))
+
+                    mesh.geometry = geometry;  // for later use
+
+                    anchor.mesh = mesh;
+                    return mesh
+                }
+            }
+            return null;
+		}
+   }
+
+    function AxesHelper( size ) {
+        size = size || 1;
+
+        var vertices = [
+            0, 0, 0,	size, 0, 0,
+            0, 0, 0,	0, size, 0,
+            0, 0, 0,	0, 0, size
+        ];
+
+        var colors = [
+            1, 0, 0,	1, 0.6, 0,
+            0, 1, 0,	0.6, 1, 0,
+            0, 0, 1,	0, 0.6, 1
+        ];
+
+        var geometry = new THREE.BufferGeometry();
+        geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+        geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+        var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+        return new THREE.LineSegments(geometry, material);
+    }
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            try {
+                window.pageApp = new WorldKnowledgeExample(document.getElementById('target'))
+            } catch(e) {
+                console.error('page error', e)
+            }
+        }, 1000)
+    })
+</script>
+</body>
+</html>

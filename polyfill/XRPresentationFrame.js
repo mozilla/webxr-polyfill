@@ -1,13 +1,14 @@
 import XRAnchor from './XRAnchor.js'
+import ARKitWrapper from './platform/ARKitWrapper.js'
 import MatrixMath from './fill/MatrixMath.js'
 
 /*
 XRPresentationFrame provides all of the values needed to render a single frame of an XR scene to the XRDisplay.
 */
 export default class XRPresentationFrame {
-	constructor(session){
+	constructor(session, timestamp){
 		this._session = session
-		this._timestamp = this._session.reality._getTimeStamp();
+		this._timestamp = this._session.reality._getTimeStamp(timestamp);
 	}
 
 	get session(){ return this._session }
@@ -65,9 +66,9 @@ export default class XRPresentationFrame {
 	}
 
 	// normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
-	findAnchor(normalizedScreenX, normalizedScreenY){
+	findAnchor(normalizedScreenX, normalizedScreenY, options=null){
 		// Promise<XRAnchorOffset?> findAnchor(float32, float32); // cast a ray to find or create an anchor at the first intersection in the Reality
-		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display)
+		return this._session.reality._findAnchor(normalizedScreenX, normalizedScreenY, this._session.display, options)
 	}
 
 	hitTestNoAnchor(normalizedScreenX, normalizedScreenY){
@@ -114,3 +115,19 @@ export default class XRPresentationFrame {
 		}
 	}
 }
+
+// hit test types
+XRPresentationFrame.HIT_TEST_TYPE_FEATURE_POINT = ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT
+XRPresentationFrame.HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE = ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE
+XRPresentationFrame.HIT_TEST_TYPE_ESTIMATED_VERTICAL_PLANE = ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_VERTICAL_PLANE
+XRPresentationFrame.HIT_TEST_TYPE_EXISTING_PLANE = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE
+XRPresentationFrame.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+XRPresentationFrame.HIT_TEST_TYPE_EXISTING_PLANE_USING_GEOMETRY = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_GEOMETRY
+
+XRPresentationFrame.HIT_TEST_TYPE_ALL = ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT |
+	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
+	ARKitWrapper.HIT_TEST_TYPE_ESTIMATED_HORIZONTAL_PLANE |
+	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+
+XRPresentationFrame.HIT_TEST_TYPE_EXISTING_PLANES = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
+	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT

@@ -4,6 +4,7 @@ import EventHandlerBase from './fill/EventHandlerBase.js'
 import VirtualReality from './reality/VirtualReality.js'
 
 import XRFieldOfView from './XRFieldOfView.js'
+import Reality from './Reality.js'
 
 
 /*
@@ -99,3 +100,7 @@ export default class XRDisplay extends EventHandlerBase {
 
 	//attribute EventHandler ondeactivate;
 }
+
+XRDisplay.NEW_WORLD_ANCHOR = 'world-anchor'
+XRDisplay.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
+XRDisplay.REMOVE_WORLD_ANCHOR = 'remove-world-anchor'

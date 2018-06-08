@@ -52,8 +52,6 @@
 			class HitTestExample extends XRExampleBase {
 				constructor(domElement){
 					super(domElement, false)
-					this._tapEventData = null // Will be filled in on touch start and used in updateScene
-
 					// A message at the bottom of the screen that shows whether a surface has been found
 					this._messageEl = document.createElement('div')
 					this.el.appendChild(this._messageEl)
@@ -74,6 +72,8 @@
 						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
 					)
 					box.position.set(0, 0.05, 0)
+					var axesHelper = AxesHelper( 0.2 );
+		            this.floorGroup.add( axesHelper );
 					this.floorGroup.add(box)
 
 					// Add a few lights
@@ -85,23 +85,6 @@
 
 				// Called once per frame, before render, to give the app a chance to update this.scene
 				updateScene(frame){
-					// If we have tap data, attempt a hit test for a surface
-					if(this._tapEventData !== null){
-						const x = this._tapEventData[0]
-						const y = this._tapEventData[1]
-						this._tapEventData = null
-						// Attempt a hit test using the normalized screen coordinates
-						frame.findAnchor(x, y).then(anchorOffset => {
-							if(anchorOffset === null){
-								this._messageEl.innerHTML = 'miss'
-							} else {
-								this._messageEl.innerHTML = 'hit'
-								this.addAnchoredNode(anchorOffset, this._createSceneGraphNode())
-							}
-						}).catch(err => {
-							console.error('Error in hit test', err)
-						})
-					}
 				}
 
 				// Save screen taps as normalized coordinates for use in this.updateScene
@@ -110,11 +93,21 @@
 						console.error('No touches on touch event', ev)
 						return
 					}
-					//save screen coordinates normalized to -1..1 (0,0 is at center and 1,1 is at top right)
-					this._tapEventData = [
-						ev.touches[0].clientX / window.innerWidth,
-						ev.touches[0].clientY / window.innerHeight
-					]
+
+					const x = ev.touches[0].clientX / window.innerWidth
+					const y = ev.touches[0].clientY / window.innerHeight
+
+					// Attempt a hit test using the normalized screen coordinates
+					this.session.hitTest(x, y).then(anchorOffset => {
+						if(anchorOffset === null){
+							this._messageEl.innerHTML = 'miss'
+						} else {
+							this._messageEl.innerHTML = 'hit'
+							this.addAnchoredNode(anchorOffset, this._createSceneGraphNode())
+						}
+					}).catch(err => {
+						console.error('Error in hit test', err)
+					})
 				}
 
 				// Creates a box used to indicate the location of an anchor offset
@@ -127,6 +120,30 @@
 					group.add(mesh)
 					return group
 				}
+			}
+
+			function AxesHelper( size ) {
+				size = size || 1;
+
+				var vertices = [
+					0, 0, 0,	size, 0, 0,
+					0, 0, 0,	0, size, 0,
+					0, 0, 0,	0, 0, size
+				];
+
+				var colors = [
+					1, 0, 0,	1, 0.6, 0,
+					0, 1, 0,	0.6, 1, 0,
+					0, 0, 1,	0, 0.6, 1
+				];
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+				var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				return new THREE.LineSegments(geometry, material);
 			}
 
 

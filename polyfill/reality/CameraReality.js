@@ -3,7 +3,6 @@ import XRAnchor from '../XRAnchor.js'
 import XRViewPose from '../XRViewPose.js'
 
 import XRAnchorOffset from '../XRAnchorOffset.js'
-
 import XRLightEstimate from '../XRLightEstimate.js'
 
 import MatrixMath from '../fill/MatrixMath.js'
@@ -11,6 +10,9 @@ import Quaternion from '../fill/Quaternion.js'
 
 import ARKitWrapper from '../platform/ARKitWrapper.js'
 import ARCoreCameraRenderer from '../platform/ARCoreCameraRenderer.js'
+import XRImageAnchor from "../XRImageAnchor.js"
+import XRPlaneAnchor from "../XRPlaneAnchor.js"
+import XRFaceAnchor from "../XRFaceAnchor.js"
 
 /*
 CameraReality displays the forward facing camera.
@@ -156,19 +158,23 @@ export default class CameraReality extends Reality {
 		this._videoEl.style.height = windowHeight.toFixed(2) + 'px'		
 		this._videoEl.style.transform = "translate(" + translateX.toFixed(2) + "px, "+ translateY.toFixed(2) + "px)"
 
-		this.dispatchEvent(
-			new CustomEvent(
-				Reality.WINDOW_RESIZE_EVENT,
-				{
-					source: this,
-					detail: {
-						width: canvasWidth,
-						height: canvasHeight,
-						focalLength: this._focalLength
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					Reality.WINDOW_RESIZE_EVENT,
+					{
+						source: this,
+						detail: {
+							width: canvasWidth,
+							height: canvasHeight,
+							focalLength: this._focalLength
+						}
 					}
-				}
+				)
 			)
-		)
+        } catch(e) {
+            console.error('WINDOW_RESIZE_EVENT error', e)
+        }
 	}
 	
 	/*
@@ -237,15 +243,19 @@ export default class CameraReality extends Reality {
 
 			var xrVideoFrame = new XRVideoFrame(buffers, pixelFormat, timestamp, camera )
 
-			this.dispatchEvent(
-				new CustomEvent(
-					Reality.COMPUTER_VISION_DATA,
-					{
-						source: this,
-						detail: xrVideoFrame
-					}
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						Reality.COMPUTER_VISION_DATA,
+						{
+							source: this,
+							detail: xrVideoFrame
+						}
+					)
 				)
-			)
+			} catch(e) {
+				console.error('COMPUTER_VISION_DATA event error', e)
+			}
 		}
 		// TODO update the anchor positions using ARCore or ARKit
 	}
@@ -364,13 +374,58 @@ export default class CameraReality extends Reality {
 		if(ev.detail && ev.detail.objects){
 			for(let anchorInfo of ev.detail.objects){
 				this._updateAnchorFromARKitUpdate(anchorInfo.uuid, anchorInfo)
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.UPDATE_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: anchorInfo.uuid
+							}
+						)
+					)
+				} catch(e) {
+					console.error('UPDATE_WORLD_ANCHOR event error', e)
+				}
 			}
 		}
+
 		if (ev.detail && ev.detail.removedObjects) {
 			for (let removedAnchor of ev.detail.removedObjects) {
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.REMOVE_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: removedAnchor
+							}
+						)
+					)
+				} catch(e) {
+					console.error('REMOVE_WORLD_ANCHOR event error', e)
+				}
 				this._deleteAnchorFromARKitUpdate(removedAnchor)
 			}
 		}
+
+        if (ev.detail && ev.detail.newObjects) {
+            for (let addedAnchor of ev.detail.newObjects) {
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							Reality.NEW_WORLD_ANCHOR,
+							{
+								source: this,
+								detail: addedAnchor
+							}
+						)
+					)
+				} catch(e) {
+					console.error('NEW_WORLD_ANCHOR event error', e)
+				}
+			}
+        }
 	}
 
     _deleteAnchorFromARKitUpdate(anchorUUID) {
@@ -389,6 +444,30 @@ export default class CameraReality extends Reality {
 		}
 		// This assumes that the anchor's coordinates are in the tracker coordinate system
 		anchor.coordinateSystem._relativeMatrix = anchorInfo.transform
+
+		// update internal data if any
+        switch (anchorInfo.type) {
+			case ARKitWrapper.ANCHOR_TYPE_PLANE:
+				anchor.center = anchorInfo.plane_center
+				anchor.extent =  
+					[anchorInfo.plane_extent.x, anchorInfo.plane_extent.z]
+				anchor.alignment = anchorInfo.plane_alignment
+				anchor.geometry = anchorInfo.geometry
+				break
+			case ARKitWrapper.ANCHOR_TYPE_FACE:
+			 	if (anchorInfo.geometry) {
+					anchor.geometry.vertices = anchorInfo.geometry.vertices
+				 }
+				 if (anchorInfo.blendShapes) {
+					anchor.updateBlendShapes(anchorInfo.blendShapes)
+				 }
+				break
+            case ARKitWrapper.ANCHOR_TYPE_ANCHOR:
+            	break
+            case ARKitWrapper.ANCHOR_TYPE_IMAGE:
+            	break
+		}
+		
 	}
 
 	_addAnchor(anchor, display){
@@ -409,43 +488,54 @@ export default class CameraReality extends Reality {
 	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	returns a Promise that resolves either to an AnchorOffset with the first hit result or null if the hit test failed
 	*/
-	_findAnchor(normalizedScreenX, normalizedScreenY, display){
+	_findAnchor(normalizedScreenX, normalizedScreenY, display, testOptions=null){
 		return new Promise((resolve, reject) => {
 			if(this._arKitWrapper !== null){	
 				// Perform a hit test using the ARKit integration
-				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
+				this._arKitWrapper.hitTest(normalizedScreenX, normalizedScreenY, testOptions || ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES).then(hits => {
 					if(hits.length === 0){
 						resolve(null)
 						// console.log('miss')
 						return
 					}
 					const hit = this._pickARKitHit(hits)
-					hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
-					hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
-					// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
+					// if it's a plane
+					if (hit.anchor_transform) {
+						hit.anchor_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
+						hit.world_transform[13] += XRViewPose.SITTING_EYE_HEIGHT
 
-					// TODO use XRPlaneAnchor for anchors with extents
+						// Use the first hit to create an XRAnchorOffset, creating the XRAnchor as necessary
 
-					let anchor = this._getAnchor(hit.uuid)
-					if(anchor === null){
+						// TODO use XRPlaneAnchor for anchors with extents;  hopefully the plane will have been created, tho
+						let anchor = this._getAnchor(hit.uuid)
+						if(anchor === null){
+							let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+							coordinateSystem._relativeMatrix = hit.anchor_transform
+							anchor = new XRAnchor(coordinateSystem, hit.uuid)
+							this._anchors.set(anchor.uid, anchor)
+						}
+
+						const offsetPosition = [
+							hit.world_transform[12] - hit.anchor_transform[12],
+							hit.world_transform[13] - hit.anchor_transform[13],
+							hit.world_transform[14] - hit.anchor_transform[14]
+						]
+						const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
+						const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
+						const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
+						const anchorOffset = new XRAnchorOffset(anchor.uid)
+						anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
+						resolve(anchorOffset)
+					} else {
 						let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
-						coordinateSystem._relativeMatrix = hit.anchor_transform
-						anchor = new XRAnchor(coordinateSystem, hit.uuid)
+						coordinateSystem._relativeMatrix = hit.world_transform
+						const anchor = new XRAnchor(coordinateSystem, hit.uuid)
 						this._anchors.set(anchor.uid, anchor)
-					}
 
-					const offsetPosition = [
-						hit.world_transform[12] - hit.anchor_transform[12],
-						hit.world_transform[13] - hit.anchor_transform[13],
-						hit.world_transform[14] - hit.anchor_transform[14]
-					]
-					const worldRotation = new Quaternion().setFromRotationMatrix(hit.world_transform)
-					const inverseAnchorRotation = new Quaternion().setFromRotationMatrix(hit.anchor_transform).inverse()
-					const offsetRotation = new Quaternion().multiplyQuaternions(worldRotation, inverseAnchorRotation)
-					const anchorOffset = new XRAnchorOffset(anchor.uid)
-					anchorOffset.poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), offsetRotation.toArray(), offsetPosition)
-					resolve(anchorOffset)
+						const anchorOffset = new XRAnchorOffset(anchor.uid)
+						resolve(anchorOffset)
+					}
 				})
 			} else if(this._vrDisplay !== null){
 				// Perform a hit test using the ARCore data
@@ -468,6 +558,53 @@ export default class CameraReality extends Reality {
 				resolve(null) // No platform support for finding anchors
 			}
 		})
+	}
+
+    /**
+	 * Creates an ARReferenceImage in the ARKit native side
+     * @param uid the ID of the image to create
+     * @param buffer the base64 encoded image
+     * @param width
+     * @param height
+     * @param physicalWidthInMeters
+     * @returns a promise when the image has been created, error otherwise
+     * @private
+     */
+    _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+		if (this._arKitWrapper) {
+            return this._arKitWrapper.createImageAnchor(uid, buffer, width, height, physicalWidthInMeters)
+        } else {
+			return null;
+		}
+	}
+
+    /**
+	 * _activateDetectionImage Uses the ARKit wrapper to add a new reference image to the set of detection images in the ARKit configuration object
+	 * and runs the session again. The promise is resolved when the image is detected by ARKit
+     * @param uid The name (id) if the image to activate. It has to be previously created calling the "createImageAnchor" method
+     * @param display The current display
+     * @returns {Promise<any>} A promise resolved with the image transform in case of success, rejected with error otherwise
+     */
+    _activateDetectionImage(uid, display) {
+        return new Promise((resolve, reject) => {
+            if (this._arKitWrapper) {
+                this._arKitWrapper.activateDetectionImage(uid).then(aRKitImageAnchor => {
+                    if (aRKitImageAnchor.activated === true) {
+                    	let coordinateSystem = new XRCoordinateSystem(display, XRCoordinateSystem.TRACKER)
+						coordinateSystem._relativeMatrix = aRKitImageAnchor.imageAnchor.transform
+						let anchor = new XRImageAnchor(coordinateSystem, aRKitImageAnchor.imageAnchor.uuid)
+						this._anchors.set(aRKitImageAnchor.imageAnchor.uuid, anchor)
+                        resolve(aRKitImageAnchor.imageAnchor.transform)
+					} else if (aRKitImageAnchor.error !== null) {
+                		reject(aRKitImageAnchor.error)
+					} else {
+                    	reject(null)
+					}
+				})
+            } else {
+                reject('ARKit not supported')
+            }
+        })
 	}
 
 	_removeAnchor(uid){
@@ -560,12 +697,13 @@ export default class CameraReality extends Reality {
 		}
 	}
 
-	_getTimeStamp() {
+	_getTimeStamp(timestamp) {
 		if(this._arKitWrapper !== null){
 			return this._arKitWrapper.timestamp;
 		}else{
 			// use performance.now()
-			return 	( performance || Date ).now();
+			//return 	( performance || Date ).now();
+			return timestamp
 		}
 	}
 	/*

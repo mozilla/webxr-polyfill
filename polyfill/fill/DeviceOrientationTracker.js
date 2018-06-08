@@ -18,10 +18,14 @@ export default class DeviceOrientationTracker extends EventHandlerBase {
 		}, false)
 		window.addEventListener('deviceorientation', ev => {
 			this._deviceOrientation = ev
-			this.dispatchEvent(new CustomEvent(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, {
-				deviceOrientation: this._deviceOrientation,
-				windowOrientation: this._windowOrientation
-			}))
+			try {
+				this.dispatchEvent(new CustomEvent(DeviceOrientationTracker.ORIENTATION_UPDATE_EVENT, {
+					deviceOrientation: this._deviceOrientation,
+					windowOrientation: this._windowOrientation
+				}))
+			} catch(e) {
+				console.error('deviceorientation event handler error', e)
+			}					
 		}, false)
 	}
 
