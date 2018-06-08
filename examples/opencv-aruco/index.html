@@ -138,8 +138,12 @@
 								var videoFrame = XRVideoFrame.createFromMessage(ev)
 
 								this.markers = ev.data.markers;
-								this.session.getVideoFramePose(videoFrame, this.camPose);
 
+								try {
+								  this.session.getVideoFramePose(videoFrame, this.camPose);
+								} catch (e) {
+									console.log("can't get pose ", e)
+								}
 								cvEndTime = ev.data.time;
 								cvMarkerTime = cvEndTime - cvAfterDetectTime;
 
@@ -204,6 +208,8 @@
 						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
 					)
 					box.position.set(0, 0, 0)
+					var axesHelper = AxesHelper( 0.2 );
+		            this.floorGroup.add( axesHelper );
 					this.floorGroup.add(box)
 
 					// // Add a box at the scene origin
@@ -337,6 +343,30 @@
 				console.log('OpenCV.js is ready');
 				openCVready = true				
 			}
+			function AxesHelper( size ) {
+				size = size || 1;
+
+				var vertices = [
+					0, 0, 0,	size, 0, 0,
+					0, 0, 0,	0, size, 0,
+					0, 0, 0,	0, 0, size
+				];
+
+				var colors = [
+					1, 0, 0,	1, 0.6, 0,
+					0, 1, 0,	0.6, 1, 0,
+					0, 0, 1,	0, 0.6, 1
+				];
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+				var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				return new THREE.LineSegments(geometry, material);
+			}
+
 
 			window.addEventListener('DOMContentLoaded', () => {
 				setTimeout(() => {

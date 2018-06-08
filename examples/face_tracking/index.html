@@ -1,0 +1,283 @@
+
+<html>
+<head>
+	<title>ARKit face tracking example</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body, html {
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+			position: fixed;
+			width: 100%;
+			height: 100vh;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+        #gui { position: absolute; top: 5%; right: 2px }
+		#target {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+		}
+	</style>
+	<link rel="stylesheet" href="../common.css"/>
+	<script src="../libs/three.js"></script>
+    <script src="../libs/dat.gui.min.js"></script>
+	<script src="../libs/three-gltf-loader.js"></script>
+	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+	<script nomodule src="../../dist/webxr-polyfill.js"></script>
+	<script src="../common.js"></script>
+</head>
+<body>
+<div id="target" />
+<div onclick="hideMe(this)" id="description">
+	<h2>ARKit face tracking Example</h2>
+	<h5>(click to dismiss)</h5>
+	<p>This detects and tracks your face using ARKit and places a 3D  model on it.
+        (Glasses model by <a href="https://sketchfab.com/models/5c78f100eea749c895d69fe2ed728197#">person-x</a>)
+    </p>
+</div>
+<script>
+    
+    class ARKitFaceTrackingExample extends XRExampleBase {
+        constructor(domElement){
+            super(domElement, false, true, false, true)
+
+            // A message at the bottom of the screen that shows whether a surface has been found
+            this._messageEl = document.createElement('div')
+            this.el.appendChild(this._messageEl)
+            this._messageEl.style.position = 'absolute'
+            this._messageEl.style.bottom = '10px'
+            this._messageEl.style.left = '10px'
+            this._messageEl.style.color = 'white'
+            this._messageEl.style['font-size'] = '16px'
+
+            // add dat.GUI to the left HUD.  We hid it in stereo viewing, so we don't need to 
+            // figure out how to duplicate it.
+            this.params = {
+                face: 'occlusion',
+                ducky: false,
+                glasses: true
+            };
+
+
+            var gui = new dat.GUI({ autoPlace: false });
+            document.body.appendChild(gui.domElement);
+
+            gui.add( this.params, 'face', { 'Occlusion Only': 'occlusion', 'Oclussion & Mesh': 'both', 'Transparent Mesh': 'transparent' } );
+            gui.add( this.params, 'ducky' );
+            gui.add( this.params, 'glasses' );
+            gui.domElement.id = 'gui';
+            gui.open();
+            this.gui = gui
+        }
+
+        // Called during construction to allow the app to populate this.scene
+        initializeScene() {
+            // Add a box at the scene origin
+            let box = new THREE.Mesh(
+                new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+                new THREE.MeshPhongMaterial({color: '#DDFFDD'})
+            )
+            box.position.set(0, 0.05, 0)
+            var axesHelper = AxesHelper( 0.2 );
+            this.floorGroup.add( axesHelper );
+            this.floorGroup.add(box)
+
+            // Add a few lights
+            this.ambientLight = new THREE.AmbientLight('#FFF', 0.2)
+            this.scene.add(this.ambientLight);
+
+            this.directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+            this.directionalLight.position.set(0, 10, 0)
+            this.scene.add(this.directionalLight)
+
+			this.duckyCreated = false
+            this.glassesCreated = false;
+
+            this.faceMesh = new THREE.Group();
+            this.transparentMesh = new THREE.Group()
+            this.meshOcclusion = new THREE.Group()
+
+            this.ducky = new THREE.Group()
+            this.ducky.name = "Duck group"
+			loadGLTF('./DuckyMesh.glb').then(gltf => {
+                this.duckyNode = gltf.scene
+                this.duckyNode.position.set(0, -0.25, -0.2)
+                this.duckyNode.scale.set(3,3,3)
+				this.ducky.add(this.duckyNode)
+                this.duckyCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
+
+            this.glasses = new THREE.Group()
+            this.glasses.name = "Glasses group"
+			loadGLTF('./glasses/glasses.gltf').then(gltf => {
+                this.glassesNode = gltf.scene
+                this.glassesNode.position.set(0, 0.01, 0.06)
+                this.glassesNode.scale.set(0.0005,0.0005,0.0005)
+				this.glasses.add(this.glassesNode)
+                this.glassesCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
+
+			this.listenerSetup = false
+        }
+
+        // Called once per frame, before render, to give the app a chance to update this.scene
+        updateScene(frame){
+            if(frame.hasLightEstimate){
+                // intensity is 1 for "normal"
+                this.ambientLight.intensity = frame.lightEstimate * (2/10);
+                this.directionalLight.intensity = frame.lightEstimate * (8/10);
+            }
+            if (!this.listenerSetup) {
+                this.listenerSetup = true
+                this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
+            }
+
+            if (this.params.ducky) {
+                if (this.ducky.parent != this.faceMesh) {
+                    this.faceMesh.add(this.ducky)
+                }
+            } else {
+                this.faceMesh.remove(this.ducky)
+            }
+
+            if (this.params.glasses) {
+                if (this.glasses.parent != this.faceMesh) {
+                    this.faceMesh.add(this.glasses)
+                }
+            } else {
+                this.faceMesh.remove(this.glasses)
+            }
+
+            if (this.material) {            
+                if (this.params.face == "occlusion") {
+                    this.material.colorWrite = false; // only update the depth
+                    this.wireMaterial.colorWrite = false; // only update the depth
+                    this.material.transparent = false;                
+                } else if (this.params.face == "transparent") {
+                    this.material.colorWrite = true; // only update the depth
+                    this.wireMaterial.colorWrite = true; // only update the depth
+                    this.material.transparent = true;
+                } else {
+                    this.material.colorWrite = true; // only update the depth
+                    this.wireMaterial.colorWrite = true; // only update the depth
+                    this.material.transparent = false;
+                }
+            }
+        }
+
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    this.faceMesh.remove(this.transparentMesh)
+                    this.transparentMesh = null
+                    this.removeAnchoredNode(this.faceMesh);
+                }                
+            }
+        }
+
+        _handleUpdateWorldAnchor(event) {
+            let anchor = event.detail
+            if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    let currentVertexIndex = 0
+                    var position = this.faceMesh.geometry.attributes.position;                    
+                    for (let vertex of anchor.geometry.vertices) {
+                        position.setXYZ(currentVertexIndex++, vertex.x, vertex.y, vertex.z)
+                    }
+
+                    //this.faceMesh.geometry.verticesNeedUpdate = true;
+                    position.needsUpdate = true;
+                }
+            }
+		}
+
+        _handleNewWorldAnchor(event) {
+            let anchor = event.detail
+	      	if (anchor instanceof XRFaceAnchor) {
+                if (anchor.geometry !== null) {
+                    if (!this.meshOcclusionMesh) {
+                        let vertexCount = anchor.geometry.vertexCount
+
+                        let vertices = new Float32Array( vertexCount * 3 );
+                        let currentVertexIndex = 0
+						for (let vertex of anchor.geometry.vertices) {
+						    vertices[currentVertexIndex++] = vertex.x
+						    vertices[currentVertexIndex++] = vertex.y
+						    vertices[currentVertexIndex++] = vertex.z
+						}
+						
+                        let geometry = new THREE.BufferGeometry()
+
+                        let triangleIndices = anchor.geometry.triangleIndices
+						let verticesBufferAttribute = new THREE.BufferAttribute( vertices, 3 )
+                        verticesBufferAttribute.dynamic = true
+                        geometry.addAttribute( 'position', verticesBufferAttribute );
+                        geometry.setIndex(triangleIndices)
+
+                        // transparent mesh
+						this.wireMaterial = new THREE.MeshPhongMaterial({color: '#999999', wireframe: true})
+                        this.material = new THREE.MeshPhongMaterial({color: '#999900', transparent: true, opacity: 0.5})
+                        var mesh = new THREE.Mesh(geometry, this.material)
+                        mesh.renderOrder = -2
+                        this.transparentMesh.add(mesh)
+                        mesh = new THREE.Mesh(geometry, this.wireMaterial)
+                        mesh.renderOrder = -2
+						this.transparentMesh.add(mesh)
+
+                        this.faceMesh.geometry = geometry;  // for later use
+                        this.faceMesh.add(this.transparentMesh)
+                        this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this.faceMesh)
+					}
+				}
+			}
+		}
+    }
+
+			function AxesHelper( size ) {
+				size = size || 1;
+
+				var vertices = [
+					0, 0, 0,	size, 0, 0,
+					0, 0, 0,	0, size, 0,
+					0, 0, 0,	0, 0, size
+				];
+
+				var colors = [
+					1, 0, 0,	1, 0.6, 0,
+					0, 1, 0,	0.6, 1, 0,
+					0, 0, 1,	0, 0.6, 1
+				];
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+				var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				return new THREE.LineSegments(geometry, material);
+			}
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            try {
+                window.pageApp = new ARKitFaceTrackingExample(document.getElementById('target'))
+            } catch(e) {
+                console.error('page error', e)
+            }
+        }, 1000)
+    })
+</script>
+</body>
+</html>

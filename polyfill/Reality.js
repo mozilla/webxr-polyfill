@@ -75,6 +75,14 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _findAnchor')
 	}
 
+    _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+        throw new Error('Exending classes should implement _createImageAnchor')
+	}
+
+    activateDetectionImage(uid, display) {
+        throw new Error('Exending classes should implement _activateDetectionImage')
+    }
+
 	/*
 	Find an XRAnchorOffset that is at floor level below the current head pose
 	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown
@@ -105,3 +113,6 @@ export default class Reality extends EventHandlerBase {
 
 Reality.COMPUTER_VISION_DATA = 'cv_data'
 Reality.WINDOW_RESIZE_EVENT = 'window-resize'
+Reality.NEW_WORLD_ANCHOR = 'world-anchor'
+Reality.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
+Reality.REMOVE_WORLD_ANCHOR = 'remove-world-anchor'

@@ -6,6 +6,8 @@ import XRPointCloud from './XRPointCloud.js'
 import XRLightEstimate from './XRLightEstimate.js'
 import XRAnchor from './XRAnchor.js'
 import XRPlaneAnchor from './XRPlaneAnchor.js'
+import XRFaceAnchor from './XRFaceAnchor.js'
+import XRImageAnchor from './XRImageAnchor.js'
 import XRAnchorOffset from './XRAnchorOffset.js'
 import XRStageBounds from './XRStageBounds.js'
 import XRStageBoundsPoint from './XRStageBoundsPoint.js'
@@ -41,7 +43,9 @@ class XRPolyfill extends EventHandlerBase {
 		window.XRLightEstimate = XRLightEstimate
 		window.XRAnchor = XRAnchor
 		window.XRPlaneAnchor = XRPlaneAnchor
-		window.XRAnchorOffset = XRAnchorOffset
+        window.XRFaceAnchor = XRFaceAnchor
+        window.XRImageAnchor = XRImageAnchor
+        window.XRAnchorOffset = XRAnchorOffset
 		window.XRStageBounds = XRStageBounds
 		window.XRStageBoundsPoint = XRStageBoundsPoint
 		window.XRPresentationFrame = XRPresentationFrame

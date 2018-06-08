@@ -1,0 +1,233 @@
+
+<html>
+<head>
+	<title>ARKit 1.5 image detection example</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		body, html {
+			padding: 0;
+			margin: 0;
+			overflow: hidden;
+			position: fixed;
+			width: 100%;
+			height: 100vh;
+			-webkit-user-select: none;
+			user-select: none;
+		}
+		#target {
+			width: 100%;
+			height: 100%;
+			position: absolute;
+		}
+        .reset-button {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 2em;
+				padding: 10px;
+			}
+		.common-message {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 20px;
+		}
+	</style>
+	<link rel="stylesheet" href="../common.css"/>
+	<script src="../libs/three.min.js"></script>
+	<script src="../libs/three-gltf-loader.js"></script>
+	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+	<script type="module" src="../../polyfill/platform/ARKitWrapper.js"></script>
+	<script nomodule src="../../dist/webxr-polyfill.js"></script>
+	<script src="../common.js"></script>
+</head>
+<body>
+<div id="target" />
+<div id="hubs" style="width: 100px; display: none">
+	<img id="hubs-image" src="hubs.png" >
+</div>
+<div onclick="hideMe(this)" id="description">
+	<h2>ARKit 1.5 Image Detection Example</h2>
+	<h5>(click to dismiss)</h5>
+	<p>This sample automatically creates and activates a reference image, and places an anchored ducky when it's detected.  Print hubs.png so that it's 20cm wide.</p>
+</div>
+<script>
+    class ARKitImageDetectionExample extends XRExampleBase {
+        constructor(domElement){
+            super(domElement, false, true, false, true)
+
+            // A message at the bottom of the screen that shows whether a surface has been found
+            this._messageEl = document.createElement('div')
+            this.el.appendChild(this._messageEl)
+            this._messageEl.style.position = 'absolute'
+            this._messageEl.style.bottom = '10px'
+            this._messageEl.style.left = '10px'
+            this._messageEl.style.color = 'white'
+            this._messageEl.style['font-size'] = '16px'
+        }
+
+        // Called during construction to allow the app to populate this.scene
+        initializeScene(){
+            // Add a box at the scene origin
+            let box = new THREE.Mesh(
+                new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+                new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+            )
+            box.position.set(0, 0.05, 0)
+            var axesHelper = AxesHelper( 0.2 );
+            this.floorGroup.add( axesHelper );
+            this.floorGroup.add(box)
+
+            // Add a few lights
+            this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+            let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+            directionalLight.position.set(0, 10, 0)
+            this.scene.add(directionalLight)
+
+			this.duckyCreated = false
+            this.imageDetectionCreationRequested = false
+            this.imageActivateDection = false;
+            this.imageActivated = false;
+
+			loadGLTF('./DuckyMesh.glb').then(gltf => {
+			    this.ducky = new THREE.Group()
+                this.ducky.name = "Duck group"
+                this.duckyNode = gltf.scene
+                this.duckyNode.position.set(0, -0.01, 0)
+				this.ducky.add(this.duckyNode)
+                this.duckyCreated = true
+			}).catch((...params) =>{
+                console.error('could not load gltf', ...params)
+            })
+        }
+
+        // Called once per frame, before render, to give the app a chance to update this.scene
+        updateScene(frame){
+            let hubsImageName = 'hubs'
+
+            if (!this.listenerSetup) {
+                this.listenerSetup = true
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
+            }
+
+            if (!this.imageDetectionCreationRequested && this.duckyCreated) {
+                this.imageDetectionCreationRequested = true
+                let hubsImageData = this.getImageData('hubs-image')
+
+                this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
+                    this.resetButton = document.createElement('button')
+                    this.resetButton.setAttribute('class', 'reset-button')
+                    this.resetButton.innerText = 'Reset'
+                    this.el.appendChild(this.resetButton)
+                    this.resetButton.addEventListener('click', ev => {
+                        this.imageActivateDection = true;
+                        this.removeAnchoredNode(this.ducky)
+                    })
+
+                    // ready to go!
+                    this.imageActivateDection = true;
+                }).catch(error => {
+                    console.error(`error creating ducky: ${error}`)
+				})
+            }
+
+            if (!this.imageActivated && this.imageActivateDection) {
+                this.imageActivated = true;
+                this.imageActivateDection = false;
+
+                this.session.activateDetectionImage(hubsImageName).then(imageAnchorTransform => {
+                    this.imageActivated = false;
+                    const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+
+                    let model = new THREE.Matrix4();
+                    let tempPos = new THREE.Vector3();
+                    let tempQuat = new THREE.Quaternion();
+                    let tempScale = new THREE.Vector3();
+
+                    model.fromArray(imageAnchorTransform);
+                    model.decompose(tempPos, tempQuat, tempScale);
+
+                    const anchorUID = frame.addAnchor(headCoordinateSystem, [tempPos.x, tempPos.y, tempPos.z], [tempQuat.x, tempQuat.y, tempQuat.z, tempQuat.w])
+
+                    // var markerbox = new THREE.Object3D();
+                    // var markerboxGeom = new THREE.Mesh(
+                    //     new THREE.BoxBufferGeometry(0.2, 0.01, 0.145),
+                    //     new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff}) //'#2D5FFD' })
+                    // )
+                    // markerboxGeom.position.set(0, 0.005, 0);
+                    // markerbox.add(markerboxGeom)
+                    // markerbox.add(this.ducky)
+                    // this.addAnchoredNode(new XRAnchorOffset(anchorUID), markerbox)
+
+                    // uncomment the above and comment this line, if you want to see how well
+                    // the 3D content lines up with the image
+                    this.addAnchoredNode(new XRAnchorOffset(anchorUID), this.ducky)
+                }).catch(error => {
+                    this.imageActivated = false;
+                    console.error(`error activating ducky: ${error}`)
+                })
+            }
+        }
+
+
+        _handleRemoveWorldAnchor(event) {
+            let anchor = event.detail
+            
+            if (anchor instanceof XRImageAnchor) {
+                this.imageActivated = false;
+                this.imageActivateDetection = true;
+                this.removeAnchoredNode(this.ducky)
+            }    
+        }
+
+        getImageData(imageID) {
+            let canvas = document.createElement('canvas');
+            let context = canvas.getContext('2d');
+            let img = document.getElementById(imageID);
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0 );
+            return context.getImageData(0, 0, img.width, img.height);
+		}
+    }
+    function AxesHelper( size ) {
+				size = size || 1;
+
+				var vertices = [
+					0, 0, 0,	size, 0, 0,
+					0, 0, 0,	0, size, 0,
+					0, 0, 0,	0, 0, size
+				];
+
+				var colors = [
+					1, 0, 0,	1, 0.6, 0,
+					0, 1, 0,	0.6, 1, 0,
+					0, 0, 1,	0, 0.6, 1
+				];
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+				var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				return new THREE.LineSegments(geometry, material);
+			}
+
+
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            try {
+                window.pageApp = new ARKitImageDetectionExample(document.getElementById('target'))
+            } catch(e) {
+                console.error('page error', e)
+            }
+        }, 1000)
+    })
+</script>
+</body>
+</html>

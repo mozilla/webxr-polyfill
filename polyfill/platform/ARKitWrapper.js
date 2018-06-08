@@ -124,21 +124,26 @@ export default class ARKitWrapper extends EventHandlerBase {
 			['arkitWindowResize', ARKitWrapper.WINDOW_RESIZE_EVENT],
 			['onError', ARKitWrapper.ON_ERROR],
 			['arTrackingChanged', ARKitWrapper.AR_TRACKING_CHANGED],
-			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA]
+			['userGrantedComputerVisionData', ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA],
+			['userGrantedWorldSensingData', ARKitWrapper.USER_GRANTED_WORLD_SENSING_DATA]
             //,['onComputerVisionData', ARKitWrapper.COMPUTER_VISION_DATA]
 		]
 		for(let i=0; i < eventCallbacks.length; i++){
 			window[eventCallbacks[i][0]] = (detail) => {
 				detail = detail || null
-				this.dispatchEvent(
-					new CustomEvent(
-						eventCallbacks[i][1],
-						{
-							source: this,
-							detail: detail
-						}
-					)
-				)	
+				try {
+					this.dispatchEvent(
+						new CustomEvent(
+							eventCallbacks[i][1],
+							{
+								source: this,
+								detail: detail
+							}
+						)
+					)	
+				} catch(e) {
+					console.error(eventCallbacks[i][0] + ' callback error', e)
+				}
 			}
 		}
 		/*
@@ -615,7 +620,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		transform - anchor transformation matrix
 	}
 	*/
-	addAnchor(uid, transform){
+    addAnchor(uid, transform){
 		return new Promise((resolve, reject) => {
 			if (!this._isInitialized){
 				reject(new Error('ARKit is not initialized'));
@@ -640,12 +645,45 @@ export default class ARKitWrapper extends EventHandlerBase {
 	 * Supply the image in an ArrayBuffer, typedArray or ImageData
 	 * width and height are in meters 
 	 */
-	createImageAnchor(uid, buffer, width, height) {
-		var b64 = base64.encode(buffer);
+    createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
+		return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
 
-		// something like addAnchor?
+            let b64 = base64.encode(buffer);
+
+            window.webkit.messageHandlers.createImageAnchor.postMessage({
+                uid: uid,
+                buffer: b64,
+                imageWidth: width,
+                imageHeight: height,
+                physicalWidth: physicalWidthInMeters,
+				callback: this._createPromiseCallback('createImageAnchor', resolve)
+            })
+		})
 	}
-		
+
+    /***
+	 * activateDetectionImage activates an image and waits for the detection
+     * @param uid The UID of the image to activate, previously created via "createImageAnchor"
+     * @returns {Promise<any>} a promise that will be resolved when ARKit detects the image, or an error otherwise
+     */
+	activateDetectionImage(uid) {
+        return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
+
+            window.webkit.messageHandlers.activateDetectionImage.postMessage({
+                uid: uid,
+                callback: this._createPromiseCallback('activateDetectionImage', resolve)
+            })
+        })
+	}
+
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
@@ -766,9 +804,13 @@ export default class ARKitWrapper extends EventHandlerBase {
 	_onInit(deviceId){
 		this._deviceId = deviceId
 		this._isInitialized = true
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.INIT_EVENT, {
-			source: this
-		}))
+		try {
+			this.dispatchEvent(new CustomEvent(ARKitWrapper.INIT_EVENT, {
+				source: this
+			}))
+        } catch(e) {
+            console.error('INIT_EVENT event error', e)
+        }
 	}
 
 	/*
@@ -804,10 +846,14 @@ export default class ARKitWrapper extends EventHandlerBase {
 
 	_onWatch(data){
 		this._rawARData = data
-		this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
-			source: this,
-			detail: this._rawARData
-		}))
+		try {
+			this.dispatchEvent(new CustomEvent(ARKitWrapper.WATCH_EVENT, {
+				source: this,
+				detail: this._rawARData
+			}))
+        } catch(e) {
+            console.error('WATCH_EVENT event error', e)
+        }
 		this.timestamp = this._adjustARKitTime(data.timestamp)
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
@@ -859,8 +905,10 @@ export default class ARKitWrapper extends EventHandlerBase {
 						});
 					} else {
 						plane.center = element.plane_center;
-						plane.extent = [element.plane_extent.x, element.plane_extent.z];
+						plane.extent[0] = element.plane_extent.x
+						plane.extent[1] = element.plane_extent.y
 						plane.modelMatrix = element.transform;
+						plane.alignment = element.plane_alignment
 					}
 				}else{
 					var anchor = this.anchors_.get(element.uuid);
@@ -1060,16 +1108,20 @@ export default class ARKitWrapper extends EventHandlerBase {
 			}
 
 			var xrVideoFrame = new XRVideoFrame(detail.frame.buffers, detail.frame.pixelFormat, this._adjustARKitTime(detail.frame.timestamp), detail.camera )
-			this.dispatchEvent(
-				new CustomEvent(
-					ARKitWrapper.COMPUTER_VISION_DATA,
-					{
-						source: this,
-						detail: xrVideoFrame
-					}
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						ARKitWrapper.COMPUTER_VISION_DATA,
+						{
+							source: this,
+							detail: xrVideoFrame
+						}
+					)
 				)
-			)
-		//}	
+			} catch(e) {
+				console.error('COMPUTER_VISION_DATA event error', e)
+			}
+			//}	
 	}
 
 	/*
@@ -1222,6 +1274,17 @@ ARKitWrapper.ON_ERROR = 'on-error'
 ARKitWrapper.AR_TRACKING_CHANGED = 'ar_tracking_changed'
 ARKitWrapper.COMPUTER_VISION_DATA = 'cv_data'
 ARKitWrapper.USER_GRANTED_COMPUTER_VISION_DATA = 'user-granted-cv-data'
+ARKitWrapper.USER_GRANTED_WORLD_SENSING_DATA = 'user-granted-world-sensing-data'
+
+// ARKit Detection Image Orientations
+ARKitWrapper.ORIENTATION_UP = 1        			// 0th row at top,    0th column on left   - default orientation
+ARKitWrapper.ORIENTATION_UP_MIRRORED = 2    	// 0th row at top,    0th column on right  - horizontal flip
+ARKitWrapper.ORIENTATION_DOWN = 3          		// 0th row at bottom, 0th column on right  - 180 deg rotation
+ARKitWrapper.ORIENTATION_DOWN_MIRRORED = 4  	// 0th row at bottom, 0th column on left   - vertical flip
+ARKitWrapper.ORIENTATION_LEFT_MIRRORED = 5  	// 0th row on left,   0th column at top
+ARKitWrapper.ORIENTATION_RIGHT = 6         		// 0th row on right,  0th column at top    - 90 deg CW
+ARKitWrapper.ORIENTATION_RIGHT_MIRRORED = 7 	// 0th row on right,  0th column on bottom
+ARKitWrapper.ORIENTATION_LEFT = 8				// 0th row on left,   0th column at bottom - 90 deg CCW
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
@@ -1238,3 +1301,8 @@ ARKitWrapper.HIT_TEST_TYPE_ALL = ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT |
 
 ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANES = ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE |
 	ARKitWrapper.HIT_TEST_TYPE_EXISTING_PLANE_USING_EXTENT
+
+ARKitWrapper.ANCHOR_TYPE_PLANE = 'plane'
+ARKitWrapper.ANCHOR_TYPE_FACE = 'face'
+ARKitWrapper.ANCHOR_TYPE_ANCHOR = 'anchor'
+ARKitWrapper.ANCHOR_TYPE_IMAGE = 'image'
