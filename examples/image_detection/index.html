@@ -47,7 +47,7 @@
 <body>
 <div id="target" />
 <div id="hubs" style="width: 100px; display: none">
-	<img id="hubs-image" src="hubs.png" >
+	<img id="hubs-image" src="hubs.png" width="709" height="516">
 </div>
 <div onclick="hideMe(this)" id="description">
 	<h2>ARKit 1.5 Image Detection Example</h2>
@@ -116,7 +116,8 @@
             if (!this.imageDetectionCreationRequested && this.duckyCreated) {
                 this.imageDetectionCreationRequested = true
                 let hubsImageData = this.getImageData('hubs-image')
-
+		
+		// Parameters for createImageAnchor: uid, buffer, width, height, physicalWidthInMeters <- edit if needed
                 this.session.createImageAnchor(hubsImageName, hubsImageData.data, hubsImageData.width, hubsImageData.height, 0.2).then(() => {
                     this.resetButton = document.createElement('button')
                     this.resetButton.setAttribute('class', 'reset-button')
