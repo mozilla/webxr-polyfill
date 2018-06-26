@@ -2,9 +2,9 @@
 
 The API for "WebXR" implemented in this repository is based on a [proposed draft proposal for WebXR](https://github.com/mozilla/webxr-api) we created as a starting point for discussing WebXR in the fall of 2017, to explore what it might mean to expand WebVR to include AR/MR capabilities.
 
-We initially created this polyfill when the community group was calling the specification "WebVR", so using "WebXR" was not confusing. Now that the community group is working towards changing the name of the spec, this repo may be confusing to newcomers. So, we're working to bring this repo's master branch in line with the community group's draft spec.
+We initially created this polyfill when the community group was calling the specification "WebVR", so using "WebXR" was not confusing. Now that the community group is working towards changing the name of the spec, this repo may be confusing to newcomers. 
 
-That work is not yet complete.
+We're working to bring this repo's master branch in line with the community group's draft spec.  But that work is not yet complete.
 
 The WebVR community has shifted WebVR in this direction.  The group is now called the [Immersive Web Community Group](https://github.com/immersive-web/) and the WebVR specification has now become the [WebXR Device API](https://github.com/immersive-web/webxr). You should consider that spec as ground-truth for WebXR, and it is what you will likely see appearing in browsers through the rest of 2018 and into 2019.
 
