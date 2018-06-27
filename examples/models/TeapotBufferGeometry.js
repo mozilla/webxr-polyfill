@@ -503,7 +503,7 @@ THREE.TeapotBufferGeometry = function ( size, segments, bottom, lid, body, fitLi
 	mst.transpose();
 
 	// internal function: test if triangle has any matching vertices;
-	// if so, don't save triangle, since it won't display anything.
+	// if so, don't save triangle, since it won't device anything.
 	var notDegenerate = function ( vtx1, vtx2, vtx3 ) {
 
 		// if any vertex matches, return false

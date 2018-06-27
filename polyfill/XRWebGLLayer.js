@@ -4,7 +4,7 @@ import XRLayer from './XRLayer.js'
 XRWebGLLayer defines the WebGL or WebGL 2 context that is rendering the visuals for this layer.
 */
 export default class XRWebGLLayer extends XRLayer {
-	constructor(session, context){
+	constructor(session, context, layerInit=null){
 		super()
 		this._session = session
 		this._context = context

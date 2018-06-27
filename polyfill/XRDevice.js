@@ -1,31 +1,28 @@
 import MatrixMath from './fill/MatrixMath.js'
 import EventHandlerBase from './fill/EventHandlerBase.js'
 
-import VirtualReality from './reality/VirtualReality.js'
-
 import XRFieldOfView from './XRFieldOfView.js'
-
+import XRFrameOfReference from './XRFrameOfReference.js'
 
 /*
-Each XRDisplay represents a method of using a specific type of hardware to render AR or VR realities and layers.
+Each XRDevice represents a method of using a specific type of hardware to render AR or VR realities and layers.
 
 This doesn't yet support a geospatial coordinate system
 */
-export default class XRDisplay extends EventHandlerBase {
-	constructor(xr, displayName, isExternal, reality){
+export default class XRDevice extends EventHandlerBase {
+	constructor(xr, deviceName, isExternal){
 		super()
 		this._xr = xr
-		this._displayName = displayName
+		this._deviceName = deviceName
 		this._isExternal = isExternal
-		this._reality = reality // The Reality instance that is currently displayed
 
-		this._headModelCoordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.HEAD_MODEL)
-		this._eyeLevelCoordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.EYE_LEVEL)
-		this._trackerCoordinateSystem = new XRCoordinateSystem(this, XRCoordinateSystem.TRACKER)
+		this._headModelCoordinateSystem = new XRCoordinateSystem(this, XRFrameOfReference.HEAD_MODEL)
+		this._eyeLevelCoordinateSystem = new XRCoordinateSystem(this, XRFrameOfReference.EYE_LEVEL)
+		this._stageCoordinateSystem = new XRCoordinateSystem(this, XRFrameOfReference.STAGE)
 
-		this._headPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
-		this._eyeLevelPose = new XRViewPose([0, XRViewPose.SITTING_EYE_HEIGHT, 0])
-		this._trackerPoseModelMatrix = MatrixMath.mat4_generateIdentity()
+		this._headPose = new XRDevicePose([0, XRDevicePose.SITTING_EYE_HEIGHT, 0])
+		this._eyeLevelPose = new XRDevicePose([0, XRDevicePose.SITTING_EYE_HEIGHT, 0])
+		this._stagePoseModelMatrix = MatrixMath.mat4_generateIdentity()
 
 		var fov = 50/2;
 		this._fov = new XRFieldOfView(fov, fov, fov, fov)
@@ -35,12 +32,10 @@ export default class XRDisplay extends EventHandlerBase {
 		this._views = []
 	}
 
-	get displayName(){ return this._displayName }
-
-	get isExternal(){ return this._isExternal }
+	get external(){ return this._isExternal }
 
 	supportsSession(parameters){
-		// parameters: XRSessionCreateParametersInit 
+		// parameters: XRSessionCreateOptions 
 		// returns boolean
 		return this._supportedCreationParameters(parameters)
 	}
@@ -50,10 +45,6 @@ export default class XRDisplay extends EventHandlerBase {
 			if(this._supportedCreationParameters(parameters) === false){
 				reject()
 				return
-			}
-			if(parameters.type === XRSession.REALITY){
-				this._reality = new VirtualReality()
-				this._xr._privateRealities.push(this._reality)
 			}
 			resolve(this._createSession(parameters))
 		})
@@ -72,7 +63,7 @@ export default class XRDisplay extends EventHandlerBase {
 	}
 
 	_supportedCreationParameters(parameters){
-		// returns true if the parameters are supported by this display
+		// returns true if the parameters are supported by this device
 		throw 'Should be implemented by extending class'
 	}
 
@@ -83,7 +74,7 @@ export default class XRDisplay extends EventHandlerBase {
 
 	/*
 	Called by a session after it has handed the XRPresentationFrame to the app
-	Use this for any display submission calls that need to happen after the render has occurred.
+	Use this for any device submission calls that need to happen after the render has occurred.
 	*/
 	_handleAfterFrame(frame){}
 

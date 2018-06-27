@@ -7,7 +7,7 @@ export default class XRStageBoundsPoint {
 		throw new Error('Not implemented')
 	}
 
-	get y(){
+	get z(){
 		//readonly attribute double z;
 		throw new Error('Not implemented')
 	}

@@ -19926,7 +19926,7 @@
 
 		}
 
-		window.addEventListener( 'vrdisplaypresentchange', onVRDisplayPresentChange, false );
+		window.addEventListener( 'vrdevicepresentchange', onVRDisplayPresentChange, false );
 
 		//
 

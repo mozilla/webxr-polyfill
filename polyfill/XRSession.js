@@ -1,70 +1,71 @@
 import EventHandlerBase from './fill/EventHandlerBase.js'
 
 /*
-A script that wishes to make use of an XRDisplay can request an XRSession.
-An XRSession provides a list of the available Reality instances that the script may request as well as make a request for an animation frame.
+A script that wishes to make use of an XRDevice can request an XRSession.
 */
 export default class XRSession extends EventHandlerBase {
-	constructor(xr, display, createParameters){
+	constructor(xr, device, createParameters){
 		super(xr)
 		this._xr = xr
-		this._display = display
+		this._device = device
 		this._createParameters = createParameters
 		this._ended = false
 
-		this._baseLayer = null
-		this._stageBounds = null
+		this._baseLayer = new XRWebGLLayer(this, createParameters.outputContext.canvas.getContext('webgl'))
+		this._device._handleNewBaseLayer(this._baseLayer)
 	}
 
-	get display(){ return this._display }
+	get device(){ return this._device }
 
-	get createParameters(){ return this._parameters }
+	get exclusive(){ return this._createParameters.exclusive }
 
-	get realities(){ return this._xr._sharedRealities }
+	get outputContext(){ return this._createParameters.outputContext }
 
-	get reality(){ return this._display._reality }
+	get depthNear(){ this._device._depthNear }
+	set depthNear(value){ this._device._depthNear = value }
 
-	get baseLayer(){
-		return this._baseLayer
+	get depthFar(){ this._device._depthFar }
+	set depthFar(value){ this._device._depthFar = value }
+
+	get baseLayer(){ return this._baseLayer }
+
+	requestFrameOfReference(type, options){
+		// Promise<VRFrameOfReference> requestFrameOfReference(VRFrameOfReferenceType type, optional VRFrameOfReferenceOptions options);
+		return new Promise((resolve, reject) => {
+			switch(type){
+				case XRFrameOfReference.HEAD_MODEL:
+					resolve(this._device._headModelCoordinateSystem)
+				case XRFrameOfReference.EYE_LEVEL:
+					resolve(this._device._eyeLevelCoordinateSystem)
+				case XRFrameOfReference.STAGE:
+					resolve(this._device._stageCoordinateSystem)
+				default:
+					reject()
+			}
+		})
 	}
-
-	set baseLayer(value){
-		this._baseLayer = value
-		this._display._handleNewBaseLayer(this._baseLayer)
-	}
-
-	get depthNear(){ this._display._depthNear }
-	set depthNear(value){ this._display._depthNear = value }
-
-	get depthFar(){ this._display._depthFar }
-	set depthFar(value){ this._display._depthFar = value }
-
-	get hasStageBounds(){ this._stageBounds !== null }
-
-	get stageBounds(){ return this._stageBounds }
 
 	requestFrame(callback){
 		if(this._ended) return null
 		if(typeof callback !== 'function'){
 			throw 'Invalid callback'
 		}
-		return this._display._requestAnimationFrame(() => {
+		return this._device._requestAnimationFrame(() => {
 			const frame = this._createPresentationFrame()
-			this._display._reality._handleNewFrame(frame)
-			this._display._handleNewFrame(frame)
+			this._device._handleNewFrame(frame)
 			callback(frame)
-			this._display._handleAfterFrame(frame)
+			this._device._handleAfterFrame(frame)
 		})
 	}
 
 	cancelFrame(handle){
-		return this._display._cancelAnimationFrame(handle)
+		return this._device._cancelAnimationFrame(handle)
 	}
 
 	end(){
 		if(this._ended) return
 		this._ended = true
-		this._display._stop()
+		this._device._stop()
 		return new Promise((resolve, reject) => {
 			resolve()
 		})
@@ -74,37 +75,10 @@ export default class XRSession extends EventHandlerBase {
 		return new XRPresentationFrame(this)
 	}
 
-	_getCoordinateSystem(...types){
-		for(let type of types){
-			switch(type){
-				case XRCoordinateSystem.HEAD_MODEL:
-					return this._display._headModelCoordinateSystem
-				case XRCoordinateSystem.EYE_LEVEL:
-					return this._display._eyeLevelCoordinateSystem
-				case XRCoordinateSystem.TRACKER:
-					return this._display._trackerCoordinateSystem
-				case XRCoordinateSystem.GEOSPATIAL:
-					// Not supported yet
-				default:
-					continue
-			}
-		}
-		return null
-	}
-
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;
 	attribute EventHandler onresetpose;
-	attribute EventHandler onrealitychanged;
-	attribute EventHandler onrealityconnect;
-	attribute EventHandler onrealitydisconnect;
-	attribute EventHandler onboundschange;
-	attribute EventHandler onended;
+	attribute EventHandler onend;
 	*/
 }
-
-XRSession.REALITY = 'reality'
-XRSession.AUGMENTATION = 'augmentation'
-
-XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]

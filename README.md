@@ -51,13 +51,13 @@ If you run these apps on Mozilla's [ARKit based iOS app](https://github.com/mozi
 
 If you run these apps on Google's ARCore backed browser then they will use the class in [polyfill/platform/ARCoreCameraRenderer.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARCoreCameraRenderer.js) to use data out of ARCore.
 
-If you run these apps on desktop Firefox or Chrome with a WebVR 1.1 supported VR headset, the headset will be exposed as a WebXR XRDisplay.
+If you run these apps on desktop Firefox or Chrome with a WebVR 1.1 supported VR headset, the headset will be exposed as a WebXR XRDevice.
 
 If you run these apps on a device with no VR or AR tracking, the apps will use the 3dof orientation provided by Javascript orientation events.
  
-## Supported Displays
+## Supported Devices
 
-- Flat Display (AR only, needs VR)
+- Flat Device (AR only, needs VR)
 - WebVR 1.1 HMD (VR only, needs AR)
 - Cardboard (NOT YET)
 - Hololens (NOT YET)

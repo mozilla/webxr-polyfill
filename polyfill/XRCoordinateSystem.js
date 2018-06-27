@@ -1,20 +1,19 @@
 import MatrixMath from './fill/MatrixMath.js'
+import XRFrameOfReference from './XRFrameOfReference.js'
 
 /*
 XRCoordinateSystem represents the origin of a 3D coordinate system positioned at a known frame of reference.
-The XRCoordinateSystem is a string from XRCoordinateSystem.TYPES:
+The type is a string from XRFrameOfReference.TYPES:
 
 These types are used by the app code when requesting a coordinate system from the session:
-- XRCoordinateSystem.HEAD_MODEL: origin is aligned with the pose of the head, as sensed by HMD or handset trackers
-- XRCoordinateSystem.EYE_LEVEL: origin is at a fixed distance above the ground
-
-This is an internal type, specific to just this polyfill and not visible to the app code
-- XRCoordinateSystem.TRACKER: The origin of this coordinate system is at floor level at or below the origin of the HMD or handset provided tracking system
+- XRFrameOfReference.HEAD_MODEL: origin is aligned with the pose of the head, as sensed by HMD or handset trackers
+- XRFrameOfReference.EYE_LEVEL: origin is at a fixed distance above the ground
+- XRFrameOfReference.STAGE: origin is at floor level
 
 */
 export default class XRCoordinateSystem {
-	constructor(display, type){
-		this._display = display
+	constructor(device, type){
+		this._device = device
 		this._type = type
 
 		this.__relativeMatrix = MatrixMath.mat4_generateIdentity()
@@ -42,25 +41,15 @@ export default class XRCoordinateSystem {
 
 	get _poseModelMatrix(){
 		switch(this._type){
-			case XRCoordinateSystem.HEAD_MODEL:
-				return this._display._headPose.poseModelMatrix
-			case XRCoordinateSystem.EYE_LEVEL:
-				return this._display._eyeLevelPose.poseModelMatrix
-			case XRCoordinateSystem.TRACKER:
-				MatrixMath.mat4_multiply(this._workingMatrix, this.__relativeMatrix, this._display._trackerPoseModelMatrix)
+			case XRFrameOfReference.HEAD_MODEL:
+				return this._device._headPose.poseModelMatrix
+			case XRFrameOfReference.EYE_LEVEL:
+				return this._device._eyeLevelPose.poseModelMatrix
+			case XRFrameOfReference.STAGE:
+				MatrixMath.mat4_multiply(this._workingMatrix, this.__relativeMatrix, this._device._stagePoseModelMatrix)
 				return this._workingMatrix
 			default:
 				throw new Error('Unknown coordinate system type: ' + this._type)
 		}
 	}
 }
-
-XRCoordinateSystem.HEAD_MODEL = 'headModel'
-XRCoordinateSystem.EYE_LEVEL = 'eyeLevel'
-XRCoordinateSystem.TRACKER = 'tracker'
-
-XRCoordinateSystem.TYPES = [
-	XRCoordinateSystem.HEAD_MODEL,
-	XRCoordinateSystem.EYE_LEVEL,
-	XRCoordinateSystem.TRACKER,
-]

@@ -2,13 +2,21 @@ import MatrixMath from './fill/MatrixMath.js'
 import Quaternion from './fill/Quaternion.js'
 
 /*
-XRDevicePose describes the position and orientation of an XRDisplay relative to the query XRCoordinateSystem.
+XRDevicePose describes the position and orientation of an XRDisplay relative to the query XRFrameOfReference.
 It also describes the view and projection matrices that should be used by the application to render a frame of the XR scene.
 */
-export default class XRViewPose {
+export default class XRDevicePose {
 	constructor(position=[0, 0, 0], orientation=[0, 0, 0, 1]){
 		this._poseModelMatrix = new Float32Array(16)
 		MatrixMath.mat4_fromRotationTranslation(this._poseModelMatrix, orientation, position)
+	}
+
+	getViewMatrix(view, out=null){
+		if(out === null){
+			out = new Float32Array(16)
+		}
+		MatrixMath.mat4_eyeView(out, this._poseModelMatrix)
+		return out
 	}
 
 	get poseModelMatrix(){ return this._poseModelMatrix }
@@ -44,14 +52,6 @@ export default class XRViewPose {
 		this._poseModelMatrix[13] += array3[1]
 		this._poseModelMatrix[14] += array3[2]
 	}
-
-	getViewMatrix(view, out=null){
-		if(out === null){
-			out = new Float32Array(16)
-		}
-		MatrixMath.mat4_eyeView(out, this._poseModelMatrix) // TODO offsets
-		return out
-	}
 }
 
-XRViewPose.SITTING_EYE_HEIGHT = 1.1 // meters
+XRDevicePose.SITTING_EYE_HEIGHT = 1.1 // meters

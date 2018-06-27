@@ -78,25 +78,26 @@
 				}
 
 				// Called once per frame
-				updateScene(frame){
+				updateScene(frame, headCoordinateSystem){
 					// Uncomment the next line to spin the box
 					// this.scene.children[0].rotation.y += 0.01
 				}
 			}
 
 			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					window.pageApp = new VRSimplestExample(document.getElementById('target'))
 
-				window.pageApp = new VRSimplestExample(document.getElementById('target'))
-
-				// HMDs require the call to start presenting to occur due to a user input event, so make a button to trigger that
-				let enterVRButton = document.createElement('button')
-				enterVRButton.setAttribute('class', 'enter-vr-button')
-				document.getElementById('target').appendChild(enterVRButton)
-				enterVRButton.innerHTML = 'Enter VR'
-				enterVRButton.addEventListener('click', ev => {
-					window.pageApp.startPresenting()
-					document.getElementById('target').remove(enterVRButton)
-				})
+					// HMDs require the call to start presenting to occur due to a user input event, so make a button to trigger that
+					let enterVRButton = document.createElement('button')
+					enterVRButton.setAttribute('class', 'enter-vr-button')
+					document.getElementById('target').appendChild(enterVRButton)
+					enterVRButton.innerHTML = 'Enter VR'
+					enterVRButton.addEventListener('click', ev => {
+						window.pageApp.startPresenting()
+						document.getElementById('target').remove(enterVRButton)
+					})
+				}, 1000)
 			})
 		</script>
 	</body>
