@@ -1,0 +1,22 @@
+XRDisplay = null
+XRSession = null
+XRSessionCreateParameters = null
+Reality = null
+XRPointCloud = null;
+XRLightEstimate = null;
+XRAnchor = null;
+XRPlaneAnchor = null;
+XRFaceAnchor = null;
+XRImageAnchor = null;
+XRAnchorOffset = null;
+XRStageBounds = null;
+XRStageBoundsPoint = null;
+XRPresentationFrame = null;
+XRView = null;
+XRViewport = null;
+XRCoordinateSystem = null;
+XRViewPose = null;
+XRLayer = null;
+XRWebGLLayer = null 
+XRVideoFrame = null;
+

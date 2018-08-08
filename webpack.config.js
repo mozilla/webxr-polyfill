@@ -1,24 +1,36 @@
 const path = require('path');
+const fs = require('fs');
+
+WrapperPlugin = require('wrapper-webpack-plugin');
+
+const headerDoc = fs.readFileSync('./dist-header.js', 'utf8');
+const footerDoc = fs.readFileSync('./dist-footer.js', 'utf8');
 
 var xrPolyfill = {
-  entry: './polyfill/XRPolyfill.js',
-  output: {
-    filename: 'webxr-polyfill.js',
-    path: path.resolve(__dirname, 'dist')
-  },
+    entry: './polyfill/XRPolyfill.js',
+    output: {
+	    filename: 'webxr-polyfill.js',
+	    path: path.resolve(__dirname, 'dist')
+    },
+    plugins: [
+	    new WrapperPlugin({
+	      header: headerDoc,
+	      footer: footerDoc
+	    })
+  	],
 	module: {
-		rules: [
+	  	rules: [
 			{
-			test: /\.js$/,
-			include: [
-				path.resolve(__dirname, "polyfill"),
-			],
-			use: {
-				loader: 'babel-loader',
-				options: {
-				presets: ['env']
+				test: /\.js$/,
+				include: [
+					path.resolve(__dirname, "polyfill"),
+				],
+				use: {
+					loader: 'babel-loader',
+					options: {
+					presets: ['env']
+					}
 				}
-			}
 			}
 		]
   },
@@ -36,16 +48,16 @@ var xrVideoWorker = {
 	module: {
 		rules: [
 			{
-			test: /\.js$/,
-			include: [
-				path.resolve(__dirname, "polyfill"),
-			],
-			use: {
-				loader: 'babel-loader',
-				options: {
-				presets: ['env']
+				test: /\.js$/,
+				include: [
+					path.resolve(__dirname, "polyfill"),
+				],
+				use: {
+					loader: 'babel-loader',
+					options: {
+					presets: ['env']
+					}
 				}
-			}
 			}
 		]
   },
