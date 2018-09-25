@@ -92,6 +92,8 @@
                 this.listenerSetup = true
                 this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
                 this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
+                
             }
         }
 
