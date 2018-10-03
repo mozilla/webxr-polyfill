@@ -297,6 +297,15 @@ export default class XRSession extends EventHandlerBase {
             console.error('REMOVE_WORLD_ANCHOR event error', e)
         }
     }
+
+    getWorldMap() {
+        return this.reality._getWorldMap()
+    }
+
+    setWorldMap(worldMap) {
+        return this.reality._setWorldMap(worldMap)
+    }
+    
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;
