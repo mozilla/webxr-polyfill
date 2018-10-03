@@ -712,9 +712,9 @@ export default class ARKitWrapper extends EventHandlerBase {
                 return;
             }
 
-            window.webkit.messageHandlers.getWorldMap.postMessage({
+            window.webkit.messageHandlers.setWorldMap.postMessage({
             	worldMap: worldMap.worldMap,
-                callback: this._createPromiseCallback('getWorldMap', resolve)
+                callback: this._createPromiseCallback('setWorldMap', resolve)
             })
      	})
      }

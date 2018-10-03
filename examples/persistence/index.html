@@ -54,7 +54,7 @@
 			*/
 			class HitTestExample extends XRExampleBase {
 				constructor(domElement){
-					super(domElement, false)
+		            super(domElement, false, true, false, true)
 					// A message at the bottom of the screen that shows whether a surface has been found
 					this._messageEl = document.createElement('div')
 					this.el.appendChild(this._messageEl)
@@ -141,7 +141,19 @@
 							})
 
 							this._messageEl.innerHTML = 'hit'
+							this.session.getWorldMap().then(worldMap => {
+								self.worldMap = worldMap;
+								console.log("got worldMap, size = ", worldMap.worldMap.length)
 
+								setTimeout(() => this.session.setWorldMap(worldMap).then(val => {
+									console.log("set worldMap ok")
+								}).catch(err => {
+									console.error('Could not set world Map', err)
+								}), 1000);
+							}).catch(err => {
+								console.error('Could not get world Map', err)
+								self.worldMap = null;
+							});
 						}
 					}).catch(err => {
 						console.error('Error in hit test', err)

@@ -707,7 +707,7 @@ export default class CameraReality extends Reality {
             if (this._arKitWrapper) {
                 this._arKitWrapper.getWorldMap().then(ARKitWorldMap => {
                     if (ARKitWorldMap.saved === true) {
-                        resolve({worldMap: ARKitWorldMap.worldMap})
+                        resolve(ARKitWorldMap.worldMap)
 					} else if (ARKitWorldMap.error !== null) {
                 		reject(ARKitWorldMap.error)
 					} else {
