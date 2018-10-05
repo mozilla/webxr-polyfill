@@ -116,6 +116,8 @@
                     	this.listenerSetup = true
 
 	                	this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+	                	this.session.addEventListener(XRSession.TRACKING_CHANGED, this._handleTrackingChagned.bind(this))
+
          		    }
 				}
 
@@ -167,6 +169,10 @@
 		           		// it's an anchor we created last time
 						this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this._createSceneGraphNode())
 		            }
+		        }
+
+		        _handleTrackingChagned(event) {
+					this._messageEl.innerHTML = event.detail
 		        }
 
 				// Creates a box used to indicate the location of an anchor offset
