@@ -108,6 +108,14 @@ export default class Reality extends EventHandlerBase {
 		throw new Error('Exending classes should implement _getLightAmbientIntensity')
 	}
 
+    _getWorldMap() {
+        throw new Error('Exending classes should implement _getWorldMap')
+	}
+
+    _setWorldMap(worldMap) {
+        throw new Error('Exending classes should implement _setWorldMap')
+	}
+
 	// attribute EventHandler onchange;
 }
 

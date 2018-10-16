@@ -314,6 +314,20 @@ export default class FlatDisplay extends XRDisplay {
 		// #define WEB_AR_TRACKING_STATE_LIMITED_MOTION       @"ar_tracking_limited_excessive_motion"
 		// #define WEB_AR_TRACKING_STATE_LIMITED_FEATURES     @"ar_tracking_limited_insufficient_features"
 		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
+		// #define WEB_AR_TRACKING_STATE_RELOCALIZING 	 	  @"ar_tracking_relocalizing"
+        try {
+            this.dispatchEvent(
+                new CustomEvent(
+                        XRDisplay.TRACKING_CHANGED, 
+                        {
+                            source: this,
+                            detail: ev.detail
+                        }
+                    )
+                );
+        } catch (e) {
+            console.error('trackingChanged callback error', e);
+        }
 	}
 
 
@@ -322,13 +336,13 @@ export default class FlatDisplay extends XRDisplay {
 		try {
 			this.dispatchEvent(
 				new CustomEvent(
-					"videoFrame",
-					{
-						source: this,
-						detail: ev.detail
-					}
-				)
-			)	
+                        XRDisplay.VIDEO_FRAME,
+    					{
+    						source: this,
+    						detail: ev.detail
+    					}
+    				)
+    			)	
 		} catch(e) {
 			console.error('computer vision callback error', e)
 		}
