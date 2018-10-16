@@ -101,6 +101,8 @@ export default class XRDisplay extends EventHandlerBase {
 	//attribute EventHandler ondeactivate;
 }
 
+XRDisplay.VIDEO_FRAME = 'videoFrame'
+XRDisplay.TRACKING_CHANGED = 'tracking-changed'
 XRDisplay.NEW_WORLD_ANCHOR = 'world-anchor'
 XRDisplay.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
 XRDisplay.REMOVE_WORLD_ANCHOR = 'remove-world-anchor'

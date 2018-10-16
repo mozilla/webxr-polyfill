@@ -28,6 +28,7 @@ export default class XRSession extends EventHandlerBase {
 		this._tempMatrix = MatrixMath.mat4_generateIdentity()		
 		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()
 
+		this._display.addEventListener(XRDisplay.TRACKING_CHANGED, this._handleTrackingChanged.bind(this))
 		this._display.addEventListener(XRDisplay.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
 		this._display.addEventListener(XRDisplay.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
 		this._display.addEventListener(XRDisplay.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
@@ -298,6 +299,22 @@ export default class XRSession extends EventHandlerBase {
         }
     }
 
+    _handleTrackingChanged(event) {
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					XRSession.TRACKING_CHANGED,
+					{
+						source: this,
+						detail: event.detail
+					}
+				)
+			)
+        } catch(e) {
+            console.error('TRACKING_CHANGED event error', e)
+        }
+    }
+
     getWorldMap() {
         return this.reality._getWorldMap()
     }
@@ -322,6 +339,8 @@ XRSession.REALITY = 'reality'
 XRSession.AUGMENTATION = 'augmentation'
 
 XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]
+
+XRSession.TRACKING_CHANGED = 'tracking-changed'
 
 XRSession.NEW_WORLD_ANCHOR = 'world-anchor'
 XRSession.UPDATE_WORLD_ANCHOR = 'update-world-anchor'
