@@ -1,0 +1,226 @@
+
+  <html>
+	<head>
+		<title>Hit test example</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body, html {
+				padding: 0;
+				margin: 0;
+				overflow: hidden;
+				position: fixed;
+				width: 100%;
+				height: 100vh;
+				-webkit-user-select: none;
+				user-select: none;
+			}
+			#target {
+				width: 100%;
+				height: 100%;
+				position: absolute;
+			}
+			.common-message {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				transform: translate(-50%, -50%);
+				font-size: 20px;
+			}
+		</style>
+		<link rel="stylesheet" href="../common.css"/>
+		<script src="../libs/three.min.js"></script>
+<!-- 	
+		<script type="module" src="../../polyfill/XRPolyfill.js"></script>
+		<script nomodule src="../../dist/webxr-polyfill.js"></script>
+ -->		
+ 		<script src="../../dist/webxr-polyfill.js"></script>
+		<script src="../common.js"></script>
+	</head>
+	<body>
+		<div id="target" />
+		<div onclick="hideMe(this)" id="description">
+			<h2>Hit Test with Persistence</h2>
+			<h5>(click to dismiss)</h5>
+			<p>Find anchors by searching on tap events.</p>
+		</div>
+		<script>
+			/*
+			HitTestExample shows how to find surfaces or other features and place content relative to them.
+
+			In a production application, you would not create a separate anchor for every user action because
+			your application would quickly slow down tracking so many anchors. Instead, find an anchor
+			for groups of content that are positioned relative to some surface or other feature.
+			*/
+			class HitTestExample extends XRExampleBase {
+				constructor(domElement){
+		            super(domElement, false, true, false, true)
+					// A message at the bottom of the screen that shows whether a surface has been found
+					this._messageEl = document.createElement('div')
+					this.el.appendChild(this._messageEl)
+					this._messageEl.style.position = 'absolute'
+					this._messageEl.style.bottom = '10px'
+					this._messageEl.style.left = '10px'
+					this._messageEl.style.color = 'white'
+					this._messageEl.style['font-size'] = '16px'
+
+					this.anchorsToAdd = [] // { node, anchorOffset }
+					this.tempMat = new THREE.Matrix4();
+					this.tempScale = new THREE.Vector3();
+					this.tempPos = new THREE.Vector3();
+					this.tempQuaternion = new THREE.Quaternion();
+
+					this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+
+					this.listenerSetup = false
+				}
+
+				// Called during construction to allow the app to populate this.scene
+				initializeScene(){
+					// Add a box at the scene origin
+					let box = new THREE.Mesh(
+						new THREE.BoxBufferGeometry(0.1, 0.1, 0.1),
+						new THREE.MeshPhongMaterial({ color: '#DDFFDD' })
+					)
+					box.position.set(0, 0.05, 0)
+					var axesHelper = AxesHelper( 0.2 );
+		            this.floorGroup.add( axesHelper );
+					this.floorGroup.add(box)
+
+					// Add a few lights
+					this.scene.add(new THREE.AmbientLight('#FFF', 0.2))
+					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
+					directionalLight.position.set(0, 10, 0)
+					this.scene.add(directionalLight)
+		
+					this.listenerSetup = false
+
+				}
+
+				// Called once per frame, before render, to give the app a chance to update this.scene
+				updateScene(frame){
+					const worldCoordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+					// Create anchors and start tracking them
+					for(let anchorToAdd of this.anchorsToAdd){
+						var anchor = frame.getAnchor(anchorToAdd.anchorOffset.anchorUID)					
+						this.tempMat.fromArray(anchorToAdd.anchorOffset.getOffsetTransform(anchor.coordinateSystem))
+
+						this.tempMat.decompose(this.tempPos,this.tempQuaternion, this.tempScale); 
+
+						const anchorUID = frame.addAnchor(worldCoordinates, [this.tempPos.x, this.tempPos.y, this.tempPos.z], [this.tempQuaternion.x, this.tempQuaternion.y, this.tempQuaternion.z, this.tempQuaternion.w])
+						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
+					}
+					this.anchorsToAdd = []
+
+          		    if (!this.listenerSetup) {
+                    	this.listenerSetup = true
+
+	                	this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+	                	this.session.addEventListener(XRSession.TRACKING_CHANGED, this._handleTrackingChagned.bind(this))
+
+         		    }
+				}
+
+				// Save screen taps as normalized coordinates for use in this.updateScene
+				_onTouchStart(ev){
+					if (!ev.touches || ev.touches.length === 0) {
+						console.error('No touches on touch event', ev)
+						return
+					}
+
+					const x = ev.touches[0].clientX / window.innerWidth
+					const y = ev.touches[0].clientY / window.innerHeight
+
+					// Attempt a hit test using the normalized screen coordinates
+					this.session.hitTest(x, y).then(anchorOffset => {
+						if(anchorOffset === null){
+							this._messageEl.innerHTML = 'miss'
+						} else {
+							// Save this info for use during the next render frame
+							this.anchorsToAdd.push({
+								node: this._createSceneGraphNode(),
+								anchorOffset: anchorOffset
+							})
+
+							this._messageEl.innerHTML = 'hit'
+							this.session.getWorldMap().then(worldMap => {
+								self.worldMap = worldMap;
+								console.log("got worldMap, size = ", worldMap.worldMap.length)
+
+								setTimeout(() => this.session.setWorldMap(worldMap).then(val => {
+									console.log("set worldMap ok")
+								}).catch(err => {
+									console.error('Could not set world Map', err)
+								}), 1000);
+							}).catch(err => {
+								console.error('Could not get world Map', err)
+								self.worldMap = null;
+							});
+						}
+					}).catch(err => {
+						console.error('Error in hit test', err)
+					})
+				}
+
+		        _handleNewWorldAnchor(event) {
+		            let anchor = event.detail
+
+		            if (anchor.uid.startsWith('anchor-')) {
+		           		// it's an anchor we created last time
+						this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this._createSceneGraphNode())
+		            }
+		        }
+
+		        _handleTrackingChagned(event) {
+					this._messageEl.innerHTML = event.detail
+		        }
+
+				// Creates a box used to indicate the location of an anchor offset
+				_createSceneGraphNode(){
+					let group = new THREE.Group()
+					let geometry = new THREE.BoxBufferGeometry(0.1, 0.1, 0.1)
+					let material = new THREE.MeshPhongMaterial({ color: '#99FF99' })
+					let mesh = new THREE.Mesh(geometry, material)
+					mesh.position.set(0, 0.05, 0)
+					group.add(mesh)
+					return group
+				}
+			}
+
+			function AxesHelper( size ) {
+				size = size || 1;
+
+				var vertices = [
+					0, 0, 0,	size, 0, 0,
+					0, 0, 0,	0, size, 0,
+					0, 0, 0,	0, 0, size
+				];
+
+				var colors = [
+					1, 0, 0,	1, 0.6, 0,
+					0, 1, 0,	0.6, 1, 0,
+					0, 0, 1,	0, 0.6, 1
+				];
+
+				var geometry = new THREE.BufferGeometry();
+				geometry.addAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
+				geometry.addAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) );
+
+				var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+
+				return new THREE.LineSegments(geometry, material);
+			}
+
+
+			window.addEventListener('DOMContentLoaded', () => {
+				setTimeout(() => {
+					try {
+						window.pageApp = new HitTestExample(document.getElementById('target'))
+					} catch(e) {
+						console.error('page error', e)
+					}
+				}, 1000)
+			})
+		</script>
+	</body>
+</html>
