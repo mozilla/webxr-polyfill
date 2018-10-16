@@ -943,7 +943,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					} else {
 						plane.center = element.plane_center;
 						plane.extent[0] = element.plane_extent.x
-						plane.extent[1] = element.plane_extent.y
+						plane.extent[1] = element.plane_extent.z
 						plane.modelMatrix = element.transform;
 						plane.alignment = element.plane_alignment
 					}
