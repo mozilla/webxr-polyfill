@@ -109,6 +109,7 @@
 
 						const anchorUID = frame.addAnchor(worldCoordinates, [this.tempPos.x, this.tempPos.y, this.tempPos.z], [this.tempQuaternion.x, this.tempQuaternion.y, this.tempQuaternion.z, this.tempQuaternion.w])
 						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
+						console.log("created anchor with uid=", anchorUID)
 					}
 					this.anchorsToAdd = []
 
@@ -167,6 +168,8 @@
 
 		            if (anchor.uid.startsWith('anchor-')) {
 		           		// it's an anchor we created last time
+						console.log("RECEIVED anchor with uid=", anchor.uid)
+
 						this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this._createSceneGraphNode())
 		            }
 		        }
