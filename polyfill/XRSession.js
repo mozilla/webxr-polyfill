@@ -107,7 +107,9 @@ export default class XRSession extends EventHandlerBase {
 		// new anchor each minute
 		if (this._frameAnchors.length == 0 || (this._frameAnchors[0].timestamp + 60000) < frame.timestamp) {
 			const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
-			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0])
+			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0], [0,0,0,1],
+					'cameraAnchor-' + new Date().getTime() + '-' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER)));
+)
 			const anchor = frame.getAnchor(anchorUID)
 			anchor.timestamp = frame.timestamp;
 			this._frameAnchors.unshift(anchor)
@@ -246,19 +248,23 @@ export default class XRSession extends EventHandlerBase {
 		let xrAnchor = event.detail
         //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
 
-		try {
-			this.dispatchEvent(
-				new CustomEvent(
-					XRSession.NEW_WORLD_ANCHOR,
-					{
-						source: this,
-						detail: xrAnchor
-					}
+		if (!xrAnchor.uid.startsWith('cameraAnchor-')) {
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						XRSession.NEW_WORLD_ANCHOR,
+						{
+							source: this,
+							detail: xrAnchor
+						}
+					)
 				)
-			)
-        } catch(e) {
-            console.error('NEW_WORLD_ANCHOR event error', e)
-        }
+	        } catch(e) {
+	            console.error('NEW_WORLD_ANCHOR event error', e)
+	        }
+	    } else {
+	        console.log('not passing NEW_WORLD_ANCHOR event to app for ', xrAnchor.uid)
+	    }
     }
 
     _handleUpdateWorldAnchor(event) {
