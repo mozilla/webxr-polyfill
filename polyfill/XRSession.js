@@ -109,7 +109,6 @@ export default class XRSession extends EventHandlerBase {
 			const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
 			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0], [0,0,0,1],
 					'cameraAnchor-' + new Date().getTime() + '-' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER)));
-)
 			const anchor = frame.getAnchor(anchorUID)
 			anchor.timestamp = frame.timestamp;
 			this._frameAnchors.unshift(anchor)

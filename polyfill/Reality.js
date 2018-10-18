@@ -28,14 +28,14 @@ export default class Reality extends EventHandlerBase {
 	Called when at least one active XRSession is using this Reality
 	*/
 	_start(parameters){
-		throw new Error('Exending classes should implement _start')
+		throw new Error('Extending classes should implement _start')
 	}
 
 	/*
 	Called when no more active XRSessions are using this Reality
 	*/
 	_stop(){
-		throw new Error('Exending classes should implement _stop')
+		throw new Error('Extending classes should implement _stop')
 	}
 
 	/*
@@ -63,7 +63,7 @@ export default class Reality extends EventHandlerBase {
 	*/
 	_addAnchor(anchor, display){
 		// returns DOMString anchor UID
-		throw new Error('Exending classes should implement _addAnchor')
+		throw new Error('Extending classes should implement _addAnchor')
 	}
 
 	/*
@@ -72,15 +72,15 @@ export default class Reality extends EventHandlerBase {
 	normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
 	*/
 	_findAnchor(normalizedScreenX, normalizedScreenY, display){
-		throw new Error('Exending classes should implement _findAnchor')
+		throw new Error('Extending classes should implement _findAnchor')
 	}
 
     _createImageAnchor(uid, buffer, width, height, physicalWidthInMeters) {
-        throw new Error('Exending classes should implement _createImageAnchor')
+        throw new Error('Extending classes should implement _createImageAnchor')
 	}
 
     activateDetectionImage(uid, display) {
-        throw new Error('Exending classes should implement _activateDetectionImage')
+        throw new Error('Extending classes should implement _activateDetectionImage')
     }
 
 	/*
@@ -88,7 +88,7 @@ export default class Reality extends EventHandlerBase {
 	returns a Promise that resolves either to an AnchorOffset or null if the floor level is unknown
 	*/
 	_findFloorAnchor(display, uid=null){
-		throw new Error('Exending classes should implement _findFloorAnchor')
+		throw new Error('Extending classes should implement _findFloorAnchor')
 	}
 
 	_getAnchor(uid){
@@ -97,23 +97,23 @@ export default class Reality extends EventHandlerBase {
 
 	_removeAnchor(uid){
 		// returns void
-		throw new Error('Exending classes should implement _removeAnchor')
+		throw new Error('Extending classes should implement _removeAnchor')
 	}
 
 	_hitTestNoAnchor(normalizedScreenX, normalizedScreenY, display){
-		throw new Error('Exending classes should implement _hitTestNoAnchor')
+		throw new Error('Extending classes should implement _hitTestNoAnchor')
 	}
 
 	_getLightAmbientIntensity(){
-		throw new Error('Exending classes should implement _getLightAmbientIntensity')
+		throw new Error('Extending classes should implement _getLightAmbientIntensity')
 	}
 
     _getWorldMap() {
-        throw new Error('Exending classes should implement _getWorldMap')
+        throw new Error('Extending classes should implement _getWorldMap')
 	}
 
     _setWorldMap(worldMap) {
-        throw new Error('Exending classes should implement _setWorldMap')
+        throw new Error('Extending classes should implement _setWorldMap')
 	}
 
 	// attribute EventHandler onchange;
