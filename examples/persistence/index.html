@@ -127,7 +127,7 @@
                     	this.listenerSetup = true
 
 	                	this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
-	                	this.session.addEventListener(XRSession.TRACKING_CHANGED, this._handleTrackingChagned.bind(this))
+	                	this.session.addEventListener(XRSession.TRACKING_CHANGED, this._handleTrackingChanged.bind(this))
 
          		    }
 				}
@@ -184,7 +184,7 @@
 		            }
 		        }
 
-		        _handleTrackingChagned(event) {
+		        _handleTrackingChanged(event) {
 					this._messageEl.innerHTML = event.detail
 		        }
 
