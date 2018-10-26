@@ -116,6 +116,9 @@ export default class Reality extends EventHandlerBase {
         throw new Error('Extending classes should implement _setWorldMap')
 	}
 
+	_getWorldMappingStatus() {
+        throw new Error('Extending classes should implement _getWorldMappingStatus')
+	}
 	// attribute EventHandler onchange;
 }
 

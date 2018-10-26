@@ -697,6 +697,15 @@ export default class CameraReality extends Reality {
 		}
 	}
 
+	_getWorldMappingStatus(){
+		if(this._arKitWrapper !== null){
+			return this._arKitWrapper.worldMappingStatus;
+		}else{
+			// No platform support for ligth estimation
+			return null;
+		}
+	}
+
  	/**
 	 * retrieves a worldMap from the platform, if possible
      * @returns a promise when the worldMap has been retrieved

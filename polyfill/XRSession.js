@@ -327,7 +327,10 @@ export default class XRSession extends EventHandlerBase {
     setWorldMap(worldMap) {
         return this.reality._setWorldMap(worldMap)
     }
-    
+	
+	getWorldMappingStatus() {
+		return this.reality._getWorldMappingStatus()
+	}
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;
