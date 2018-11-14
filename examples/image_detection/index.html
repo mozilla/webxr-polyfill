@@ -91,7 +91,7 @@
 
 			this.duckyCreated = false
             this.imageDetectionCreationRequested = false
-            this.imageActivateDection = false;
+            this.imageActivateDetection = false;
             this.imageActivated = false;
 
 			loadGLTF('./DuckyMesh.glb').then(gltf => {
@@ -125,20 +125,20 @@
                     this.resetButton.innerText = 'Reset'
                     this.el.appendChild(this.resetButton)
                     this.resetButton.addEventListener('click', ev => {
-                        this.imageActivateDection = true;
+                        this.imageActivateDetection = true;
                         this.removeAnchoredNode(this.ducky)
                     })
 
                     // ready to go!
-                    this.imageActivateDection = true;
+                    this.imageActivateDetection = true;
                 }).catch(error => {
                     console.error(`error creating ducky: ${error}`)
 				})
             }
 
-            if (!this.imageActivated && this.imageActivateDection) {
+            if (!this.imageActivated && this.imageActivateDetection) {
                 this.imageActivated = true;
-                this.imageActivateDection = false;
+                this.imageActivateDetection = false;
 
                 this.session.activateDetectionImage(hubsImageName).then(imageAnchorTransform => {
                     this.imageActivated = false;
