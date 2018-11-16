@@ -739,7 +739,9 @@ export default class CameraReality extends Reality {
 		if (this._arKitWrapper) {
             return this._arKitWrapper.setWorldMap(worldMap)
         } else {
-			return null;
+			return new Promise((resolve, reject) => {
+                reject(new Error('setWorldMap not supported'));
+			})
 		}
 	}
 
