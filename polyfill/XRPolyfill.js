@@ -1,24 +1,24 @@
-import XRDisplay from './XRDisplay.js'
-import XRSession from './XRSession.js'
-import XRSessionCreateParameters from './XRSessionCreateParameters.js'
-import Reality from './Reality.js'
-import XRPointCloud from './XRPointCloud.js'
-import XRLightEstimate from './XRLightEstimate.js'
-import XRAnchor from './XRAnchor.js'
-import XRPlaneAnchor from './XRPlaneAnchor.js'
-import XRFaceAnchor from './XRFaceAnchor.js'
-import XRImageAnchor from './XRImageAnchor.js'
-import XRAnchorOffset from './XRAnchorOffset.js'
-import XRStageBounds from './XRStageBounds.js'
-import XRStageBoundsPoint from './XRStageBoundsPoint.js'
-import XRPresentationFrame from './XRPresentationFrame.js'
-import XRView from './XRView.js'
-import XRViewport from './XRViewport.js'
-import XRCoordinateSystem from './XRCoordinateSystem.js'
-import XRViewPose from './XRViewPose.js'
-import XRLayer from './XRLayer.js'
-import XRWebGLLayer from './XRWebGLLayer.js'
-import XRVideoFrame from './XRVideoFrame.js'
+import _XRDisplay from './XRDisplay.js'
+import _XRSession from './XRSession.js'
+import _XRSessionCreateParameters from './XRSessionCreateParameters.js'
+import _Reality from './Reality.js'
+import _XRPointCloud from './XRPointCloud.js'
+import _XRLightEstimate from './XRLightEstimate.js'
+import _XRAnchor from './XRAnchor.js'
+import _XRPlaneAnchor from './XRPlaneAnchor.js'
+import _XRFaceAnchor from './XRFaceAnchor.js'
+import _XRImageAnchor from './XRImageAnchor.js'
+import _XRAnchorOffset from './XRAnchorOffset.js'
+import _XRStageBounds from './XRStageBounds.js'
+import _XRStageBoundsPoint from './XRStageBoundsPoint.js'
+import _XRPresentationFrame from './XRPresentationFrame.js'
+import _XRView from './XRView.js'
+import _XRViewport from './XRViewport.js'
+import _XRCoordinateSystem from './XRCoordinateSystem.js'
+import _XRViewPose from './XRViewPose.js'
+import _XRLayer from './XRLayer.js'
+import _XRWebGLLayer from './XRWebGLLayer.js'
+import _XRVideoFrame from './XRVideoFrame.js'
 
 import EventHandlerBase from './fill/EventHandlerBase.js'
 import FlatDisplay from './display/FlatDisplay.js'
@@ -35,27 +35,49 @@ so you can safely include this script in any page.
 class XRPolyfill extends EventHandlerBase {
 	constructor(){
 		super()
-		window.XRDisplay = XRDisplay
-		window.XRSession = XRSession
-		window.XRSessionCreateParameters = XRSessionCreateParameters
-		window.Reality = Reality
-		window.XRPointCloud = XRPointCloud
-		window.XRLightEstimate = XRLightEstimate
-		window.XRAnchor = XRAnchor
-		window.XRPlaneAnchor = XRPlaneAnchor
-        window.XRFaceAnchor = XRFaceAnchor
-        window.XRImageAnchor = XRImageAnchor
-        window.XRAnchorOffset = XRAnchorOffset
-		window.XRStageBounds = XRStageBounds
-		window.XRStageBoundsPoint = XRStageBoundsPoint
-		window.XRPresentationFrame = XRPresentationFrame
-		window.XRView = XRView
-		window.XRViewport = XRViewport
-		window.XRCoordinateSystem = XRCoordinateSystem
-		window.XRViewPose = XRViewPose
-		window.XRLayer = XRLayer
-		window.XRWebGLLayer = XRWebGLLayer
-		window.XRVideoFrame = XRVideoFrame
+		window.XRDisplay = _XRDisplay
+		window.XRSession = _XRSession
+		window.XRSessionCreateParameters = _XRSessionCreateParameters
+		window.Reality = _Reality
+		window.XRPointCloud = _XRPointCloud
+		window.XRLightEstimate = _XRLightEstimate
+		window.XRAnchor = _XRAnchor
+		window.XRPlaneAnchor = _XRPlaneAnchor
+        window.XRFaceAnchor = _XRFaceAnchor
+        window.XRImageAnchor = _XRImageAnchor
+        window.XRAnchorOffset = _XRAnchorOffset
+		window.XRStageBounds = _XRStageBounds
+		window.XRStageBoundsPoint = _XRStageBoundsPoint
+		window.XRPresentationFrame = _XRPresentationFrame
+		window.XRView = _XRView
+		window.XRViewport = _XRViewport
+		window.XRCoordinateSystem = _XRCoordinateSystem
+		window.XRViewPose = _XRViewPose
+		window.XRLayer = _XRLayer
+		window.XRWebGLLayer = _XRWebGLLayer
+		window.XRVideoFrame = _XRVideoFrame
+
+		XRDisplay = window.XRDisplay
+		XRSession = window.XRSession
+		XRSessionCreateParameters = window.XRSessionCreateParameters
+		Reality = window.Reality
+		XRPointCloud = window.XRPointCloud
+		XRLightEstimate = window.XRLightEstimate
+		XRAnchor = window.XRAnchor;
+		XRPlaneAnchor = window.XRPlaneAnchor;
+		XRFaceAnchor = window.XRFaceAnchor;
+		XRImageAnchor = window.XRImageAnchor;
+		XRAnchorOffset = window.XRAnchorOffset;
+		XRStageBounds = window.XRStageBounds;
+		XRStageBoundsPoint = window.XRStageBoundsPoint;
+		XRPresentationFrame = window.XRPresentationFrame;
+		XRView = window.XRView;
+		XRViewport = window.XRViewport;
+		XRCoordinateSystem = window.XRCoordinateSystem;
+		XRViewPose = window.XRViewPose;
+		XRLayer = window.XRLayer;
+		XRWebGLLayer = window.XRWebGLLayer; 
+		XRVideoFrame = window.XRVideoFrame;
 
 		this._getVRDisplaysFinished = false;
 
@@ -125,4 +147,6 @@ class XRPolyfill extends EventHandlerBase {
 }
 
 /* Install XRPolyfill if window.XR does not exist */
-if(typeof navigator.XR === 'undefined') navigator.XR = new XRPolyfill()
+if(typeof navigator.XR === 'undefined') {
+	navigator.XR = new XRPolyfill()
+}

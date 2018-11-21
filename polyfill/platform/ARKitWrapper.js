@@ -88,6 +88,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this._timeOffsetComputed = false;
 		this.timestamp = 0;
 
+		this.worldMappingStatus = ARKitWrapper.WEB_AR_WORLDMAPPING_NOT_AVAILABLE;
 
 		this._globalCallbacksMap = {} // Used to map a window.arkitCallback method name to an ARKitWrapper.on* method name
 		// Set up the window.arkitCallback methods that the ARKit bridge depends on
@@ -684,6 +685,43 @@ export default class ARKitWrapper extends EventHandlerBase {
         })
 	}
 
+    /***
+     * getWorldMap requests a worldmap from the platform
+     * @returns {Promise<any>} a promise that will be resolved when the worldMap has been retrieved, or an error otherwise
+     */
+     getWorldMap() {
+     	return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
+
+            window.webkit.messageHandlers.getWorldMap.postMessage({
+                callback: this._createPromiseCallback('getWorldMap', resolve)
+            })
+     	})
+     }
+
+    /***
+     * setWorldMap requests a worldmap for the platform be set
+     * @returns {Promise<any>} a promise that will be resolved when the worldMap has been set, or an error otherwise
+     */
+     setWorldMap(worldMap) {
+     	return new Promise((resolve, reject) => {
+            if (!this._isInitialized){
+                reject(new Error('ARKit is not initialized'));
+                return;
+            }
+
+            window.webkit.messageHandlers.setWorldMap.postMessage({
+            	worldMap: worldMap.worldMap,
+                callback: this._createPromiseCallback('setWorldMap', resolve)
+            })
+     	})
+     }
+     
+
+
 	/* 
 	RACE CONDITION:  call stop, then watch:  stop does not set isWatching false until it gets a message back from the app,
 	so watch will return and not issue a watch command.   May want to set isWatching false immediately?
@@ -858,7 +896,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 		this.lightIntensity = data.light_intensity;
 		this.viewMatrix_ = data.camera_view;
 		this.projectionMatrix_ = data.projection_camera;
-
+		this.worldMappingStatus = data.worldMappingStatus;
 		if(data.newObjects.length){
 			for (let i = 0; i < data.newObjects.length; i++) {
 				const element = data.newObjects[i];
@@ -906,7 +944,7 @@ export default class ARKitWrapper extends EventHandlerBase {
 					} else {
 						plane.center = element.plane_center;
 						plane.extent[0] = element.plane_extent.x
-						plane.extent[1] = element.plane_extent.y
+						plane.extent[1] = element.plane_extent.z
 						plane.modelMatrix = element.transform;
 						plane.alignment = element.plane_alignment
 					}
@@ -1285,6 +1323,12 @@ ARKitWrapper.ORIENTATION_LEFT_MIRRORED = 5  	// 0th row on left,   0th column at
 ARKitWrapper.ORIENTATION_RIGHT = 6         		// 0th row on right,  0th column at top    - 90 deg CW
 ARKitWrapper.ORIENTATION_RIGHT_MIRRORED = 7 	// 0th row on right,  0th column on bottom
 ARKitWrapper.ORIENTATION_LEFT = 8				// 0th row on left,   0th column at bottom - 90 deg CCW
+
+// world mapping status
+ARKitWrapper.WEB_AR_WORLDMAPPING_NOT_AVAILABLE = "ar_worldmapping_not_available"
+ARKitWrapper.WEB_AR_WORLDMAPPING_LIMITED       = "ar_worldmapping_limited"
+ARKitWrapper.WEB_AR_WORLDMAPPING_EXTENDING     = "ar_worldmapping_extending"
+ARKitWrapper.WEB_AR_WORLDMAPPING_MAPPED        = "ar_worldmapping_mapped"
 
 // hit test types
 ARKitWrapper.HIT_TEST_TYPE_FEATURE_POINT = 1
