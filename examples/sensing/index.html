@@ -25,8 +25,11 @@
 	<link rel="stylesheet" href="../common.css"/>
 	<script src="../libs/three.js"></script>
 	<script src="../libs/three-gltf-loader.js"></script>
-	<script type="module" src="../../polyfill/XRPolyfill.js"></script>
-	<script nomodule src="../../dist/webxr-polyfill.js"></script>
+<!--    
+        <script type="module" src="../../polyfill/XRPolyfill.js"></script>
+        <script nomodule src="../../dist/webxr-polyfill.js"></script>
+ -->        
+        <script src="../../dist/webxr-polyfill.js"></script>
 	<script src="../common.js"></script>
 </head>
 <body>
@@ -89,6 +92,8 @@
                 this.listenerSetup = true
                 this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
                 this.session.addEventListener(XRSession.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
+                this.session.addEventListener(XRSession.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
+                
             }
         }
 

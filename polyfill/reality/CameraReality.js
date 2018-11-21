@@ -697,6 +697,54 @@ export default class CameraReality extends Reality {
 		}
 	}
 
+	_getWorldMappingStatus(){
+		if(this._arKitWrapper !== null){
+			return this._arKitWrapper.worldMappingStatus;
+		}else{
+			// No platform support for ligth estimation
+			return null;
+		}
+	}
+
+ 	/**
+	 * retrieves a worldMap from the platform, if possible
+     * @returns a promise when the worldMap has been retrieved
+     * @private
+     */
+    _getWorldMap() {
+        return new Promise((resolve, reject) => {
+            if (this._arKitWrapper) {
+                this._arKitWrapper.getWorldMap().then(ARKitWorldMap => {
+                    if (ARKitWorldMap.saved === true) {
+                        resolve(ARKitWorldMap.worldMap)
+					} else if (ARKitWorldMap.error !== null) {
+                		reject(ARKitWorldMap.error)
+					} else {
+                    	reject(null)
+					}
+				})
+            } else {
+                reject('ARKit not supported')
+            }
+        })
+	}
+
+	/**
+	 * sets a worldMap for the platform, if possible
+	 * @param worldMap a platform specific worldmap
+     * @returns a promise when the worldMap has been set
+     * @private
+     */
+    _setWorldMap(worldMap) {
+		if (this._arKitWrapper) {
+            return this._arKitWrapper.setWorldMap(worldMap)
+        } else {
+			return new Promise((resolve, reject) => {
+                reject(new Error('setWorldMap not supported'));
+			})
+		}
+	}
+
 	_getTimeStamp(timestamp) {
 		if(this._arKitWrapper !== null){
 			return this._arKitWrapper.timestamp;

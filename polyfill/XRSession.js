@@ -28,6 +28,7 @@ export default class XRSession extends EventHandlerBase {
 		this._tempMatrix = MatrixMath.mat4_generateIdentity()		
 		this._tempMatrix2 = MatrixMath.mat4_generateIdentity()
 
+		this._display.addEventListener(XRDisplay.TRACKING_CHANGED, this._handleTrackingChanged.bind(this))
 		this._display.addEventListener(XRDisplay.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
 		this._display.addEventListener(XRDisplay.REMOVE_WORLD_ANCHOR, this._handleRemoveWorldAnchor.bind(this))
 		this._display.addEventListener(XRDisplay.UPDATE_WORLD_ANCHOR, this._handleUpdateWorldAnchor.bind(this))
@@ -106,7 +107,8 @@ export default class XRSession extends EventHandlerBase {
 		// new anchor each minute
 		if (this._frameAnchors.length == 0 || (this._frameAnchors[0].timestamp + 60000) < frame.timestamp) {
 			const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
-			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0])
+			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0], [0,0,0,1],
+					'cameraAnchor-' + new Date().getTime() + '-' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER)));
 			const anchor = frame.getAnchor(anchorUID)
 			anchor.timestamp = frame.timestamp;
 			this._frameAnchors.unshift(anchor)
@@ -245,19 +247,23 @@ export default class XRSession extends EventHandlerBase {
 		let xrAnchor = event.detail
         //console.log(`New world anchor: ${JSON.stringify(xrAnchor)}`)
 
-		try {
-			this.dispatchEvent(
-				new CustomEvent(
-					XRSession.NEW_WORLD_ANCHOR,
-					{
-						source: this,
-						detail: xrAnchor
-					}
+		if (!xrAnchor.uid.startsWith('cameraAnchor-')) {
+			try {
+				this.dispatchEvent(
+					new CustomEvent(
+						XRSession.NEW_WORLD_ANCHOR,
+						{
+							source: this,
+							detail: xrAnchor
+						}
+					)
 				)
-			)
-        } catch(e) {
-            console.error('NEW_WORLD_ANCHOR event error', e)
-        }
+	        } catch(e) {
+	            console.error('NEW_WORLD_ANCHOR event error', e)
+	        }
+	    } else {
+	        console.log('not passing NEW_WORLD_ANCHOR event to app for ', xrAnchor.uid)
+	    }
     }
 
     _handleUpdateWorldAnchor(event) {
@@ -297,6 +303,34 @@ export default class XRSession extends EventHandlerBase {
             console.error('REMOVE_WORLD_ANCHOR event error', e)
         }
     }
+
+    _handleTrackingChanged(event) {
+		try {
+			this.dispatchEvent(
+				new CustomEvent(
+					XRSession.TRACKING_CHANGED,
+					{
+						source: this,
+						detail: event.detail
+					}
+				)
+			)
+        } catch(e) {
+            console.error('TRACKING_CHANGED event error', e)
+        }
+    }
+
+    getWorldMap() {
+        return this.reality._getWorldMap()
+    }
+
+    setWorldMap(worldMap) {
+        return this.reality._setWorldMap(worldMap)
+    }
+	
+	getWorldMappingStatus() {
+		return this.reality._getWorldMappingStatus()
+	}
 	/*
 	attribute EventHandler onblur;
 	attribute EventHandler onfocus;
@@ -313,6 +347,8 @@ XRSession.REALITY = 'reality'
 XRSession.AUGMENTATION = 'augmentation'
 
 XRSession.TYPES = [XRSession.REALITY, XRSession.AUGMENTATION]
+
+XRSession.TRACKING_CHANGED = 'tracking-changed'
 
 XRSession.NEW_WORLD_ANCHOR = 'world-anchor'
 XRSession.UPDATE_WORLD_ANCHOR = 'update-world-anchor'

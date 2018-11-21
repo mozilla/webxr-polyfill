@@ -1,20 +1,26 @@
-# WebXR polyfill with examples
+# (deprecated, experimental) WebXR polyfill with examples
 
-This repository holds a polyfill and sample code for a proposed API for building AR and VR applications in web browsers.
+The API for "WebXR" implemented in this repository is based on a [proposed draft proposal for WebXR](https://github.com/mozilla/webxr-api) we created as a starting point for discussing WebXR in the fall of 2017, to explore what it might mean to expand WebVR to include AR/MR capabilities.
 
-We initially created this polyfill when the community group was calling the specification "WebVR", so using "WebXR" was not confusing. Now that the community group is working towards changing the name of the spec, this repo is a bit confusing. So, we're working to bring this repo's master branch in line with the community group's draft spec and will use a separate branch for experimental features like AR support.
+We initially created this polyfill when the community group was calling the specification "WebVR", so using "WebXR" was not confusing. Now that the community group is working towards changing the name of the spec, this repo may be confusing to newcomers. 
 
-That work is not yet complete.
+We're working to bring this repo's master branch in line with the community group's draft spec.  But that work is not yet complete.
 
-In the meantime, you can compare the two from the [community group's draft spec](https://w3c.github.io/webvr/spec/latest/) and our experimental [API description](https://github.com/mozilla/webxr-api).
+The WebVR community has shifted WebVR in this direction.  The group is now called the [Immersive Web Community Group](https://github.com/immersive-web/) and the WebVR specification has now become the [WebXR Device API](https://github.com/immersive-web/webxr). You should consider that spec as ground-truth for WebXR, and it is what you will likely see appearing in browsers through the rest of 2018 and into 2019.
+
+We will continue to experiment with extensions to, and new ideas for, WebXR in this library.  Soon, we expect it to be integrated directly in our [WebXR Viewer iOS app](https://github.com/mozilla-mobile/webxr-ios) and no longer be included directly in any web pages.
+
+## WebXR library with examples
+
+This repository holds an implementation of a non-compliant version of WebXR, along with sample code demonstrating how to use the API.
 
 ## WARNING
 
-THIS SOFTWARE IS PRERELEASE, IS *NOT* READY FOR PRODUCTION USE, AND *WILL* SOON HAVE BREAKING CHANGES.
+THIS SOFTWARE IS NON-STANDARD AND PRERELEASE, IS *NOT* READY FOR PRODUCTION USE, AND *WILL* SOON HAVE BREAKING CHANGES.
 
 NOTHING IN THIS REPO COMES WITH ANY WARRENTY WHATSOEVER. DO NOT USE IT FOR ANYTHING EXCEPT EXPERIMENTS.
 
-There are a lot of pieces of the polyfill that are stubbed out and throw 'Not implemented' when called.
+There may be pieces of the library that are stubbed out and throw 'Not implemented' when called.
 
 ## Running the examples
 
@@ -47,9 +53,9 @@ The WebXR polyfill is not dependent on any external libraries, but examples/comm
 
 Look in [examples/ar_simplest/index.html](https://github.com/mozilla/webxr-polyfill/blob/master/examples/ar_simplest/index.html) for an example of how to extend [XRExampleBase](https://github.com/mozilla/webxr-polyfill/blob/master/examples/common.js) and how to start up an app.
 
-If you run these apps on Mozilla's [ARKit based iOS app](https://github.com/mozilla/webxr-ios) then they will use the class in [polyfill/platform/ARKitWrapper.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARKitWrapper.js) to get pose and anchor data out of ARKit.
+If you run these apps on Mozilla's [ARKit based iOS app](https://github.com/mozilla-mobile/webxr-ios) then they will use the class in [polyfill/platform/ARKitWrapper.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARKitWrapper.js) to get pose and anchor data out of ARKit.
 
-If you run these apps on Google's ARCore backed browser then they will use the class in [polyfill/platform/ARCoreCameraRenderer.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARCoreCameraRenderer.js) to use data out of ARCore.
+If you run these apps on Google's old ARCore backed experimental browser then they will use the class in [polyfill/platform/ARCoreCameraRenderer.js](https://github.com/mozilla/webxr-polyfill/blob/master/polyfill/platform/ARCoreCameraRenderer.js) to use data out of ARCore.
 
 If you run these apps on desktop Firefox or Chrome with a WebVR 1.1 supported VR headset, the headset will be exposed as a WebXR XRDisplay.
 

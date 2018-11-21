@@ -40,7 +40,7 @@
 	<body>
 		<div id="target" />
 		<div onclick="hideMe(this)" id="description">
-			<h2>Hit Test</h2>
+			<h2>Hit Test with Persistence</h2>
 			<h5>(click to dismiss)</h5>
 			<p>Find anchors by searching on tap events.</p>
 		</div>
@@ -54,7 +54,7 @@
 			*/
 			class HitTestExample extends XRExampleBase {
 				constructor(domElement){
-					super(domElement, false)
+		            super(domElement, false, true, false, true)
 					// A message at the bottom of the screen that shows whether a surface has been found
 					this._messageEl = document.createElement('div')
 					this.el.appendChild(this._messageEl)
@@ -64,7 +64,23 @@
 					this._messageEl.style.color = 'white'
 					this._messageEl.style['font-size'] = '16px'
 
+					this._mapMessageEl = document.createElement('div')
+					this.el.appendChild(this._mapMessageEl)
+					this._mapMessageEl.style.position = 'absolute'
+					this._mapMessageEl.style.bottom = '30px'
+					this._mapMessageEl.style.left = '10px'
+					this._mapMessageEl.style.color = 'grey'
+					this._mapMessageEl.style['font-size'] = '16px'
+
+					this.anchorsToAdd = [] // { node, anchorOffset }
+					this.tempMat = new THREE.Matrix4();
+					this.tempScale = new THREE.Vector3();
+					this.tempPos = new THREE.Vector3();
+					this.tempQuaternion = new THREE.Quaternion();
+
 					this.el.addEventListener('touchstart', this._onTouchStart.bind(this), false)
+
+					this.listenerSetup = false
 				}
 
 				// Called during construction to allow the app to populate this.scene
@@ -84,10 +100,36 @@
 					let directionalLight = new THREE.DirectionalLight('#FFF', 0.6)
 					directionalLight.position.set(0, 10, 0)
 					this.scene.add(directionalLight)
+		
+					this.listenerSetup = false
+
 				}
 
 				// Called once per frame, before render, to give the app a chance to update this.scene
 				updateScene(frame){
+					const worldCoordinates = frame.getCoordinateSystem(XRCoordinateSystem.TRACKER)
+					// Create anchors and start tracking them
+					for(let anchorToAdd of this.anchorsToAdd){
+						var anchor = frame.getAnchor(anchorToAdd.anchorOffset.anchorUID)					
+						this.tempMat.fromArray(anchorToAdd.anchorOffset.getOffsetTransform(anchor.coordinateSystem))
+
+						this.tempMat.decompose(this.tempPos,this.tempQuaternion, this.tempScale); 
+
+						const anchorUID = frame.addAnchor(worldCoordinates, [this.tempPos.x, this.tempPos.y, this.tempPos.z], [this.tempQuaternion.x, this.tempQuaternion.y, this.tempQuaternion.z, this.tempQuaternion.w])
+						this.addAnchoredNode(new XRAnchorOffset(anchorUID), anchorToAdd.node)
+						console.log("created anchor with uid=", anchorUID)
+					}
+					this.anchorsToAdd = []
+
+					this._mapMessageEl.innerHTML = this.session.getWorldMappingStatus();
+
+          		    if (!this.listenerSetup) {
+                    	this.listenerSetup = true
+
+	                	this.session.addEventListener(XRSession.NEW_WORLD_ANCHOR, this._handleNewWorldAnchor.bind(this))
+	                	this.session.addEventListener(XRSession.TRACKING_CHANGED, this._handleTrackingChanged.bind(this))
+
+         		    }
 				}
 
 				// Save screen taps as normalized coordinates for use in this.updateScene
@@ -105,13 +147,49 @@
 						if(anchorOffset === null){
 							this._messageEl.innerHTML = 'miss'
 						} else {
+							// Save this info for use during the next render frame
+							this.anchorsToAdd.push({
+								node: this._createSceneGraphNode(),
+								anchorOffset: anchorOffset
+							})
+
 							this._messageEl.innerHTML = 'hit'
-							this.addAnchoredNode(anchorOffset, this._createSceneGraphNode())
+							this.session.getWorldMap().then(worldMap => {
+								self.worldMap = worldMap;
+								console.log("got worldMap, size = ", worldMap.worldMap.length)
+
+								// if you have a world map, you can use it with a similar command.  
+								// to see it in action, uncomment the following code:
+								//
+								// setTimeout(() => this.session.setWorldMap(worldMap).then(val => {
+								// 	console.log("set worldMap ok")
+								// }).catch(err => {
+								// 	console.error('Could not set world Map', err)
+								// }), 1000);
+							}).catch(err => {
+								console.error('Could not get world Map', err)
+								self.worldMap = null;
+							});
 						}
 					}).catch(err => {
 						console.error('Error in hit test', err)
 					})
 				}
+
+		        _handleNewWorldAnchor(event) {
+		            let anchor = event.detail
+
+		            if (anchor.uid.startsWith('anchor-')) {
+		           		// it's an anchor we created last time
+						console.log("RECEIVED anchor with uid=", anchor.uid)
+
+						this.addAnchoredNode(new XRAnchorOffset(anchor.uid), this._createSceneGraphNode())
+		            }
+		        }
+
+		        _handleTrackingChanged(event) {
+					this._messageEl.innerHTML = event.detail
+		        }
 
 				// Creates a box used to indicate the location of an anchor offset
 				_createSceneGraphNode(){

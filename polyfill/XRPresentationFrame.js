@@ -56,13 +56,13 @@ export default class XRPresentationFrame {
 	/*
 	Create an anchor at a specific position defined by XRAnchor.coordinates
 	*/
-	addAnchor(coordinateSystem, position=[0,0,0], orientation=[0,0,0,1]){
+	addAnchor(coordinateSystem, position=[0,0,0], orientation=[0,0,0,1],uid=null){
 		//DOMString? addAnchor(XRCoordinateSystem, position, orientation);
 		let poseMatrix = MatrixMath.mat4_fromRotationTranslation(new Float32Array(16), orientation, position)
 		MatrixMath.mat4_multiply(poseMatrix, coordinateSystem.getTransformTo(this._session._display._trackerCoordinateSystem), poseMatrix)
 		let anchorCoordinateSystem = new XRCoordinateSystem(this._session._display, XRCoordinateSystem.TRACKER)
 		anchorCoordinateSystem._relativeMatrix = poseMatrix
-		return this._session.reality._addAnchor(new XRAnchor(anchorCoordinateSystem), this._session.display)
+		return this._session.reality._addAnchor(new XRAnchor(anchorCoordinateSystem, uid), this._session.display)
 	}
 
 	// normalized screen x and y are in range 0..1, with 0,0 at top left and 1,1 at bottom right
