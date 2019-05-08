@@ -105,7 +105,7 @@ export default class XRSession extends EventHandlerBase {
 
 	_updateCameraAnchor(frame) {
 		// new anchor each minute
-		if (this._frameAnchors.length == 0 || (this._frameAnchors[0].timestamp + 60000) < frame.timestamp) {
+		if (this._frameAnchors.length == 0 || (this._frameAnchors[0].timestamp + 1000) < frame.timestamp) {
 			const headCoordinateSystem = frame.getCoordinateSystem(XRCoordinateSystem.EYE_LEVEL)
 			const anchorUID = frame.addAnchor(headCoordinateSystem, [0,-1,0], [0,0,0,1],
 					'cameraAnchor-' + new Date().getTime() + '-' + Math.floor((Math.random() * Number.MAX_SAFE_INTEGER)));
@@ -113,7 +113,7 @@ export default class XRSession extends EventHandlerBase {
 			anchor.timestamp = frame.timestamp;
 			this._frameAnchors.unshift(anchor)
 
-			if (this._frameAnchors.length > 10) {
+			if (this._frameAnchors.length > 5) {
 				var oldAnchor = this._frameAnchors.pop()
 				this._display._reality._removeAnchor(oldAnchor.uid)
 			}
@@ -262,7 +262,7 @@ export default class XRSession extends EventHandlerBase {
 	            console.error('NEW_WORLD_ANCHOR event error', e)
 	        }
 	    } else {
-	        console.log('not passing NEW_WORLD_ANCHOR event to app for ', xrAnchor.uid)
+	        // console.log('not passing NEW_WORLD_ANCHOR event to app for ', xrAnchor.uid)
 	    }
     }
 

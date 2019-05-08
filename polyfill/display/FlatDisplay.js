@@ -315,13 +315,15 @@ export default class FlatDisplay extends XRDisplay {
 		// #define WEB_AR_TRACKING_STATE_LIMITED_FEATURES     @"ar_tracking_limited_insufficient_features"
 		// #define WEB_AR_TRACKING_STATE_NOT_AVAILABLE        @"ar_tracking_not_available"
 		// #define WEB_AR_TRACKING_STATE_RELOCALIZING 	 	  @"ar_tracking_relocalizing"
-        try {
+		
+		// the string gets sent as a single member array, pull the member out
+		try {
             this.dispatchEvent(
                 new CustomEvent(
                         XRDisplay.TRACKING_CHANGED, 
                         {
                             source: this,
-                            detail: ev.detail
+                            detail: ev.detail[0]
                         }
                     )
                 );
