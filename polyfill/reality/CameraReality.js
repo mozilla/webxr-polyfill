@@ -132,8 +132,10 @@ export default class CameraReality extends Reality {
 			canvasHeight = this._videoRenderHeight = height;				
 			var cameraAspect = canvasWidth / canvasHeight;
 
-			this._videoFrameCanvas.width = width;
-			this._videoFrameCanvas.height = height;
+			if (this._videoFrameCanvas) {
+				this._videoFrameCanvas.width = width;
+				this._videoFrameCanvas.height = height;
+			}
 		}
 
 		this._setFovy(this._cameraFov / (Math.PI/180))
